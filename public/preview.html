@@ -1,0 +1,1373 @@
+
+<!DOCTYPE html>More actions
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <title>PWians Admin - Test Preview</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+:root {
+  --primary: #667eea;
+  --primary-dark: #5a67d8;
+  --secondary: #764ba2;
+  --accent: #f093fb;
+  --success: #48bb78;
+  --warning: #ed8936;
+  --error: #f56565;
+  --info: #4299e1;
+
+  --bg-primary: #f7fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #edf2f7;
+  --bg-glass: rgba(255, 255, 255, 0.25);
+
+  --text-primary: #2d3748;
+  --text-secondary: #4a5568;
+  --text-muted: #718096;
+  --text-inverse: #ffffff;
+
+  --border: #e2e8f0;
+  --border-light: #f1f5f9;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="dark"] {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --bg-glass: rgba(30, 41, 59, 0.8);
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --border: #334155;
+  --border-light: #475569;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 14px;
+  overflow-x: hidden;
+  transition: var(--transition);
+}
+
+/* Glassmorphism utility */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Modern scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Header */
+.header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+  color: white;
+  padding: 24px 32px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+
+.header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+}
+
+.header-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.header-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-details {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.header-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 8px 16px;
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(10px);
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: var(--transition);
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-glass {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+}
+
+.btn-glass:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Subject Tabs */
+.subject-tabs {
+  background: var(--bg-secondary);
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.subject-tabs-container {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+
+.subject-tab {
+  flex: 0 0 auto;
+  padding: 12px 24px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.subject-tab:hover {
+  background: rgba(102, 126, 234, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.subject-tab.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-md);
+}
+
+/* Main Layout */
+.main-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  padding: 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: calc(100vh - 200px);
+}
+
+/* Sidebar */
+.sidebar {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  height: fit-content;
+  max-height: calc(100vh - 250px);
+  position: sticky;
+  top: 32px;
+}
+
+.sidebar-header {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  padding: 20px 24px;
+  font-weight: 700;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-content {
+  padding: 16px 0;
+  max-height: calc(100vh - 350px);
+  overflow-y: auto;
+}
+
+.question-list {
+  list-style: none;
+}
+
+.question-item {
+  padding: 16px 24px;
+  cursor: pointer;
+  transition: var(--transition);
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+}
+
+.question-item:hover {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--primary);
+}
+
+.question-item.active {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  position: relative;
+}
+
+.question-item.active::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 24px;
+  background: white;
+  border-radius: 2px 0 0 2px;
+}
+
+.question-number {
+  width: 32px;
+  height: 32px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  color: var(--primary);
+}
+
+.question-item.active .question-number {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+/* Main Content */
+.main-content {
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-light);
+  overflow: hidden;
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content-header {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  padding: 24px 32px;
+  position: relative;
+  overflow: hidden;
+}
+
+.content-header::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.content-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  z-index: 2;
+}
+
+.content-body {
+  padding: 32px;
+}
+
+/* Question Card */
+.question-card {
+  background: var(--bg-tertiary);
+  border: 2px solid var(--border-light);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  margin-bottom: 24px;
+  position: relative;
+  transition: var(--transition);
+}
+
+.question-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+.question-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.question-meta {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.meta-item i {
+  color: var(--primary);
+}
+
+/* Options */
+.options-container {
+  margin: 24px 0;
+}
+
+.options-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.options-list {
+  list-style: none;
+  display: grid;
+  gap: 12px;
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  transition: var(--transition);
+  font-weight: 500;
+}
+
+.option-item:hover {
+  border-color: var(--primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.option-item.correct {
+  border-color: var(--success);
+  background: rgba(72, 187, 120, 0.1);
+  color: var(--success);
+}
+
+.option-label {
+  width: 32px;
+  height: 32px;
+  background: var(--primary);
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.option-item.correct .option-label {
+  background: var(--success);
+}
+
+/* Answer Section */
+.answer-section {
+  background: var(--bg-secondary);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin: 24px 0;
+}
+
+.answer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--success);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.answer-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Solution Section */
+.solution-section {
+  background: rgba(102, 126, 234, 0.05);
+  border: 2px solid rgba(102, 126, 234, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.solution-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.solution-text {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+/* Edit Mode */
+.edit-form {
+  display: grid;
+  gap: 24px;
+}
+
+.form-group {
+  position: relative;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-label i {
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-family: inherit;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: var(--transition);
+  outline: none;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-2px);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 120px;
+  font-family: inherit;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-secondary {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 2px solid var(--border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.btn-success {
+  background: linear-gradient(135deg, var(--success), #38a169);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-success:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--error), #e53e3e);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.btn-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Navigation */
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 32px;
+  background: var(--bg-tertiary);
+  border-top: 1px solid var(--border-light);
+}
+
+.nav-info {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.nav-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+/* Loading States */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 24px;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-text {
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 16px 24px;
+  border-radius: var(--radius-lg);
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 2000;
+  box-shadow: var(--shadow-lg);
+  transform: translateX(100%);
+  transition: var(--transition);
+  max-width: 400px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  backdrop-filter: blur(20px);
+}
+
+.toast.show {
+  transform: translateX(0);
+}
+
+.toast-success {
+  background: linear-gradient(135deg, var(--success), #38a169);
+  color: white;
+}
+
+.toast-error {
+  background: linear-gradient(135deg, var(--error), #e53e3e);
+  color: white;
+}
+
+.toast-info {
+  background: linear-gradient(135deg, var(--info), #3182ce);
+  color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .sidebar {
+    position: static;
+    max-height: 300px;
+  }
+
+  .header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-details {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 20px;
+  }
+
+  .subject-tabs {
+    padding: 16px 20px;
+  }
+
+  .content-body {
+    padding: 20px;
+  }
+
+  .question-card {
+    padding: 20px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+  }
+
+  .navigation {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+}
+
+/* Focus styles */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <div class="header-info">
+        <h1 class="header-title">
+          <i class="fas fa-clipboard-list"></i>
+          <span id="test-name">Loading...</span>
+        </h1>
+        <div class="header-details">
+          <div class="header-detail">
+            <i class="fas fa-book"></i>
+            <span>Subject: <span id="current-subject">Loading...</span></span>
+          </div>
+          <div class="header-detail">
+            <i class="fas fa-list-ol"></i>
+            <span>Question: <span id="current-question-index">0</span>/<span id="total-questions">0</span></span>
+          </div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-glass" onclick="loadQuestions()">
+          <i class="fas fa-sync-alt"></i>
+          Refresh
+        </button>
+        <button class="theme-toggle" id="themeToggle">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subject Tabs -->
+  <section class="subject-tabs">
+    <div class="subject-tabs-container" id="subject-buttons">
+      <!-- Subject tabs will be populated here -->
+    </div>
+  </section>
+
+  <!-- Main Layout -->
+  <div class="main-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <i class="fas fa-list"></i>
+        Questions
+      </div>
+      <div class="sidebar-content">
+        <ul class="question-list" id="question-list">
+          <!-- Questions will be populated here -->
+        </ul>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="content-header">
+        <h2 class="content-title">
+          <i class="fas fa-question-circle"></i>
+          Question Preview
+        </h2>
+      </div>
+      <div class="content-body">
+        <div id="question-content">
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Loading question...</div>
+          </div>
+        </div>
+      </div>
+      <div class="navigation">
+        <div class="nav-info">
+          Navigate through questions using the sidebar or buttons below
+        </div>
+        <div class="nav-buttons">
+          <button class="btn btn-secondary" onclick="prevQuestion()" id="prevBtn">
+            <i class="fas fa-chevron-left"></i>
+            Previous
+          </button>
+          <button class="btn btn-secondary" onclick="nextQuestion()" id="nextBtn">
+            <i class="fas fa-chevron-right"></i>
+            Next
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<script>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 1. LaTeX Rendering Helper
+  //    - Only wrap “bare” TeX; leave already‐wrapped TeX alone
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderLatex(str) {
+    if (!str) return "—";
+
+    // 1) Detect existing TeX delimiters: \(…\), \[…\], $$…$$, or \begin{…}…\end{…}
+    const alreadyHasDelimiters =
+         /\\\(.+?\\\)/.test(str)         // \( … \)
+      || /\\\[.+?\\\]/.test(str)         // \[ … \]
+      || /\$\$[\s\S]+?\$\$/.test(str)    // $$ … $$
+      || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);
+
+    if (alreadyHasDelimiters) {
+      return str;
+    }
+
+    // 2) If we see a “bare” TeX pattern (like \frac, \hat, \pi, subscripts), wrap once:
+    const hasInlineMath =
+         /\\frac\s*{[^}]+}\s*{[^}]+}/.test(str)
+      || /\\hat\{[^}]+\}/.test(str)
+      || /\\pi\b/.test(str)
+      || /\\varepsilon/.test(str)
+      || /[A-Za-z]+_\{[^}]+\}/.test(str);
+
+    if (hasInlineMath) {
+      return `\\(${str}\\)`;
+    }
+
+    // 3) Otherwise leave unchanged
+    return str;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2. Theme management
+  // ─────────────────────────────────────────────────────────────────────────────
+  const themeToggle = document.getElementById('themeToggle');
+  const body = document.body;
+  function toggleTheme() {
+    const isDark = body.hasAttribute('data-theme');
+    if (isDark) {
+      body.removeAttribute('data-theme');
+      themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+      localStorage.setItem('theme', 'light');
+    } else {
+      body.setAttribute('data-theme', 'dark');
+      themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+      localStorage.setItem('theme', 'dark');
+    }
+  }
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'dark') {
+    body.setAttribute('data-theme', 'dark');
+    themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+  }
+  themeToggle.addEventListener('click', toggleTheme);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 3. Toast notifications
+  // ─────────────────────────────────────────────────────────────────────────────
+  function showToast(message, type = "info") {
+    const toast = document.createElement("div");
+    toast.className = `toast toast-${type}`;
+    const icon = type === "error"
+      ? "fas fa-exclamation-circle"
+      : type === "success"
+        ? "fas fa-check-circle"
+        : "fas fa-info-circle";
+    toast.innerHTML = `<i class="${icon}"></i><span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (document.body.contains(toast))
+          document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. API helper
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function api(path, opts = {}) {
+    try {
+      const response = await fetch('/api/' + path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...opts
+      });
+      if (!response.ok) throw new Error(`API Error: ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 5. State
+  // ─────────────────────────────────────────────────────────────────────────────
+  const params   = new URLSearchParams(window.location.search);
+  const testId   = params.get('test') || '';
+  let testName   = '', subjects = [], questions = [];
+  let currentSub = '', currentIdx = 0, inEditMode = false;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 6. Load test metadata
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function loadTest() {
+    try {
+      const test = await api(`tests/${testId}`);
+      testName = test.testName;
+      subjects = test.subjects;
+      document.getElementById('test-name').textContent = testName;
+      buildSubjectButtons();
+      if (subjects.length) switchSubject(subjects[0]);
+    } catch {
+      showToast('Error loading test data', 'error');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. Build subject tabs
+  // ─────────────────────────────────────────────────────────────────────────────
+  function buildSubjectButtons() {
+    const container = document.getElementById('subject-buttons');
+    container.innerHTML = '';
+    subjects.forEach(subject => {
+      const btn = document.createElement('button');
+      btn.className = 'subject-tab';
+      btn.textContent = subject;
+      btn.onclick = () => switchSubject(subject);
+      container.appendChild(btn);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 8. Switch subject
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function switchSubject(subject) {
+    currentSub = subject;
+    document.querySelectorAll('.subject-tab')
+      .forEach(tab => tab.classList.toggle('active', tab.textContent === subject));
+    document.getElementById('current-subject').textContent = subject;
+    await loadQuestions();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 9. Load questions for current subject
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function loadQuestions() {
+    try {
+      const res = await api(`questions?test=${testId}&subject=${encodeURIComponent(currentSub)}`);
+      questions = res.questions || [];
+      currentIdx = 0;
+      inEditMode = false;
+      renderQuestionList();
+      renderQuestion();
+    } catch {
+      showToast('Error loading questions', 'error');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 10. Render sidebar (question list)
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderQuestionList() {
+    const list = document.getElementById('question-list');
+    list.innerHTML = '';
+    if (!questions.length) {
+      list.innerHTML = `<li class="no-questions">No questions found for this subject</li>`;
+      updateNavigation();
+      return;
+    }
+    questions.forEach((q, i) => {
+      const li = document.createElement('li');
+      li.className = 'question-item';
+      li.classList.toggle('active', i === currentIdx);
+      li.innerHTML = `<div class="question-number">${i+1}</div><span>Question ${i+1}</span>`;
+      li.onclick = () => {
+        currentIdx = i;
+        inEditMode = false;
+        renderQuestion();
+        renderQuestionList();
+      };
+      list.appendChild(li);
+    });
+    updateNavigation();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 11. Render main pane
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderQuestion() {
+    const c = document.getElementById('question-content');
+    if (!questions.length) {
+      c.innerHTML = `<div class="loading-container">
+        <i class="fas fa-inbox loading-icon"></i>
+        <div class="loading-text">No questions available</div>
+      </div>`;
+      return;
+    }
+    const q = questions[currentIdx];
+    if (inEditMode) renderEditForm(q);
+    else renderQuestionView(q);
+    updateNavigation();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 12. View mode with LaTeX rendering
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderQuestionView(q) {
+    const c = document.getElementById('question-content');
+    let html = `<div class="question-card">
+      <div class="question-meta">
+        <div class="meta-item"><i class="fas fa-hashtag"></i> Q${currentIdx+1}</div>
+        <div class="meta-item"><i class="fas fa-tag"></i> ${q.questionType}</div>
+      </div>
+      <div class="question-text">${renderLatex(q.question)}</div>`;
+    if (q.questionType === 'MCQ') {
+      html += `<div class="options-container">
+        <div class="options-title"><i class="fas fa-list"></i> Options</div>
+        <ol class="options-list" type="A">`;
+      q.options.forEach((opt, idx) => {
+        const L = String.fromCharCode(65 + idx);
+        html += `<li class="option-item${q.correctAnswer === L ? ' correct' : ''}">
+          <div class="option-label">${L}</div>
+          <span>${renderLatex(opt)}</span>
+        </li>`;
+      });
+      html += `</ol></div>
+        <div class="answer-section">
+          <div class="answer-title"><i class="fas fa-check-circle"></i> Correct Answer</div>
+          <div class="answer-value">Option ${q.correctAnswer}</div>
+        </div>`;
+    } else {
+      html += `<div class="answer-section">
+        <div class="answer-title"><i class="fas fa-hashtag"></i> Correct Answer</div>
+        <div class="answer-value">${renderLatex(q.answer)}</div>
+      </div>`;
+    }
+    if (q.solution) {
+      html += `<div class="solution-section">
+        <div class="solution-title"><i class="fas fa-lightbulb"></i> Solution</div>
+        <div class="solution-text">${renderLatex(q.solution)}</div>
+      </div>`;
+    }
+    html += `<div class="action-buttons">
+        <button class="btn btn-danger" onclick="deleteQuestion()"><i class="fas fa-trash"></i> Delete</button>
+        <button class="btn btn-primary" onclick="enterEditMode()"><i class="fas fa-edit"></i> Edit</button>
+      </div>
+    </div>`;
+    c.innerHTML = html;
+
+    // Trigger MathJax to typeset any LaTeX
+    if (window.MathJax) {
+      MathJax.typesetPromise([c]).catch(err => console.error("MathJax error:", err));
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 13. Edit mode (no LaTeX rendering, raw editing)
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderEditForm(q) {
+    const c = document.getElementById('question-content');
+    let html = `<div class="question-card">
+      <form class="edit-form" onsubmit="saveQuestion(event)" novalidate>
+        <div class="form-group">
+          <label for="edit-question"><i class="fas fa-edit"></i> Question Text</label>
+          <textarea id="edit-question" name="question" class="form-textarea" required>${q.question || ''}</textarea>
+        </div>
+        <div class="form-group">
+          <label for="edit-type"><i class="fas fa-list"></i> Question Type</label>
+          <select id="edit-type" name="type" class="form-select" onchange="toggleQuestionType()" required>
+            <option value="MCQ"${q.questionType === 'MCQ' ? ' selected' : ''}>MCQ</option>
+            <option value="Integer"${q.questionType === 'Integer' ? ' selected' : ''}>Integer</option>
+          </select>
+        </div>
+        <div id="mcq-options" style="display:${q.questionType === 'MCQ' ? 'block' : 'none'}">
+          <div class="form-group"><label><i class="fas fa-list-ol"></i> Options</label>
+            <div class="grid-options">`;
+    ['A','B','C','D'].forEach((L, i) => {
+      html += `<div>
+        <label for="edit-option-${L}">Option ${L}</label>
+        <input type="text" id="edit-option-${L}" name="option${L}"
+               class="form-input" value="${q.options[i] || ''}" required>
+      </div>`;
+    });
+    html += `   </div></div>
+          <div class="form-group">
+            <label for="edit-correct"><i class="fas fa-check-circle"></i> Correct Answer</label>
+            <select id="edit-correct" name="correctAnswer" class="form-select" required>
+              <option value="">Select correct answer</option>`;
+    ['A','B','C','D'].forEach(L => {
+      html += `<option value="${L}"${q.correctAnswer === L ? ' selected' : ''}>${L}</option>`;
+    });
+    html += `   </select>
+          </div>
+        </div>
+        <div id="integer-answer" style="display:${q.questionType === 'Integer' ? 'block' : 'none'}">
+          <div class="form-group">
+            <label for="edit-answer"><i class="fas fa-hashtag"></i> Correct Answer</label>
+            <input type="number" id="edit-answer" name="answer"
+                   class="form-input" value="${q.answer || ''}" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="edit-solution"><i class="fas fa-lightbulb"></i> Solution</label>
+          <textarea id="edit-solution" name="solution" class="form-textarea">${q.solution || ''}</textarea>
+        </div>
+        <div class="action-buttons">
+          <button type="button" class="btn btn-secondary" onclick="cancelEdit()"><i class="fas fa-times"></i> Cancel</button>
+          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Changes</button>
+        </div>
+      </form>
+    </div>`;
+    c.innerHTML = html;
+  }
+
+  function toggleQuestionType() {
+    const t = document.getElementById('edit-type').value;
+    document.getElementById('mcq-options').style.display   = t === 'MCQ' ? 'block' : 'none';
+    document.getElementById('integer-answer').style.display = t === 'Integer' ? 'block' : 'none';
+  }
+  function enterEditMode() { inEditMode = true; renderQuestion(); }
+  function cancelEdit()    { inEditMode = false; renderQuestion(); }
+
+  async function saveQuestion(e) {
+    e.preventDefault();
+    const q = questions[currentIdx];
+    const payload = {
+      question:     document.getElementById('edit-question').value.trim(),
+      questionType: document.getElementById('edit-type').value,
+      solution:     document.getElementById('edit-solution').value.trim()
+    };
+    if (payload.questionType === 'MCQ') {
+      payload.options       = ['A','B','C','D'].map(L => document.getElementById(`edit-option-${L}`).value.trim());
+      payload.correctAnswer = document.getElementById('edit-correct').value;
+      if (payload.options.some(o => !o))     { showToast('Fill all options', 'error'); return; }
+      if (!payload.correctAnswer)           { showToast('Select correct answer', 'error'); return; }
+    } else {
+      payload.answer = document.getElementById('edit-answer').value.trim();
+      if (!payload.answer) { showToast('Enter the answer', 'error'); return; }
+    }
+    try {
+      await api(`questions/${q._id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+      showToast('Question updated', 'success');
+      inEditMode = false;
+      await loadQuestions();
+    } catch {
+      showToast('Error saving question', 'error');
+    }
+  }
+
+  async function deleteQuestion() {
+    if (!confirm('Delete this question?')) return;
+    const q = questions[currentIdx];
+    try {
+      await api(`questions/${q._id}`, { method: 'DELETE' });
+      showToast('Question deleted', 'success');
+      await loadQuestions();
+    } catch {
+      showToast('Error deleting question', 'error');
+    }
+  }
+
+  function prevQuestion() {
+    if (currentIdx > 0) {
+      currentIdx--;
+      inEditMode = false;
+      renderQuestion();
+      renderQuestionList();
+    }
+  }
+  function nextQuestion() {
+    if (currentIdx < questions.length - 1) {
+      currentIdx++;
+      inEditMode = false;
+      renderQuestion();
+      renderQuestionList();
+    }
+  }
+  function updateNavigation() {
+    document.getElementById('current-question-index').textContent = currentIdx + 1;
+    document.getElementById('total-questions').textContent        = questions.length;
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    if (prevBtn) prevBtn.disabled = currentIdx === 0;
+    if (nextBtn) nextBtn.disabled = currentIdx === questions.length - 1;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!testId) { showToast('No test ID', 'error'); return; }
+    loadTest();
+  });
+
+  // Expose globals
+  window.prevQuestion       = prevQuestion;
+  window.nextQuestion       = nextQuestion;
+  window.enterEditMode      = enterEditMode;
+  window.cancelEdit         = cancelEdit;
+  window.deleteQuestion     = deleteQuestion;
+  window.toggleQuestionType = toggleQuestionType;
+  window.saveQuestion       = saveQuestion;
+</script>
+
+
+</body>
+</html>

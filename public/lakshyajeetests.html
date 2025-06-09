@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1E40AF" />
+  <link rel="icon" sizes="192x192" href="icon-192.png">
+  <title>Test Series - PWiansZone</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+:root {
+  --primary-color: #1E40AF;
+  --secondary-color: #2563EB;
+  --accent-color: #9333EA;
+  --light-bg: #F8FAFC;
+  --white: #ffffff;
+  --text-color: #1E293B;
+  --text-secondary: #64748B;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --hover-bg: rgba(30, 64, 175, 0.05);
+  --border-color: #E2E8F0;
+  --success-color: #10B981;
+  --warning-color: #F59E0B;
+  --error-color: #EF4444;
+  --border-radius: 16px;
+  --border-radius-sm: 8px;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.dark-mode {
+  --primary-color: #60A5FA;
+  --secondary-color: #3B82F6;
+  --accent-color: #C084FC;
+  --light-bg: #0F172A;
+  --white: #1E293B;
+  --text-color: #E2E8F0;
+  --text-secondary: #94A3B8;
+  --card-shadow: rgba(0, 0, 0, 0.3);
+  --hover-bg: rgba(96, 165, 250, 0.1);
+  --border-color: #334155;
+}
+
+/* Base Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--light-bg);
+  color: var(--text-color);
+  transition: var(--transition);
+  line-height: 1.5;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
+}
+
+/* Header */
+.navbar {
+  background: var(--white);
+  border-bottom: 1px solid var(--border-color);
+  padding: 16px 20px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 3px var(--card-shadow);
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-container {
+  display: flex;
+  background: var(--light-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 25px;
+  overflow: hidden;
+  transition: var(--transition);
+  max-width: 300px;
+  width: 100%;
+}
+
+.search-container:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+}
+
+.search-input {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  outline: none;
+  color: var(--text-color);
+  font-family: inherit;
+}
+
+.search-input::placeholder {
+  color: var(--text-secondary);
+}
+
+.search-btn {
+  padding: 10px 16px;
+  border: none;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-btn:hover {
+  background: var(--secondary-color);
+}
+
+.dark-toggle {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--border-color);
+  background: var(--white);
+  color: var(--text-color);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.dark-toggle:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+  background: var(--hover-bg);
+}
+
+/* Main Content */
+.main-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 20px;
+}
+
+.page-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* Loading State */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  gap: 16px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top: 3px solid var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Test Cards */
+.tests-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.test-card {
+  background: var(--white);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  transition: var(--transition);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.test-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+}
+
+.test-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px var(--card-shadow);
+  border-color: var(--primary-color);
+}
+
+.test-card.scheduled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.test-card.scheduled::before {
+  background: var(--warning-color);
+}
+
+.test-card.scheduled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px var(--card-shadow);
+}
+
+.test-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.test-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+
+.test-status {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.test-status.published {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--success-color);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.test-status.scheduled {
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--warning-color);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.test-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.test-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.test-detail i {
+  color: var(--primary-color);
+  width: 16px;
+}
+
+.test-subjects {
+  margin-bottom: 20px;
+}
+
+.subjects-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 8px;
+}
+
+.subjects-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.subject-tag {
+  background: rgba(30, 64, 175, 0.1);
+  color: var(--primary-color);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(30, 64, 175, 0.2);
+}
+
+.scheduled-info {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.scheduled-text {
+  font-size: 14px;
+  color: var(--warning-color);
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.syllabus-btn {
+  background: var(--white);
+  border: 2px solid var(--primary-color);
+  color: var(--primary-color);
+  padding: 8px 16px;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.syllabus-btn:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+.start-icon {
+  color: var(--primary-color);
+  font-size: 20px;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.test-card:hover .start-icon {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-text {
+  font-size: 16px;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  opacity: 0;
+  animation: fadeIn 0.3s forwards;
+}
+
+.modal-content {
+  background: var(--white);
+  border-radius: var(--border-radius);
+  width: 100%;
+  max-width: 600px;
+  max-height: 80vh;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideUp 0.3s ease-out;
+}
+
+.modal-header {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+}
+
+.close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+  padding: 24px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.subject-section {
+  margin-bottom: 24px;
+}
+
+.subject-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chapters-list {
+  background: var(--light-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 16px;
+}
+
+.chapters-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.chapters-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chapters-list li:last-child {
+  border-bottom: none;
+}
+
+.chapters-list li::before {
+  content: '•';
+  color: var(--primary-color);
+  font-weight: bold;
+}
+
+.no-chapters {
+  color: var(--text-secondary);
+  font-style: italic;
+  text-align: center;
+  padding: 20px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { transform: translateY(20px) scale(0.95); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* Responsive Design */
+@media (min-width: 768px) {
+  body { font-size: 16px; }
+  
+  .navbar {
+    padding: 20px 24px;
+  }
+  
+  .logo {
+    font-size: 28px;
+  }
+  
+  .main-content {
+    padding: 40px 24px;
+  }
+  
+  .page-title {
+    font-size: 36px;
+  }
+  
+  .tests-grid {
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+  }
+  
+  .test-card {
+    padding: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tests-grid {
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+  }
+}
+
+/* Mobile specific */
+@media (max-width: 767px) {
+  .nav-container {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .search-container {
+    max-width: 100%;
+  }
+  
+  .test-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .test-actions {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .syllabus-btn {
+    justify-content: center;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus styles */
+button:focus,
+input:focus,
+.test-card:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <i class="fas fa-graduation-cap"></i>
+        PWiansZone
+      </div>
+      <div class="nav-right">
+        <div class="search-container">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search tests..." />
+          <button id="searchBtn" class="search-btn">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+        <button id="darkToggle" class="dark-toggle">
+          <i class="fas fa-moon"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="page-header">
+      <h1 class="page-title" id="batchTitle">
+        <i class="fas fa-clipboard-list"></i>
+        Loading batch...
+      </h1>
+      <p class="page-subtitle">Select a test to begin your assessment</p>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-container" id="loadingState">
+      <div class="loading-spinner"></div>
+      <p>Loading available tests...</p>
+    </div>
+
+    <!-- Tests Grid -->
+    <div class="tests-grid" id="testSeriesContainer" style="display: none;"></div>
+
+    <!-- Empty State -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+      <div class="empty-icon">
+        <i class="fas fa-inbox"></i>
+      </div>
+      <h3 class="empty-title">No Tests Found</h3>
+      <p class="empty-text">No tests are available for this batch at the moment.</p>
+    </div>
+  </main>
+
+  <!-- Syllabus Modal -->
+  <div id="syllabusModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="syllabusTitle" class="modal-title">
+          <i class="fas fa-book"></i>
+          Test Syllabus
+        </h3>
+        <button id="syllabusClose" class="close-btn">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div id="syllabusContent" class="modal-body">
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Loading syllabus...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // Utility functions
+  function getParam(name, def = '') {
+    return new URLSearchParams(window.location.search).get(name) || def;
+  }
+
+  function showToast(message, type = "info") {
+    const toast = document.createElement("div");
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: ${type === "error" ? "var(--error-color)" : type === "success" ? "var(--success-color)" : "var(--primary-color)"};
+      color: white;
+      padding: 12px 20px;
+      border-radius: var(--border-radius-sm);
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10000;
+      box-shadow: 0 4px 12px var(--card-shadow);
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+      max-width: 300px;
+    `;
+    toast.textContent = message;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.transform = "translateX(0)";
+    }, 100);
+    
+    setTimeout(() => {
+      toast.style.transform = "translateX(100%)";
+      setTimeout(() => {
+        document.body.removeChild(toast);
+      }, 300);
+    }, 3000);
+  }
+
+  // Get parameters
+  const rawBatchCode = getParam('batchID', 'BATCH001');
+  const batchCode = rawBatchCode.startsWith('BATCH')
+    ? rawBatchCode.replace(/^BATCH/, 'B')
+    : rawBatchCode;
+  const batchName = getParam('batchName', 'Lakshya JEE 1.0');
+
+  // Update page title
+  document.getElementById('batchTitle').innerHTML = `
+    <i class="fas fa-clipboard-list"></i>
+    ${batchName}
+  `;
+
+  // API helper
+  const api = (path, opts = {}) =>
+    fetch('/api/' + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts
+    }).then(r => r.json());
+
+  let allTests = [];
+
+  // Fetch and render tests
+  async function fetchAndRender() {
+    const loadingState = document.getElementById('loadingState');
+    const container = document.getElementById('testSeriesContainer');
+    const emptyState = document.getElementById('emptyState');
+
+    try {
+      loadingState.style.display = 'flex';
+      container.style.display = 'none';
+      emptyState.style.display = 'none';
+
+      const tests = await api('tests');
+      console.log('Fetched tests:', tests);
+      
+      allTests = tests.filter(t =>
+        t.batch && t.batch.BatchID === batchCode
+      );
+
+      loadingState.style.display = 'none';
+      
+      if (allTests.length === 0) {
+        emptyState.style.display = 'block';
+      } else {
+        container.style.display = 'grid';
+        renderTests(allTests);
+      }
+    } catch (err) {
+      console.error('Error fetching tests:', err);
+      loadingState.style.display = 'none';
+      showToast('Error loading tests. Please try again.', 'error');
+    }
+  }
+
+  // Render tests
+  function renderTests(tests) {
+    const container = document.getElementById('testSeriesContainer');
+    container.innerHTML = '';
+
+    tests.forEach(test => {
+      const isScheduled = !test.published && test.scheduledAt && new Date(test.scheduledAt) > new Date();
+      const card = document.createElement('div');
+      card.className = `test-card ${test.published ? '' : 'scheduled'}`;
+
+      const scheduledInfo = isScheduled ? `
+        <div class="scheduled-info">
+          <div class="scheduled-text">
+            <i class="fas fa-clock"></i>
+            Starts on: ${new Date(test.scheduledAt).toLocaleString()}
+          </div>
+        </div>
+      ` : '';
+
+      card.innerHTML = `
+        <div class="test-header">
+          <div>
+            <h3 class="test-title">${test.testName}</h3>
+          </div>
+          <div class="test-status ${test.published ? 'published' : 'scheduled'}">
+            <i class="fas fa-${test.published ? 'check-circle' : 'clock'}"></i>
+            ${test.published ? 'Available' : 'Scheduled'}
+          </div>
+        </div>
+
+        <div class="test-details">
+          <div class="test-detail">
+            <i class="fas fa-clock"></i>
+            <span>${test.testDuration} minutes</span>
+          </div>
+          <div class="test-detail">
+            <i class="fas fa-question-circle"></i>
+            <span>${test.subjects.length} subjects</span>
+          </div>
+        </div>
+
+        <div class="test-subjects">
+          <div class="subjects-label">Subjects:</div>
+          <div class="subjects-list">
+            ${test.subjects.map(subject => 
+              `<span class="subject-tag">${subject}</span>`
+            ).join('')}
+          </div>
+        </div>
+
+        ${scheduledInfo}
+
+        <div class="test-actions">
+          <button class="syllabus-btn" onclick="openSyllabus('${test._id}', '${test.testName}', ${JSON.stringify(test.subjects).replace(/"/g, '&quot;')})">
+            <i class="fas fa-book"></i>
+            View Syllabus
+          </button>
+          ${test.published ? '<i class="fas fa-arrow-right start-icon"></i>' : ''}
+        </div>
+      `;
+
+      if (test.published) {
+        card.addEventListener('click', (e) => {
+          // Don't navigate if clicking on syllabus button
+          if (e.target.closest('.syllabus-btn')) return;
+          
+          const params = new URLSearchParams({
+            test: test._id,
+            batchID: batchCode,
+            batchName
+          });
+          window.location.href = `testpage.html?${params}`;
+        });
+      }
+
+      container.appendChild(card);
+    });
+  }
+
+  // Search functionality
+  function filterTests() {
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    const filteredTests = query
+      ? allTests.filter(test => test.testName.toLowerCase().includes(query))
+      : allTests;
+    
+    renderTests(filteredTests);
+    
+    if (filteredTests.length === 0 && query) {
+      document.getElementById('testSeriesContainer').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-search"></i></div>
+          <h3 class="empty-title">No Results Found</h3>
+          <p class="empty-text">No tests match your search criteria.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Event listeners
+  document.getElementById('searchBtn').addEventListener('click', filterTests);
+  document.getElementById('searchInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') filterTests();
+  });
+
+  // Dark mode toggle
+  document.getElementById('darkToggle').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    const icon = isDark ? 'fa-sun' : 'fa-moon';
+    document.getElementById('darkToggle').innerHTML = `<i class="fas ${icon}"></i>`;
+    
+    // Save preference
+    localStorage.setItem('darkMode', isDark);
+  });
+
+  // Load dark mode preference
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.body.classList.add('dark-mode');
+    document.getElementById('darkToggle').innerHTML = '<i class="fas fa-sun"></i>';
+  }
+
+  // Syllabus modal
+  const syllabusModal = document.getElementById('syllabusModal');
+  const syllabusTitle = document.getElementById('syllabusTitle');
+  const syllabusContent = document.getElementById('syllabusContent');
+
+  document.getElementById('syllabusClose').onclick = () => {
+    syllabusModal.style.display = 'none';
+  };
+
+  window.addEventListener('click', (e) => {
+    if (e.target === syllabusModal) {
+      syllabusModal.style.display = 'none';
+    }
+  });
+
+  // Open syllabus modal
+  async function openSyllabus(testId, title, subjects) {
+    syllabusTitle.innerHTML = `
+      <i class="fas fa-book"></i>
+      Syllabus: ${title}
+    `;
+    
+    syllabusContent.innerHTML = `
+      <div class="loading-container">
+        <div class="loading-spinner"></div>
+        <p>Loading syllabus...</p>
+      </div>
+    `;
+    
+    syllabusModal.style.display = 'flex';
+
+    try {
+      const data = await Promise.all(
+        subjects.map(subject =>
+          api(`chapters/${testId}/${subject}`)
+            .then(res => ({ subject, chapters: res.chapters || [] }))
+            .catch(() => ({ subject, chapters: [] }))
+        )
+      );
+
+      let html = '';
+      data.forEach(({ subject, chapters }) => {
+        html += `
+          <div class="subject-section">
+            <h4 class="subject-title">
+              <i class="fas fa-book-open"></i>
+              ${subject}
+            </h4>
+            <div class="chapters-list">
+              ${chapters.length > 0 
+                ? `<ul>${chapters.map(chapter => `<li>${chapter}</li>`).join('')}</ul>`
+                : '<div class="no-chapters">No chapters available for this subject.</div>'
+              }
+            </div>
+          </div>
+        `;
+      });
+
+      syllabusContent.innerHTML = html;
+    } catch (error) {
+      console.error('Error loading syllabus:', error);
+      syllabusContent.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <h3 class="empty-title">Failed to Load Syllabus</h3>
+          <p class="empty-text">Please try again later.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Make openSyllabus global
+  window.openSyllabus = openSyllabus;
+
+  // Initialize
+  fetchAndRender();
+</script>
+</body>
+</html>

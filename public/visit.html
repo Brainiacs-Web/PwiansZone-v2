@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BRAINIACS – Access Required</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary:     #1E40AF;
+      --accent:      #2563EB;
+      --bg:          #F8FAFC;
+      --text:        #1F2937;
+      --shadow-light:rgba(0,0,0,0.05);
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: "Poppins", sans-serif;
+      background: var(--bg);
+      background-image: linear-gradient(135deg, var(--bg), #ffffff);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 20px;
+      text-align: center;
+    }
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1.5em;
+      color: var(--primary);
+      background: #fff;
+      padding: 24px 32px;
+      border-left: 6px solid var(--accent);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px var(--shadow-light);
+    }
+    .btn {
+      font-size: 1.1rem;
+      padding: 0.8em 1.6em;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: var(--accent);
+      color: #fff;
+      transition: background 0.25s, box-shadow 0.25s;
+      text-decoration: none;
+      box-shadow: 0 4px 12px var(--shadow-light);
+    }
+    .btn:hover {
+      background: var(--primary);
+      box-shadow: 0 6px 16px var(--shadow-light);
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Kindly generate your key before moving forward</h2>
+  <button class="btn" onclick="window.location.href='key.html'">
+    Generate key
+  </button>
+
+</body>
+</html>
