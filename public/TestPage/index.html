@@ -63,7 +63,7 @@ body {
 /* Mobile-first approach */
 .app-container {
   min-height: 100vh;
-: flex;
+  display: flex;
   flex-direction: column;
 }
 
@@ -1473,10 +1473,11 @@ input:focus,
       );
 
       setTimeout(() => {
-        window.location.href = auto
-          ? "result.html"
-          : `results.html?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-      }, 2000);
+  window.location.href = auto
+    ? "Results/"
+    : `Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+}, 2000);
+
     } catch (error) {
       console.error("Submission error:", error);
       showToast("Failed to submit test. Please try again.", "error");

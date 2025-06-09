@@ -757,7 +757,7 @@ input:focus,
   const batchCode = rawBatchCode.startsWith('BATCH')
     ? rawBatchCode.replace(/^BATCH/, 'B')
     : rawBatchCode;
-  const batchName = getParam('batchName', 'Prayas JEE 1.0');
+  const batchName = getParam('batchName', 'Dropper JEE 1.0');
 
   // Update page title
   document.getElementById('batchTitle').innerHTML = `
@@ -868,19 +868,19 @@ input:focus,
         </div>
       `;
 
-      if (test.published) {
-        card.addEventListener('click', (e) => {
-          // Don't navigate if clicking on syllabus button
-          if (e.target.closest('.syllabus-btn')) return;
-          
-          const params = new URLSearchParams({
-            test: test._id,
-            batchID: batchCode,
-            batchName
-          });
-          window.location.href = `testpage.html?${params}`;
-        });
-      }
+     if (test.published) {
+  card.addEventListener('click', (e) => {
+    // Don't navigate if clicking on syllabus button
+    if (e.target.closest('.syllabus-btn')) return;
+
+    const params = new URLSearchParams({
+      test: test._id,
+      batchID: batchCode,
+      batchName
+    });
+    window.location.href = `TestPage/?${params}`;
+  });
+}
 
       container.appendChild(card);
     });

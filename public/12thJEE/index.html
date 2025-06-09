@@ -753,11 +753,11 @@ input:focus,
   }
 
   // Get parameters
-  const rawBatchCode = getParam('batchID', 'BATCH005');
+  const rawBatchCode = getParam('batchID', 'BATCH001');
   const batchCode = rawBatchCode.startsWith('BATCH')
     ? rawBatchCode.replace(/^BATCH/, 'B')
     : rawBatchCode;
-  const batchName = getParam('batchName', 'Arjuna JEE 1.0');
+  const batchName = getParam('batchName', '12th JEE 1.0');
 
   // Update page title
   document.getElementById('batchTitle').innerHTML = `
@@ -869,18 +869,18 @@ input:focus,
       `;
 
       if (test.published) {
-        card.addEventListener('click', (e) => {
-          // Don't navigate if clicking on syllabus button
-          if (e.target.closest('.syllabus-btn')) return;
-          
-          const params = new URLSearchParams({
-            test: test._id,
-            batchID: batchCode,
-            batchName
-          });
-          window.location.href = `testpage.html?${params}`;
-        });
-      }
+  card.addEventListener('click', (e) => {
+    // Don't navigate if clicking on syllabus button
+    if (e.target.closest('.syllabus-btn')) return;
+
+    const params = new URLSearchParams({
+      test: test._id,
+      batchID: batchCode,
+      batchName
+    });
+    window.location.href = `TestPage/?${params}`;
+  });
+}
 
       container.appendChild(card);
     });

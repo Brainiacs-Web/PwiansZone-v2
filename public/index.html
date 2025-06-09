@@ -866,14 +866,15 @@
     unlockHeaderBtn.addEventListener("click", handleLockClick);
     lockBtnDesktop.addEventListener("click", handleLockClick);
 
-    const batches = {
-      "11th": [{ label: "11th JEE 1.0", url: "Arjunajeetests.html" }],
-      "12th": [
-        { label: "12th JEE 1.0", url: "lakshyajeetests.html" },
-        { label: "12th Boards 2026", url: "parishramtests.html" }
-      ],
-      dropper: [{ label: "Dropper JEE 1.0", url: "prayasjeetests.html" }]
-    };
+   const batches = {
+  "11th": [{ label: "11th JEE 1.0", url: "/11thJEE/" }],
+  "12th": [
+    { label: "12th JEE 1.0", url: "/12thJEE/" },
+    { label: "12th Boards 2026", url: "/12thBoards/" }
+  ],
+  dropper: [{ label: "Dropper JEE 1.0", url: "/DropperJEE/" }]
+};
+
 
     const tabMap = {
       "tab-11th": "11th",
@@ -907,9 +908,11 @@
           overlay.addEventListener(
             "animationend",
             () => {
-              overlay.classList.remove("overlay-anim");
-              const dest = localStorage.getItem("keyID") ? item.url : "visit.html";
-              location.href = dest;
+             overlay.classList.remove("overlay-anim");
+
+const dest = localStorage.getItem("keyID") ? item.url : "/GenerateKey/";
+location.href = dest;
+
             },
             { once: true }
           );

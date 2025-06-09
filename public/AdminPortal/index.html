@@ -1998,12 +1998,13 @@ textarea:focus-visible {
   };
 
   window.previewTest = async (id) => {
-    try {
-      window.open(`/preview.html?test=${id}`, '_blank');
-    } catch (err) {
-      alert("Could not open preview: " + err.message);
-    }
-  };
+  try {
+    window.open(`/AdminPreview/?test=${id}`, '_blank');
+  } catch (err) {
+    alert("Could not open preview: " + err.message);
+  }
+};
+
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 14. Initialize when DOM is loaded
