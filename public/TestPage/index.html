@@ -1474,8 +1474,9 @@ input:focus,
 
       setTimeout(() => {
   window.location.href = auto
-    ? "Results/"
-    : `Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+  ? "/Results/"
+  : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+
 }, 2000);
 
     } catch (error) {
