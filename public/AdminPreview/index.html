@@ -966,34 +966,29 @@ textarea:focus-visible {
   //    - Only wrap “bare” TeX; leave already‐wrapped TeX alone
   // ─────────────────────────────────────────────────────────────────────────────
   function renderLatex(str) {
-    if (!str) return "—";
+  if (!str || typeof str !== "string") return "—";
 
-    // 1) Detect existing TeX delimiters: \(…\), \[…\], $$…$$, or \begin{…}…\end{…}
-    const alreadyHasDelimiters =
-         /\\\(.+?\\\)/.test(str)         // \( … \)
-      || /\\\[.+?\\\]/.test(str)         // \[ … \]
-      || /\$\$[\s\S]+?\$\$/.test(str)    // $$ … $$
-      || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);
+  // Check if the string is already wrapped in LaTeX delimiters
+  const alreadyWrapped =
+    /\\\(.+?\\\)/.test(str) ||           // \( ... \)
+    /\\\[.+?\\\]/.test(str) ||           // \[ ... \]
+    /\$\$[\s\S]+?\$\$/.test(str) ||      // $$ ... $$
+    /\\begin\{.*?\}[\s\S]*?\\end\{.*?\}/.test(str); // \begin{} ... \end{}
 
-    if (alreadyHasDelimiters) {
-      return str;
-    }
-
-    // 2) If we see a “bare” TeX pattern (like \frac, \hat, \pi, subscripts), wrap once:
-    const hasInlineMath =
-         /\\frac\s*{[^}]+}\s*{[^}]+}/.test(str)
-      || /\\hat\{[^}]+\}/.test(str)
-      || /\\pi\b/.test(str)
-      || /\\varepsilon/.test(str)
-      || /[A-Za-z]+_\{[^}]+\}/.test(str);
-
-    if (hasInlineMath) {
-      return `\\(${str}\\)`;
-    }
-
-    // 3) Otherwise leave unchanged
+  if (alreadyWrapped) {
     return str;
   }
+
+  // Regex to detect if the string contains LaTeX-like syntax
+  const containsLatex = /\\[a-zA-Z]+|[_^{}]|\\begin|\\end/.test(str);
+
+  // Wrap with inline math delimiters if it looks like LaTeX
+  if (containsLatex) {
+    return `\\(${str}\\)`;
+  }
+
+  return str; // Return plain string if not LaTeX
+}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. Theme management
