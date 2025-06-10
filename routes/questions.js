@@ -78,4 +78,9 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+router.delete('/test/:testId', async (req, res) => {
+  await Question.deleteMany({ test: req.params.testId });
+  res.json({ success: true });
+});
+
 module.exports = router;

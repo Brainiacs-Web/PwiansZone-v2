@@ -22,4 +22,9 @@ router.post('/', async (req, res) => {
   res.json(ch);
 });
 
+router.delete('/test/:testId', async (req, res) => {
+  await Chapter.deleteMany({ test: req.params.testId });
+  res.json({ success: true });
+});
+
 module.exports = router;

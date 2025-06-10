@@ -1963,8 +1963,8 @@ textarea:focus-visible {
     }
   }
 
- // ─────────────────────────────────────────────────────────────────────────────
-// 13. Test actions (DELETE now cascades related data)
+// ─────────────────────────────────────────────────────────────────────────────
+// 13. Test actions (Cascade delete: test + questions + chapters)
 // ─────────────────────────────────────────────────────────────────────────────
 window.deleteTest = async (id) => {
   if (!confirm('Delete this test AND all its data? This CANNOT be undone.')) return;
@@ -1972,10 +1972,12 @@ window.deleteTest = async (id) => {
   try {
     // 1) Delete all questions for this test
     await api(`questions/test/${id}`, { method: 'DELETE' });
+
     // 2) Delete all chapters for this test
-    await api(`chapters/test/${id}`,  { method: 'DELETE' });
-    // 3) Finally delete the test record itself
-    await api(`tests/${id}`,          { method: 'DELETE' });
+    await api(`chapters/test/${id}`, { method: 'DELETE' });
+
+    // 3) Delete the test record itself
+    await api(`tests/${id}`, { method: 'DELETE' });
 
     showToast('Test and all related data deleted successfully', 'success');
     loadTestPreview();
@@ -1984,6 +1986,7 @@ window.deleteTest = async (id) => {
     showToast('Error deleting test', 'error');
   }
 };
+
 
   window.sendTest = async (id) => {
     if (!confirm('Are you sure you want to publish this test? Students will be able to access it immediately.'))
