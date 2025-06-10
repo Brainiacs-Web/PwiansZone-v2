@@ -1555,35 +1555,30 @@ textarea:focus-visible {
   // 1. LaTeX Rendering Helper (for preview & form text)
   //    - Now wraps only the math snippets, leaving plain text intact.
   // ─────────────────────────────────────────────────────────────────────────────
-  function renderLatex(str) {
-    if (!str) return "";
+   function renderLatex(str) {
+  if (!str || typeof str !== "string") return "—";
 
-    // Regexes to detect “bare” LaTeX fragments
-    const inlinePatterns = [
-      /\\frac\s*{[^}]+}\s*{[^}]+}/g,   // \frac{…}{…}
-      /\\hat\{[^}]+\}/g,               // \hat{…}
-      /\\pi\b/g,                       // \pi
-      /\\varepsilon\b/g,               // \varepsilon
-      /[A-Za-z]+_\{[^}]+\}/g           // subscripts like x_{i}
-    ];
+  // Check if the string is already wrapped in LaTeX delimiters
+  const alreadyWrapped =
+    /\\\(.+?\\\)/.test(str) ||           // \( ... \)
+    /\\\[.+?\\\]/.test(str) ||           // \[ ... \]
+    /\$\$[\s\S]+?\$\$/.test(str) ||      // $$ ... $$
+    /\\begin\{.*?\}[\s\S]*?\\end\{.*?\}/.test(str); // \begin{} ... \end{}
 
-    // If the string is already wrapped in any TeX delimiter, leave as-is
-    const hasAnyDelimiter = 
-         /\\\(.+?\\\)/.test(str)
-      || /\\\[.+?\\\]/.test(str)
-      || /\$\$[\s\S]+?\$\$/.test(str)
-      || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);
-    if (hasAnyDelimiter) {
-      return str;
-    }
-
-    // Otherwise, find each inline LaTeX snippet and wrap it in \(…\)
-    let result = str;
-    inlinePatterns.forEach((pattern) => {
-      result = result.replace(pattern, (match) => `\\(${match}\\)`);
-    });
-    return result;
+  if (alreadyWrapped) {
+    return str;
   }
+
+  // Regex to detect if the string contains LaTeX-like syntax
+  const containsLatex = /\\[a-zA-Z]+|[_^{}]|\\begin|\\end/.test(str);
+
+  // Wrap with inline math delimiters if it looks like LaTeX
+  if (containsLatex) {
+    return `\\(${str}\\)`;
+  }
+
+  return str; // Return plain string if not LaTeX
+}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. Text formatting functionality (unchanged)
@@ -2127,64 +2122,76 @@ window.deleteTest = async (id) => {
     });
 
     // Question form submission
-    document.getElementById('question-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const batch = document.getElementById('questionBatch').value;
-      const series = document.getElementById('testSeries').value;
-      const subject = document.getElementById('subject').value;
-      if (!batch || !series || !subject) {
-        showToast('Please select batch, series & subject!', 'error');
-        return;
-      }
-      const data = {
-        test: series,
-        subject: subject,
-        question: document.getElementById('question').value.trim(),
-        questionType: document.getElementById('questionType').value,
-        solution: document.getElementById('solution').value.trim()
-      };
-      if (!data.question) {
-        showToast('Please enter the question text!', 'error');
-        return;
-      }
-      if (data.questionType === 'MCQ') {
-        data.options = ['optionA', 'optionB', 'optionC', 'optionD'].map(id => 
-          document.getElementById(id).value.trim()
-        );
-        data.correctAnswer = document.getElementById('correctAnswer').value;
-        if (data.options.some(option => !option)) {
-          showToast('Please fill all MCQ options!', 'error');
-          return;
-        }
-        if (!data.correctAnswer) {
-          showToast('Please select the correct answer!', 'error');
-          return;
-        }
-      } else {
-        data.correctAnswer = document.getElementById('integerAnswer').value.trim();
-        if (!data.correctAnswer) {
-          showToast('Please enter the integer answer!', 'error');
-          return;
-        }
-      }
-      try {
-        await api('questions', { 
-          method: 'POST', 
-          body: JSON.stringify(data) 
-        });
-        showToast('Question added successfully!', 'success');
-        ['question', 'solution'].forEach(id => {
-          document.getElementById(id).value = '';
-        });
-        ['optionA', 'optionB', 'optionC', 'optionD', 'correctAnswer', 'integerAnswer'].forEach(id => {
-          const elm = document.getElementById(id);
-          if (elm) elm.value = '';
-        });
-      } catch (error) {
-        console.error('Error adding question:', error);
-        showToast('Error adding question', 'error');
-      }
+document.getElementById('question-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const batch = document.getElementById('questionBatch').value;
+  const series = document.getElementById('testSeries').value;
+  const subject = document.getElementById('subject').value;
+
+  if (!batch || !series || !subject) {
+    showToast('Please select batch, series & subject!', 'error');
+    return;
+  }
+
+  const questionType = document.getElementById('questionType').value;
+
+  const data = {
+    test: series,
+    subject: subject,
+    questionType,
+    question: document.getElementById('question').value.trim(),
+    solution: document.getElementById('solution').value.trim(),
+  };
+
+  if (!data.question) {
+    showToast('Please enter the question text!', 'error');
+    return;
+  }
+
+  if (questionType === 'MCQ') {
+    data.options = ['optionA', 'optionB', 'optionC', 'optionD'].map(id => 
+      document.getElementById(id).value.trim()
+    );
+    data.correctAnswer = document.getElementById('correctAnswer').value;
+
+    if (data.options.some(option => !option)) {
+      showToast('Please fill all MCQ options!', 'error');
+      return;
+    }
+    if (!data.correctAnswer) {
+      showToast('Please select the correct answer!', 'error');
+      return;
+    }
+  } else if (questionType === 'Integer') {
+    const intAnswer = document.getElementById('integerAnswer').value.trim();
+    if (!intAnswer) {
+      showToast('Please enter the integer answer!', 'error');
+      return;
+    }
+    data.correctAnswer = intAnswer;
+    data.solution = document.getElementById('solution').value.trim(); // explicitly store solution
+  }
+
+  try {
+    await api('questions', { 
+      method: 'POST', 
+      body: JSON.stringify(data) 
     });
+    showToast('Question added successfully!', 'success');
+
+    // Clear fields
+    ['question', 'solution', 'optionA', 'optionB', 'optionC', 'optionD', 'correctAnswer', 'integerAnswer'].forEach(id => {
+      const elm = document.getElementById(id);
+      if (elm) elm.value = '';
+    });
+
+  } catch (error) {
+    console.error('Error adding question:', error);
+    showToast('Error adding question', 'error');
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 15. Preview functionality (updated to render LaTeX via MathJax)
 // ─────────────────────────────────────────────────────────────────────────────
