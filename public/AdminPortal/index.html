@@ -1963,26 +1963,27 @@ textarea:focus-visible {
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 13. Test actions (DELETE now cascades related data)
-  // ─────────────────────────────────────────────────────────────────────────────
-  window.deleteTest = async (id) => {
-    if (!confirm('Are you sure you want to delete this test and all its data? This action cannot be undone.')) 
-      return;
-    try {
-      // 1) Delete all questions for this test
-      await api(`questions/test/${id}`, { method: 'DELETE' });
-      // 2) Delete all chapters for this test
-      await api(`chapters/test/${id}`, { method: 'DELETE' });
-      // 3) Delete the test record itself
-      await api(`tests/${id}`, { method: 'DELETE' });
-      showToast('Test and all related data deleted successfully', 'success');
-      loadTestPreview();
-    } catch (error) {
-      console.error('Error deleting test and related data:', error);
-      showToast('Error deleting test', 'error');
-    }
-  };
+ // ─────────────────────────────────────────────────────────────────────────────
+// 13. Test actions (DELETE now cascades related data)
+// ─────────────────────────────────────────────────────────────────────────────
+window.deleteTest = async (id) => {
+  if (!confirm('Delete this test AND all its data? This CANNOT be undone.')) return;
+
+  try {
+    // 1) Delete all questions for this test
+    await api(`questions/test/${id}`, { method: 'DELETE' });
+    // 2) Delete all chapters for this test
+    await api(`chapters/test/${id}`,  { method: 'DELETE' });
+    // 3) Finally delete the test record itself
+    await api(`tests/${id}`,          { method: 'DELETE' });
+
+    showToast('Test and all related data deleted successfully', 'success');
+    loadTestPreview();
+  } catch (error) {
+    console.error('Error deleting test and related data:', error);
+    showToast('Error deleting test', 'error');
+  }
+};
 
   window.sendTest = async (id) => {
     if (!confirm('Are you sure you want to publish this test? Students will be able to access it immediately.'))
@@ -2181,90 +2182,56 @@ textarea:focus-visible {
         showToast('Error adding question', 'error');
       }
     });
+// ─────────────────────────────────────────────────────────────────────────────
+// 15. Preview functionality (updated to render LaTeX via MathJax)
+// ─────────────────────────────────────────────────────────────────────────────
+document.getElementById('previewBtn').addEventListener('click', () => {
+  const previewContent = document.getElementById('previewContent');
+  let html = '<div style="padding:24px;line-height:1.6;">';
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // 15. Preview functionality (updated to render LaTeX via MathJax)
-    // ────────────────────────────────────────────────────────────────────────────
-    document.getElementById('previewBtn').addEventListener('click', () => {
-      const previewContent = document.getElementById('previewContent');
-      let html = '<div style="padding: 24px; line-height: 1.6;">';
+  // --- Question ---
+  const qRaw = document.getElementById('question').value.trim();
+  html += `
+    <h4><i class="fas fa-question-circle"></i> Question:</h4>
+    ${ qRaw
+      ? `<div class="preview-block">${renderLatex(qRaw)}</div>`
+      : `<p class="text-muted"><i>No question provided</i></p>` }`;
 
-      // Render question (with LaTeX if present)
-      const questionRaw = document.getElementById('question').value.trim();
-      const questionHTML = questionRaw
-        ? `<div style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius-lg); margin-bottom: 24px; border-left: 4px solid var(--primary); line-height: 1.6;">
-             ${renderLatex(questionRaw)}
-           </div>`
-        : '<p style="color: var(--text-muted); font-style: italic; margin-bottom: 24px;">No question provided</p>';
-      html += `
-        <h4 style="color: var(--primary); margin-bottom: 20px; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 12px;">
-          <i class="fas fa-question-circle"></i>Question:
-        </h4>
-        ${questionHTML}
-      `;
+  // --- Type ---
+  const qType = document.getElementById('questionType').value;
+  html += `<h4><i class="fas fa-list"></i> Type: ${qType}</h4>`;
 
-      // Render question type
-      const questionType = document.getElementById('questionType').value;
-      html += `
-        <h4 style="color: var(--primary); margin-bottom: 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px;">
-          <i class="fas fa-list"></i>Type: ${questionType}
-        </h4>
-      `;
-
-      // Render options or integer answer
-      if (questionType === 'MCQ') {
-        html += `
-          <div style="background: var(--bg-tertiary); padding: 24px; border-radius: var(--radius-lg); margin-bottom: 24px;">
-            <ol type="A" style="margin: 0; padding-left: 24px;">
-        `;
-        ['optionA', 'optionB', 'optionC', 'optionD'].forEach(id => {
-          const rawValue = document.getElementById(id).value.trim() || '–';
-          html += `
-            <li style="margin-bottom: 12px; padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border); font-weight: 500;">
-              ${renderLatex(rawValue)}
-            </li>
-          `;
-        });
-        html += `</ol></div>`;
-
-        const answer = document.getElementById('correctAnswer').value || '–';
-        html += `
-          <h4 style="color: var(--success); margin-bottom: 24px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-check-circle"></i>Correct Answer: Option ${answer}
-          </h4>
-        `;
-      } else {
-        const answerRaw = document.getElementById('integerAnswer').value.trim() || '–';
-        html += `
-          <h4 style="color: var(--success); margin-bottom: 24px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px;">
-            <i class="fas fa-hashtag"></i>Correct Answer: ${renderLatex(answerRaw)}
-          </h4>
-        `;
-      }
-
-      // Render solution
-      const solutionRaw = document.getElementById('solution').value.trim();
-      const solutionHTML = solutionRaw
-        ? `<div style="background: var(--bg-tertiary); padding: 20px; border-radius: var(--radius-lg); border-left: 4px solid var(--secondary); line-height: 1.6;">
-             ${renderLatex(solutionRaw)}
-           </div>`
-        : '<p style="color: var(--text-muted); font-style: italic;">No solution provided</p>';
-      html += `
-        <h4 style="color: var(--primary); margin-bottom: 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px;">
-          <i class="fas fa-lightbulb"></i>Solution:
-        </h4>
-        ${solutionHTML}
-      `;
-
-      html += '</div>';
-      previewContent.innerHTML = html;
-      document.getElementById('previewModal').style.display = 'flex';
-
-      // Trigger MathJax to typeset any LaTeX in the preview container
-      if (window.MathJax) {
-        MathJax.typesetPromise([previewContent]).catch(err => console.error("MathJax error:", err));
-      }
+  // --- MCQ vs Integer ---
+  if (qType === 'MCQ') {
+    html += '<ol type="A" class="preview-block">';
+    ['optionA','optionB','optionC','optionD'].forEach(id => {
+      const val = document.getElementById(id).value.trim() || '–';
+      html += `<li>${renderLatex(val)}</li>`;
     });
+    html += '</ol>';
+    html += `<h4><i class="fas fa-check-circle"></i> Correct: Option ${document.getElementById('correctAnswer').value || '–'}</h4>`;
+  } else {
+    const intAns = document.getElementById('integerAnswer').value.trim() || '–';
+    html += `<h4><i class="fas fa-hashtag"></i> Correct: ${renderLatex(intAns)}</h4>`;
+  }
+
+  // --- Solution ---
+  const solRaw = document.getElementById('solution').value.trim();
+  html += `
+    <h4><i class="fas fa-lightbulb"></i> Solution:</h4>
+    ${ solRaw
+      ? `<div class="preview-block">${renderLatex(solRaw)}</div>`
+      : `<p class="text-muted"><i>No solution provided</i></p>` }`;
+
+  html += '</div>';
+  previewContent.innerHTML = html;
+  document.getElementById('previewModal').style.display = 'flex';
+
+  // ask MathJax to typeset any new LaTeX
+  if (window.MathJax?.typesetPromise) {
+    MathJax.typesetPromise([previewContent]).catch(console.error);
+  }
+});
 
     // ────────────────────────────────────────────────────────────────────────────
     // 16. Chapter form cascades (unchanged)
