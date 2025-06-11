@@ -17,7 +17,6 @@ router.get('/:id', async (req, res) => {
   try {
     const test = await Test.findById(req.params.id).lean();
     if (!test) return res.status(404).json({ error: 'Test not found' });
-    // test.subjects should be an array of strings
     res.json(test);
   } catch (err) {
     console.error('GET /api/tests/:id error', err);
@@ -50,7 +49,7 @@ router.delete('/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// POST submit test responses (unchanged)
+// POST submit test responses
 router.post('/:id/submit', async (req, res) => {
   try {
     const testId    = req.params.id;
@@ -70,7 +69,7 @@ router.post('/:id/submit', async (req, res) => {
   }
 });
 
-// GET results for a user (unchanged)
+// GET results for a user
 router.get('/:id/results', async (req, res) => {
   try {
     const testId = req.params.id;
@@ -91,16 +90,22 @@ router.get('/:id/results', async (req, res) => {
 
     const results = {};
     const Question = require('../models/Question');
+
     for (const subject of test.subjects) {
       const qs = await Question.find({ test: testId, subject }).lean();
-      results[subject] = qs.map(q => ({
-        questionId:     String(q._id),
-        question:       q.question,
-        options:        q.options || [],
-        correctAnswer:  q.correctAnswer,
-        solution:       q.solution,
-        selectedAnswer: sub.responses?.[subject]?.[String(q._id)]?.selectedAnswer || null
-      }));
+      results[subject] = qs.map(q => {
+        // Grab the raw stored answer
+        const raw = sub.responses?.[subject]?.[String(q._id)]?.selectedAnswer;
+        return {
+          questionId:    String(q._id),
+          question:      q.question,
+          options:       q.options || [],
+          correctAnswer: q.correctAnswer,
+          // Only convert undefined/null to null; preserve "0", "42", etc.
+          selectedAnswer: raw ?? null,
+          solution:      q.solution
+        };
+      });
     }
 
     res.json({
