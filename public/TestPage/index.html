@@ -917,162 +917,143 @@ input:focus,
       </button>
     </div>
   </div>
+<!-- 1) MathJax config (before loading mathjax.js!) -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['\\(', '\\)']],
+      displayMath: [['$$', '$$']]
+    },
+    options: {
+      skipHtmlTags: ['script','noscript','style','textarea','pre','code']
+    },
+    startup: {
+      ready: () => {
+        MathJax.startup.defaultReady();
+        if (window.Prism) Prism.highlightAll();
+      }
+    }
+  };
+</script>
+
+<!-- 2) Load MathJax -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<!-- 3) Load Prism (for LaTeX code highlighting) -->
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-latex.min.js"></script>
 
-
+<!-- 4) All your application logic in one place -->
 <script>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // A) Wrap “bare” LaTeX in delimiters for MathJax
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderLatex(str) {
+    if (!str || typeof str !== "string") return "—";
+    const already =
+         /\\\(.+?\\\)/.test(str)
+      || /\\\[.+?\\\]/.test(str)
+      || /\$\$[\s\S]+?\$\$/.test(str)
+      || /\\begin\{.*?\}[\s\S]*?\\end\{.*?\}/.test(str);
+    if (already) return str;
+    const looksLike = /\\[a-zA-Z]+|[_^{}]|\\begin|\\end/.test(str);
+    return looksLike ? `\\(${str}\\)` : str;
+  }
 
- 
-  // Syntax–highlight all <code class="language-latex"> blocks once the DOM is ready
+  // Ensure any <code class="language-latex"> is highlighted
   document.addEventListener('DOMContentLoaded', () => {
     if (window.Prism) Prism.highlightAll();
   });
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // B) Read URL params & initialize state
+  // ─────────────────────────────────────────────────────────────────────────────
+  const params            = new URLSearchParams(window.location.search);
+  const testID            = params.get("test")      || "";
+  let   batchName         = params.get("batchName") || "";
+  let   username          = "";
 
+  let   testData          = {};
+  let   subjectsArr       = [];
+  let   questions         = [];
+  let   currentSubject    = "";
+  let   currentQuestionIndex = 0;
+  let   timeLeft          = 0, timerInterval    = null;
+  let   tabSwitchCount    = 0, maxTabSwitches  = 5;
+  let   isDarkMode        = localStorage.getItem('darkMode') === 'true';
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 1. Read URL params → testID, batchName; initialize username as blank
-  // ─────────────────────────────────────────────────────────────────────────────
-  const params = new URLSearchParams(window.location.search);
-  const testID = params.get("test") || "";
-  let batchName = params.get("batchName") || "";
-  let username = "";
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 2. State Management
-  // ─────────────────────────────────────────────────────────────────────────────
-  let testData = {};
-  let subjectsArr = [];
-  let questions = [];
-  let currentSubject = "";
-  let currentQuestionIndex = 0;
-  let timeLeft = 0, timerInterval = null;
-  let tabSwitchCount = 0, maxTabSwitches = 5;
-  let isDarkMode = localStorage.getItem('darkMode') === 'true';
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 3. Inject MathJax Rendering Helper
-  //    - Only wrap “bare” TeX; leave already‐wrapped TeX alone
-  // ─────────────────────────────────────────────────────────────────────────────
-  function renderLatex(str) {
-    if (!str) return "—";
-
-    // 1) Detect existing TeX delimiters: \(…\), \[…\], $$…$$, or \begin{…}…\end{…}
-    const alreadyHasDelimiters =
-         /\\\(.+?\\\)/.test(str)         // \( … \)
-      || /\\\[.+?\\\]/.test(str)         // \[ … \]
-      || /\$\$[\s\S]+?\$\$/.test(str)    // $$ … $$
-      || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);  // any \begin{…} … \end{…}
-
-    if (alreadyHasDelimiters) {
-      return str;
-    }
-
-    // 2) If we see a “bare” TeX pattern, wrap once in \( … \)
-    const hasInlineMath =
-         /\\frac\s*{[^}]+}\s*{[^}]+}/.test(str)
-      || /\\hat\{[^}]+\}/.test(str)
-      || /\\pi\b/.test(str)
-      || /\\varepsilon/.test(str)
-      || /[A-Za-z]+_\{.+?\}/.test(str);
-
-    if (hasInlineMath) {
-      return `\\(${str}\\)`;
-    }
-
-    // 3) Otherwise leave it unchanged
-    return str;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 4. Dark Mode Initialization & Toggle
+  // C) Dark mode toggle
   // ─────────────────────────────────────────────────────────────────────────────
   if (isDarkMode) {
     document.body.classList.add('dark-mode');
     document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
   }
-
   document.getElementById('theme-toggle').addEventListener('click', () => {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark-mode', isDarkMode);
-    document.getElementById('theme-toggle').innerHTML = isDarkMode 
-      ? '<i class="fas fa-sun"></i>' 
-      : '<i class="fas fa-moon"></i>';
+    document.getElementById('theme-toggle').innerHTML =
+      isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
     localStorage.setItem('darkMode', isDarkMode);
   });
 
-  // ── 3.5 Define login handler ──
-window.validateCredentials = async function() {
-  const u = document.getElementById("username")?.value.trim();
-  if (!u) {
-    return showToast("Please enter your username.", "error");
-  }
-  username = u;
-  document.getElementById("logged-username").textContent = username;
-  document.getElementById("modal-overlay").style.display = "none";
-  document.getElementById("content").style.filter = "none";
-  await loadTestSeriesData();
-};
+  // ─────────────────────────────────────────────────────────────────────────────
+  // D) Login handler (called by your Login button: <button onclick="validateCredentials()">)
+  // ─────────────────────────────────────────────────────────────────────────────
+  window.validateCredentials = async function() {
+    const u = document.getElementById("username")?.value.trim();
+    if (!u) return showToast("Please enter your username.", "error");
+    username = u;
+    document.getElementById("logged-username").textContent = u;
+    document.getElementById("modal-overlay").style.display = "none";
+    document.getElementById("content").style.filter = "none";
+    await loadTestSeriesData();
+  };
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 5. Show Batch Code in Header
+  // E) Show batch code
   // ─────────────────────────────────────────────────────────────────────────────
   document.getElementById("logged-batch").textContent = batchName;
 
- // ─────────────────────────────────────────────────────────────────────────────
-// 6. Validate Credentials (Username) & Load Test Data
-// ─────────────────────────────────────────────────────────────────────────────
-async function loadTestSeriesData() {
-  try {
-    showLoading(true);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // F) Fetch test data, subjects, timer, then load questions
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function loadTestSeriesData() {
+    try {
+      showLoading(true);
+      const res = await fetch(`/api/testSeries/${testID}`);
+      if (!res.ok) throw new Error("Fetch failed");
+      testData = await res.json();
 
-    const res = await fetch(`/api/testSeries/${testID}`);
-    if (!res.ok) throw new Error("Fetch failed");
-    testData = await res.json();
+      // Populate test name + subjects
+      document.getElementById("test-name").textContent = testData.testName;
+      subjectsArr = testData.subjects || [];
 
-    // ── DEBUG: inspect what your API is actually returning ──
-    console.log("💡 testData loaded from server:", testData);
+      // Duration parsing
+      const raw = testData.testDuration ?? testData.duration ?? testData.timeLimit ?? 90;
+      const mins = Number.isInteger(+raw) ? +raw : 90;
+      timeLeft = mins * 60;
 
-    // ── Populate test name & subjects ──
-    document.getElementById("test-name").textContent = testData.testName;
-    subjectsArr = testData.subjects || [];
+      buildSubjectButtons();
+      currentSubject = subjectsArr[0] || "";
+      await loadQuestions();
 
-    // ── ROBUST DURATION PARSING ──
-    const rawMinutes =
-         testData.testDuration   // primary
-      ?? testData.duration       // alternate
-      ?? testData.timeLimit      // another common key
-      ?? 90;                     // default if none found
-
-    const parsed = parseInt(rawMinutes, 10);
-    const minutesToUse = Number.isInteger(parsed) ? parsed : 90;
-    timeLeft = minutesToUse * 60;
-
-    buildSubjectButtons();
-    currentSubject = subjectsArr[0] || "";
-
-    // ── Load questions etc. ──
-    await loadQuestions();
-
-    updateTimerDisplay();
-    startTimer();
-
-  } catch (e) {
-    console.error(e);
-    showToast("Failed to load test. Please refresh and try again.", "error");
-  } finally {
-    showLoading(false);
+      updateTimerDisplay();
+      startTimer();
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to load test. Please refresh.", "error");
+    } finally {
+      showLoading(false);
+    }
   }
-}
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 7. Build & Update Subject Tabs
+  // G) Build subject tabs
   // ─────────────────────────────────────────────────────────────────────────────
   function buildSubjectButtons() {
-    const container = document.getElementById("subject-buttons");
-    container.innerHTML = "";
+    const c = document.getElementById("subject-buttons");
+    c.innerHTML = "";
     subjectsArr.forEach(sub => {
       const btn = document.createElement("button");
       btn.className = "nav-tab";
@@ -1082,553 +1063,302 @@ async function loadTestSeriesData() {
         updateSubjectButtons();
         loadQuestions();
       };
-      container.appendChild(btn);
+      c.appendChild(btn);
     });
     updateSubjectButtons();
   }
-
   function updateSubjectButtons() {
     document.querySelectorAll("#subject-buttons .nav-tab")
-      .forEach(btn => btn.classList.toggle("active", btn.textContent === currentSubject));
+      .forEach(b => b.classList.toggle("active", b.textContent === currentSubject));
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 8. Load Questions for Current Subject → Sort MCQ first, Track Visited
+  // H) Load & render questions
   // ─────────────────────────────────────────────────────────────────────────────
   async function loadQuestions() {
     showLoading(true);
-
-    const questionMap = testData.questions[currentSubject] || {};
-    questions = Object.values(questionMap);
-
-    // Sort: MCQs (with options) first, then numerical-input questions
-    questions.sort((a, b) => {
-      const aIsInput = !Array.isArray(a.options) || !a.options.length;
-      const bIsInput = !Array.isArray(b.options) || !b.options.length;
-      return aIsInput - bIsInput;
+    const qMap = testData.questions[currentSubject] || {};
+    questions = Object.values(qMap).sort((a,b) => {
+      const ai = Array.isArray(a.options)&&a.options.length;
+      const bi = Array.isArray(b.options)&&b.options.length;
+      return (ai?0:1)-(bi?0:1);
     });
-
     currentQuestionIndex = 0;
-    if (questions.length) {
-      markAsVisited(questions[0].questionId);
-    }
-
+    if (questions.length) markAsVisited(questions[0].questionId);
     displayQuestion();
     updateNavInfo();
     updateProgress();
     showLoading(false);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 9. Render a Question (+ Options) into the DOM, then Typeset with MathJax
-  // ─────────────────────────────────────────────────────────────────────────────
   function displayQuestion() {
-    const question = questions[currentQuestionIndex];
-    const container = document.getElementById("question-card");
-
-    if (!question) {
-      container.innerHTML = `
-        <div class="question-header">
-          <div class="question-number">No Questions</div>
-        </div>
-        <div class="question-content">
-          <p>No questions available for this section.</p>
-        </div>
-      `;
+    const q = questions[currentQuestionIndex];
+    const c = document.getElementById("question-card");
+    if (!q) {
+      c.innerHTML = "<p>No questions in this section.</p>";
       return;
     }
 
-    const isImageURL = (str) => /https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
-    const savedAnswer = getSavedAnswer(question.questionId);
-    const isReviewed = getSavedReview(question.questionId);
+    const isImageURL = str => /^https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
+    const saved       = getSavedAnswer(q.questionId);
+    const reviewed    = getSavedReview(q.questionId);
 
-    // Build question header + text
-    let questionContent = `
+    let html = `
       <div class="question-header">
-        <div class="question-number">Question ${currentQuestionIndex + 1}</div>
-        <button class="menu-btn" onclick="toggleProgress()">
-          <i class="fas fa-bars"></i>
-        </button>
+        <div class="question-number">Question ${currentQuestionIndex+1}</div>
+        <button class="menu-btn" onclick="toggleProgress()"><i class="fas fa-bars"></i></button>
       </div>
       <div class="question-content">
         <div class="question-text">
-          ${
-            isImageURL(question.question)
-              ? `<img src="${question.question}" class="question-image" alt="Question image"/>`
-              : renderLatex(question.question)
-          }
+          ${isImageURL(q.question)
+            ? `<img src="${q.question}" class="question-image"/>`
+            : renderLatex(q.question)}
         </div>
-        
         <div class="review-section">
-          <input type="checkbox" class="review-checkbox"
-                 id="review-checkbox"
-                 ${isReviewed ? "checked" : ""}/>
-          <label for="review-checkbox" class="review-label">
-            <i class="fas fa-bookmark"></i> Mark for Review
-          </label>
-        </div>
-    `;
+          <input type="checkbox" id="review-checkbox" ${reviewed?"checked":""}/>
+          <label for="review-checkbox"><i class="fas fa-bookmark"></i> Mark for Review</label>
+        </div>`;
 
-    // If MCQ (array of options)
-    if (Array.isArray(question.options) && question.options.length) {
-      questionContent += `<div class="options-container">`;
-
-      question.options.forEach((option, index) => {
-        const optionValue = String.fromCharCode(65 + index);
-        const isSelected = savedAnswer === optionValue;
-
-        questionContent += `
-          <div class="option-item ${isSelected ? 'selected' : ''}"
-               onclick="selectOption('${question.questionId}','${optionValue}', this)">
+    if (Array.isArray(q.options) && q.options.length) {
+      html += `<div class="options-container">`;
+      q.options.forEach((opt,i) => {
+        const L = String.fromCharCode(65+i);
+        const sel = saved===L ? 'selected' : '';
+        html += `
+          <div class="option-item ${sel}" onclick="selectOption('${q.questionId}','${L}',this)">
             <div class="option-content">
-              <input type="radio"
-                     class="option-radio"
-                     name="opt_${question.questionId}"
-                     value="${optionValue}"
-                     ${isSelected ? 'checked' : ''}
-                     onchange="handleOptionChange(event,'${question.questionId}')">
+              <input type="radio" name="opt_${q.questionId}" value="${L}" ${sel?"checked":""}/>
               <div class="option-text">
-                ${
-                  isImageURL(option)
-                    ? `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`
-                    : `${optionValue}. ${renderLatex(option)}`
-                }
+                ${isImageURL(opt)?`<img src="${opt}"/>`:`${L}. ${renderLatex(opt)}`}
               </div>
             </div>
-          </div>
-        `;
+          </div>`;
       });
-
-      questionContent += `</div>`; // Close options-container
-    }
-    // Else: numerical-input question
-    else {
-      questionContent += `
+      html += `</div>`;
+    } else {
+      html += `
         <div class="input-section">
-          <label class="input-label">
-            <i class="fas fa-edit"></i> Your Answer:
-          </label>
-          <input type="number"
-                 class="input-field"
-                 id="answer-input"
-                 value="${savedAnswer}"
-                 placeholder="Enter your answer"/>
-        </div>
-      `;
+          <label><i class="fas fa-edit"></i> Your Answer:</label>
+          <input type="number" id="answer-input" value="${saved}" placeholder="Enter answer"/>
+        </div>`;
     }
 
-    // Navigation buttons (Previous + Save & Next/Finish)
-    questionContent += `
+    html += `
         <div class="nav-buttons">
-          <button class="nav-btn secondary"
-                  onclick="goToPrevious()"
-                  ${currentQuestionIndex === 0 ? 'disabled' : ''}>
+          <button class="nav-btn secondary" onclick="goToPrevious()" ${currentQuestionIndex===0?'disabled':''}>
             <i class="fas fa-arrow-left"></i> Previous
           </button>
           <button class="nav-btn primary" onclick="saveAndNext()">
-            ${
-              currentQuestionIndex === questions.length - 1
-                ? 'Save & Finish'
-                : 'Save & Next'
-            }
+            ${currentQuestionIndex===questions.length-1?'Save & Finish':'Save & Next'}
             <i class="fas fa-arrow-right"></i>
           </button>
         </div>
-      </div>
-    `;
+      </div>`;
 
-    // Inject into DOM
-    container.innerHTML = questionContent;
-
-    // ── Trigger MathJax typesetting on the newly-inserted content ──
-    if (window.MathJax) {
-      MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
-    }
+    c.innerHTML = html;
+    if (window.MathJax) MathJax.typesetPromise([c]).catch(console.error);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 10. Option Selection & Change Handlers
+  // I) Handlers: selectOption, saveAndNext, goToPrevious, progress, storage…
   // ─────────────────────────────────────────────────────────────────────────────
-  function selectOption(questionId, value, element) {
-    // Deselect all, then mark this as selected
-    document.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
-    element.classList.add('selected');
-
-    // Update the corresponding radio input
-    const radio = element.querySelector('input[type="radio"]');
-    radio.checked = true;
-
-    // Persist in LocalStorage
-    saveAnswer(questionId, value);
+  function selectOption(q,val,el){
+    document.querySelectorAll('.option-item').forEach(x=>x.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input').checked = true;
+    saveAnswer(q,val);
   }
+  function handleOptionChange(e,q){ saveAnswer(q,e.target.value); }
 
-  function handleOptionChange(event, questionId) {
-    saveAnswer(questionId, event.target.value);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 11. Save & Next / Go To Previous Navigation
-  // ─────────────────────────────────────────────────────────────────────────────
   window.saveAndNext = () => {
-    const question = questions[currentQuestionIndex];
-    // Save numeric answer if present
-    const answerInput = document.getElementById("answer-input");
-    if (answerInput) {
-      const value = answerInput.value.trim();
-      if (value) saveAnswer(question.questionId, value);
-      else removeAnswer(question.questionId);
-    }
-    // Save review checkbox state
-    const reviewCheckbox = document.getElementById("review-checkbox");
-    if (reviewCheckbox) saveReview(question.questionId, reviewCheckbox.checked);
+    const q = questions[currentQuestionIndex];
+    const inp = document.getElementById("answer-input");
+    if (inp) { const v=inp.value.trim(); v?saveAnswer(q.questionId,v):removeAnswer(q.questionId); }
+    const cb = document.getElementById("review-checkbox");
+    if (cb) saveReview(q.questionId,cb.checked);
 
-    // Advance index or switch subject
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex<questions.length-1) {
       currentQuestionIndex++;
       markAsVisited(questions[currentQuestionIndex].questionId);
     } else {
-      // Move to next subject or notify completion
-      const currentIndex = subjectsArr.indexOf(currentSubject);
-      if (currentIndex < subjectsArr.length - 1) {
-        currentSubject = subjectsArr[currentIndex + 1];
+      const idx = subjectsArr.indexOf(currentSubject);
+      if (idx<subjectsArr.length-1) {
+        currentSubject = subjectsArr[idx+1];
         updateSubjectButtons();
-        loadQuestions();
-        return;
+        loadQuestions(); return;
       } else {
-        showToast("You have completed all questions!", "success");
+        showToast("All questions complete!","success");
         return;
       }
     }
-
-    displayQuestion();
-    updateNavInfo();
-    updateProgress();
+    displayQuestion(); updateNavInfo(); updateProgress();
   };
 
   window.goToPrevious = () => {
-    if (currentQuestionIndex > 0) {
+    if (currentQuestionIndex>0) {
       currentQuestionIndex--;
-      displayQuestion();
-      updateNavInfo();
-      updateProgress();
+      displayQuestion(); updateNavInfo(); updateProgress();
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 12. Update Navigation Info (Subject, Q-No, Total)
-  // ─────────────────────────────────────────────────────────────────────────────
-  function updateNavInfo() {
+  function updateNavInfo(){
     document.getElementById("current-subject").textContent = currentSubject;
-    document.getElementById("current-question-index").textContent = currentQuestionIndex + 1;
+    document.getElementById("current-question-index").textContent = currentQuestionIndex+1;
     document.getElementById("total-questions").textContent = questions.length;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 13. Progress Modal: Render Question-status Grid
-  // ─────────────────────────────────────────────────────────────────────────────
-  function updateProgress() {
-    const container = document.getElementById("question-progress");
-    container.innerHTML = "";
-
-    questions.forEach((question, index) => {
-      const item = document.createElement("div");
-      item.className = "progress-item";
-      item.textContent = index + 1;
-
-      const hasAnswer = !!getSavedAnswer(question.questionId);
-      const isReviewed = getSavedReview(question.questionId);
-      const isVisited  = getSavedVisited(question.questionId);
-
-      if (hasAnswer && isReviewed) {
-        item.classList.add("status-answered-review");
-      } else if (hasAnswer) {
-        item.classList.add("status-answered");
-      } else if (isReviewed) {
-        item.classList.add("status-review");
-      } else if (isVisited) {
-        item.classList.add("status-visited");
-      }
-
-      item.onclick = () => {
-        currentQuestionIndex = index;
-        markAsVisited(question.questionId);
-        displayQuestion();
-        updateNavInfo();
-        updateProgress();
-        toggleProgress(); // auto‐close progress on mobile
+  function updateProgress(){
+    const c = document.getElementById("question-progress"); c.innerHTML = "";
+    questions.forEach((q,i)=>{
+      const itm = document.createElement("div");
+      itm.className = "progress-item";
+      itm.textContent = i+1;
+      const has = !!getSavedAnswer(q.questionId);
+      const rev = getSavedReview(q.questionId);
+      const vis = getSavedVisited(q.questionId);
+      if (has&&rev) itm.classList.add("status-answered-review");
+      else if (has) itm.classList.add("status-answered");
+      else if (rev) itm.classList.add("status-review");
+      else if (vis) itm.classList.add("status-visited");
+      itm.onclick = ()=>{
+        currentQuestionIndex = i;
+        markAsVisited(q.questionId);
+        displayQuestion(); updateNavInfo(); updateProgress(); toggleProgress();
       };
-
-      container.appendChild(item);
+      c.appendChild(itm);
     });
   }
 
   window.toggleProgress = () => {
-    const modal = document.getElementById("progress-modal");
-    const isVisible = modal.style.display === "block";
-    modal.style.display = isVisible ? "none" : "block";
-    if (!isVisible) updateProgress();
+    const m = document.getElementById("progress-modal");
+    m.style.display = (m.style.display==="block"?"none":"block");
+    if (m.style.display==="block") updateProgress();
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 14. LocalStorage Helpers: Answer, Review, Visited
-  // ─────────────────────────────────────────────────────────────────────────────
-  function saveAnswer(questionId, answer) {
-    const key = `response_${currentSubject}_${questionId}`;
-    localStorage.setItem(key, answer);
-    console.log(`Saved answer: ${key} = ${answer}`); // Debug
+  function saveAnswer(q,a){
+    localStorage.setItem(`response_${currentSubject}_${q}`,a);
   }
-  function getSavedAnswer(questionId) {
-    const key = `response_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) || "";
+  function getSavedAnswer(q){
+    return localStorage.getItem(`response_${currentSubject}_${q}`) || "";
   }
-  function removeAnswer(questionId) {
-    const key = `response_${currentSubject}_${questionId}`;
-    localStorage.removeItem(key);
+  function removeAnswer(q){
+    localStorage.removeItem(`response_${currentSubject}_${q}`);
   }
 
-  function saveReview(questionId, isReviewed) {
-    const key = `review_${currentSubject}_${questionId}`;
-    if (isReviewed) localStorage.setItem(key, "true");
-    else localStorage.removeItem(key);
+  function saveReview(q,f){
+    f?
+      localStorage.setItem(`review_${currentSubject}_${q}`,"true") :
+      localStorage.removeItem(`review_${currentSubject}_${q}`);
   }
-  function getSavedReview(questionId) {
-    const key = `review_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) === "true";
+  function getSavedReview(q){
+    return localStorage.getItem(`review_${currentSubject}_${q}`)==="true";
   }
 
-  function markAsVisited(questionId) {
-    const key = `visited_${currentSubject}_${questionId}`;
-    localStorage.setItem(key, "true");
+  function markAsVisited(q){
+    localStorage.setItem(`visited_${currentSubject}_${q}`,"true");
   }
-  function getSavedVisited(questionId) {
-    const key = `visited_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) === "true";
+  function getSavedVisited(q){
+    return localStorage.getItem(`visited_${currentSubject}_${q}`)==="true";
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 15. Timer: Display & Auto‐Submit on Zero
+  // J) Timer + auto-submit
   // ─────────────────────────────────────────────────────────────────────────────
-  function updateTimerDisplay() {
-    const hours   = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
-    const minutes = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
-    const seconds = String(timeLeft % 60).padStart(2, '0');
-    document.getElementById("time-left").textContent = `${hours}:${minutes}:${seconds}`;
-
-    const timerEl = document.getElementById("timer");
-    if (timeLeft <= 300) { // last 5 min → red alert
-      timerEl.style.background   = "rgba(239, 68, 68, 0.1)";
-      timerEl.style.color        = "var(--error-color)";
-      timerEl.style.borderColor  = "var(--error-color)";
-    } else if (timeLeft <= 600) { // last 10 min → orange
-      timerEl.style.background   = "rgba(245, 158, 11, 0.1)";
-      timerEl.style.color        = "var(--warning-color)";
-      timerEl.style.borderColor  = "var(--warning-color)";
-    }
+  function updateTimerDisplay(){
+    const h = Math.floor(timeLeft/3600), m = Math.floor((timeLeft%3600)/60), s = timeLeft%60;
+    const txt = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const el = document.getElementById("time-left");
+    el.textContent = txt;
+    const tm = document.getElementById("timer");
+    if (timeLeft<=300) tm.style.cssText = "background:rgba(239,68,68,0.1);color:var(--error-color);border-color:var(--error-color)";
+    else if (timeLeft<=600) tm.style.cssText = "background:rgba(245,158,11,0.1);color:var(--warning-color);border-color:var(--warning-color)";
   }
-
-  function startTimer() {
-    timerInterval = setInterval(() => {
+  function startTimer(){
+    timerInterval = setInterval(()=>{
       timeLeft--;
       updateTimerDisplay();
-      if (timeLeft <= 0) {
+      if (timeLeft<=0){
         clearInterval(timerInterval);
         submitTest(true);
       }
-    }, 1000);
+    },1000);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 16. Tab‐Switch Detection (Auto‐Submit)
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
+  document.addEventListener("visibilitychange",()=>{
+    if (document.hidden){
       tabSwitchCount++;
-      if (tabSwitchCount >= maxTabSwitches) {
-        submitTest(true);
-      } else {
-        showToast(
-          `Warning: ${maxTabSwitches - tabSwitchCount} tab switches remaining before auto‐submit.`,
-          "warning"
-        );
+      if (tabSwitchCount>=maxTabSwitches) submitTest(true);
+      else showToast(`Warning: ${maxTabSwitches-tabSwitchCount} tab switches remaining before auto‐submit.`,"warning");
+    }
+  });
+
+  window.submitTest = async (auto=false)=>{
+    const q = questions[currentQuestionIndex];
+    const inp = document.getElementById("answer-input");
+    if (inp){ const v=inp.value.trim(); v?saveAnswer(q.questionId,v):removeAnswer(q.questionId); }
+    const cb = document.getElementById("review-checkbox");
+    if (cb) saveReview(q.questionId,cb.checked);
+
+    if (!auto && !confirm("Are you sure you want to submit the test?")) return;
+
+    try {
+      showLoading(true);
+      const payload = {};
+      for (const sub of subjectsArr) {
+        payload[sub] = {};
+        for (const qq of Object.values(testData.questions[sub]||{})) {
+          const key = `response_${sub}_${qq.questionId}`;
+          payload[sub][qq.questionId] = { questionId: qq.questionId, selectedAnswer: localStorage.getItem(key)||null };
+        }
       }
-    }
-  });
-
- // ─────────────────────────────────────────────────────────────────────────────
-// 17. Submit Test (Manual/Auto) → Build Payload & POST
-// ─────────────────────────────────────────────────────────────────────────────
-window.submitTest = async (auto = false) => {
-  // ─────── NEW: Pre-save current integer input and review state ───────
-  const currentQ = questions[currentQuestionIndex];
-  const answerInput = document.getElementById("answer-input");
-  if (answerInput) {
-    const val = answerInput.value.trim();
-    if (val) {
-      saveAnswer(currentQ.questionId, val);
-    } else {
-      removeAnswer(currentQ.questionId);
-    }
-  }
-  const reviewCheckbox = document.getElementById("review-checkbox");
-  if (reviewCheckbox) {
-    saveReview(currentQ.questionId, reviewCheckbox.checked);
-  }
-  // ─────────────────────────────────────────────────────────────────────
-
-  // If manual submit, confirm
-  if (!auto && !confirm("Are you sure you want to submit the test?")) {
-    return;
-  }
-
-  try {
-    showLoading(true);
-
-    // Build payload from LocalStorage for all subjects/questions
-    const payload = {};
-    for (const subject of subjectsArr) {
-      payload[subject] = {};
-      const qMap = testData.questions[subject] || {};
-      Object.values(qMap).forEach(q => {
-        const key = `response_${subject}_${q.questionId}`;
-        const stored = localStorage.getItem(key);
-        payload[subject][q.questionId] = {
-          questionId: q.questionId,
-          selectedAnswer: stored || null
-        };
+      const resp = await fetch(`/api/tests/${testID}/submit`, {
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ batchName,username,responses:payload })
       });
+      if (!resp.ok) throw new Error(`Submission failed: ${resp.status}`);
+      await resp.json();
+      localStorage.clear(); clearInterval(timerInterval);
+      showToast(auto?"Auto-submitted!":"Submitted successfully!","success");
+      setTimeout(()=>{
+        location.href = auto?"/Results/":`/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+      },2000);
+    } catch(e){
+      console.error(e);
+      showToast("Failed to submit. Try again.","error");
+      showLoading(false);
     }
+  };
 
-    console.log('Submitting payload:', payload);
-
-    // POST to server
-    const response = await fetch(`/api/tests/${testID}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        batchName,
-        username,
-        responses: payload
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Submission failed: ${response.status}`);
-    }
-    const result = await response.json();
-    console.log('Submission result:', result);
-
-    // Cleanup & Redirect
-    localStorage.clear();
-    clearInterval(timerInterval);
-    showToast(
-      auto ? "Test auto-submitted successfully!" : "Test submitted successfully!",
-      "success"
-    );
-    setTimeout(() => {
-      window.location.href = auto
-        ? "/Results/"
-        : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-    }, 2000);
-
-  } catch (error) {
-    console.error("Submission error:", error);
-    showToast("Failed to submit test. Please try again.", "error");
-    showLoading(false);
+  function showLoading(on){
+    const c=document.getElementById("content");
+    on?c.classList.add("loading"):c.classList.remove("loading");
   }
-};
-
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 18. Utility: Loading Overlay & Toast Notifications
-  // ─────────────────────────────────────────────────────────────────────────────
-  function showLoading(show) {
-    const content = document.getElementById("content");
-    if (show) content.classList.add("loading");
-    else       content.classList.remove("loading");
+  function showToast(msg,type="info"){
+    const t=document.createElement("div");
+    t.style.cssText=`position:fixed;top:20px;right:20px;background:${
+      type==="error"?"var(--error-color)":type==="warning"?"var(--warning-color)":"var(--success-color)"
+    };color:white;padding:12px 20px;border-radius:4px;z-index:10000;transform:translateX(100%);transition:transform .3s`;
+    t.textContent=msg;document.body.appendChild(t);
+    setTimeout(()=>t.style.transform="translateX(0)",100);
+    setTimeout(()=>{t.style.transform="translateX(100%)";setTimeout(()=>t.remove(),300);},3000);
   }
 
-  function showToast(message, type = "info") {
-    const toast = document.createElement("div");
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: ${
-        type === "error"   ? "var(--error-color)" :
-        type === "warning" ? "var(--warning-color)" :
-        type === "success" ? "var(--success-color)" : "var(--primary-color)"
-      };
-      color: white;
-      padding: 12px 20px;
-      border-radius: var(--border-radius-sm);
-      font-size: 14px; font-weight: 500;
-      z-index: 10000;
-      box-shadow: 0 4px 12px var(--card-shadow);
-      transform: translateX(100%);
-      transition: transform 0.3s ease;
-      max-width: 300px;
-    `;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    // Slide in
-    setTimeout(() => {
-      toast.style.transform = "translateX(0)";
-    }, 100);
-
-    // Auto‐remove
-    setTimeout(() => {
-      toast.style.transform = "translateX(100%)";
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 19. Keyboard Navigation & Touch Gestures
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' && currentQuestionIndex > 0) {
-      e.preventDefault();
-      goToPrevious();
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      saveAndNext();
-    } else if (e.key === 'Escape') {
-      const modal = document.getElementById("progress-modal");
-      if (modal.style.display === "block") toggleProgress();
-    }
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowLeft'&&currentQuestionIndex>0){ e.preventDefault(); goToPrevious(); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); saveAndNext(); }
+    else if(e.key==='Escape'){ const m=document.getElementById("progress-modal"); if(m.style.display==="block") toggleProgress(); }
   });
 
-  let touchStartX = 0, touchEndX = 0;
-  document.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
-  });
-  document.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-  });
-  function handleSwipe() {
-    const swipeThreshold = 50;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > swipeThreshold) {
-      if (diff > 0) saveAndNext(); // Swipe left → Next
-      else goToPrevious();         // Swipe right → Previous
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 20. Initial Setup on DOMContentLoaded
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    const usernameInput = document.getElementById("username");
-    if (usernameInput) {
-      usernameInput.focus();
-      usernameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') validateCredentials();
-      });
-    }
+  let touchStartX=0,touchEndX=0;
+  document.addEventListener('touchstart',e=>touchStartX=e.changedTouches[0].screenX);
+  document.addEventListener('touchend',e=>{ touchEndX=e.changedTouches[0].screenX; const d=touchStartX-touchEndX; if(Math.abs(d)>50) d>0?saveAndNext():goToPrevious(); });
+  
+  document.addEventListener('DOMContentLoaded',()=>{
+    const inp=document.getElementById("username");
+    if(inp){ inp.focus(); inp.addEventListener('keypress',e=>{ if(e.key==='Enter') validateCredentials(); }); }
   });
 </script>
+
 
 </body>
 </html>
