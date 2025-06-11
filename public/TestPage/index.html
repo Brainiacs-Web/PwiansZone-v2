@@ -1021,23 +1021,23 @@ input:focus,
 async function loadTestSeriesData() {
   try {
     showLoading(true);
-    const res = await fetch(`/api/testSeries/${testID}`);
+    const res = await fetch(`/api/testSeries/${testID}`);  // ✅ Ensure this route is correct
     if (!res.ok) throw new Error("Fetch failed");
     testData = await res.json();
 
-    // Populate test name + subjects
+    // ✅ Show test name and subject buttons
     document.getElementById("test-name").textContent = testData.testName;
     subjectsArr = testData.subjects || [];
 
-    // Duration parsing + startTime logic
-    const raw      = testData.testDuration ?? testData.duration ?? testData.timeLimit ?? 90;
-    const mins     = Number.isInteger(+raw) ? +raw : 90;
+    // ✅ Use consistent key
+    const key = `startTime_${testID}`;
+
+    // ✅ Timer duration logic
+    const raw = testData.testDuration ?? 90;
+    const mins = Number.isInteger(+raw) ? +raw : 90;
     const totalSec = mins * 60;
 
-    // **Use the same key everywhere**
-    const key     = `startTime_${testID}`;
-    let startTs   = localStorage.getItem(key);
-
+    let startTs = localStorage.getItem(key);
     if (!startTs) {
       startTs = Date.now().toString();
       localStorage.setItem(key, startTs);
@@ -1047,8 +1047,7 @@ async function loadTestSeriesData() {
     }
 
     const elapsed = Math.floor((Date.now() - parseInt(startTs, 10)) / 1000);
-    timeLeft      = Math.max(totalSec - elapsed, 0);
-
+    timeLeft = Math.max(totalSec - elapsed, 0);
     console.log(`Total=${totalSec}s, Elapsed=${elapsed}s, Remaining=${timeLeft}s`);
 
     buildSubjectButtons();

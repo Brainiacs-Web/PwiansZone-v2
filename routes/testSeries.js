@@ -7,7 +7,7 @@ const Chapter  = require('../models/Chapter');
 const Question = require('../models/Question');
 
 // GET /api/testSeries/:id
-// Returns { testName, subjects, chapters: {...}, questions: {...} }
+// Returns { testName, subjects, testDuration, chapters: {...}, questions: {...} }
 router.get('/:id', async (req, res) => {
   try {
     const testId = req.params.id;
@@ -25,6 +25,7 @@ router.get('/:id', async (req, res) => {
     chapterDocs.forEach(cd => {
       chaptersBySubject[cd.subject] = cd.chapters || [];
     });
+
     // ensure every subject has an array
     test.subjects.forEach(sub => {
       if (!chaptersBySubject[sub]) chaptersBySubject[sub] = [];
@@ -44,11 +45,10 @@ router.get('/:id', async (req, res) => {
         correctAnswer:  q.correctAnswer,
         solution:       q.solution,
         addedAt:        q.addedAt,
-        // NOTE: if you later add a `chapter` field to Question,
-        // you can return it here:
         chapter:        q.chapter || null
       };
     });
+
     // ensure empty object for any subject with no questions yet
     test.subjects.forEach(sub => {
       if (!questionsBySubject[sub]) questionsBySubject[sub] = {};
@@ -56,10 +56,11 @@ router.get('/:id', async (req, res) => {
 
     // 4) Send it back
     res.json({
-      testName:  test.testName,
-      subjects:  test.subjects,
-      chapters:  chaptersBySubject,
-      questions: questionsBySubject
+      testName:     test.testName,
+      subjects:     test.subjects,
+      testDuration: test.testDuration, // ✅ Added testDuration
+      chapters:     chaptersBySubject,
+      questions:    questionsBySubject
     });
 
   } catch (err) {
