@@ -1047,6 +1047,27 @@ input:focus,
       showLoading(false);
     }
   }
+  
+  function startTimer() {
+  stopTimer(); // Clear previous timer if running
+  timerInterval = setInterval(() => {
+    if (timeLeft <= 0) {
+      stopTimer();
+      onTimeUp();
+      return;
+    }
+    timeLeft--;
+    updateTimerDisplay();
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
+
 
   // ─────────────────────────────────────────────────────────────────────────────
   // G) Build subject tabs
