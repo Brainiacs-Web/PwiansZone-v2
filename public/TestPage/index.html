@@ -1423,11 +1423,11 @@ input:focus,
     }
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
+ // ─────────────────────────────────────────────────────────────────────────────
 // 17. Submit Test (Manual/Auto) → Build Payload & POST
 // ─────────────────────────────────────────────────────────────────────────────
 window.submitTest = async (auto = false) => {
-  // 1) Save any unsaved numeric‐input answer on the current question
+  // ─────── NEW: Pre-save current integer input and review state ───────
   const currentQ = questions[currentQuestionIndex];
   const answerInput = document.getElementById("answer-input");
   if (answerInput) {
@@ -1438,14 +1438,13 @@ window.submitTest = async (auto = false) => {
       removeAnswer(currentQ.questionId);
     }
   }
-
-  // 2) Save the current review‐checkbox state as well
   const reviewCheckbox = document.getElementById("review-checkbox");
   if (reviewCheckbox) {
     saveReview(currentQ.questionId, reviewCheckbox.checked);
   }
+  // ─────────────────────────────────────────────────────────────────────
 
-  // 3) Confirm if manual submit
+  // If manual submit, confirm
   if (!auto && !confirm("Are you sure you want to submit the test?")) {
     return;
   }
@@ -1453,7 +1452,7 @@ window.submitTest = async (auto = false) => {
   try {
     showLoading(true);
 
-    // 4) Build the payload from LocalStorage for all subjects/questions
+    // Build payload from LocalStorage for all subjects/questions
     const payload = {};
     for (const subject of subjectsArr) {
       payload[subject] = {};
@@ -1470,7 +1469,7 @@ window.submitTest = async (auto = false) => {
 
     console.log('Submitting payload:', payload);
 
-    // 5) Send to server
+    // POST to server
     const response = await fetch(`/api/tests/${testID}/submit`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1487,7 +1486,7 @@ window.submitTest = async (auto = false) => {
     const result = await response.json();
     console.log('Submission result:', result);
 
-    // 6) Cleanup & Redirect
+    // Cleanup & Redirect
     localStorage.clear();
     clearInterval(timerInterval);
     showToast(
