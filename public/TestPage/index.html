@@ -1018,7 +1018,7 @@ input:focus,
   // ─────────────────────────────────────────────────────────────────────────────
   // F) Fetch test data, subjects, timer, then load questions
   // ─────────────────────────────────────────────────────────────────────────────
- async function loadTestSeriesData() {
+async function loadTestSeriesData() {
   try {
     showLoading(true);
     const res = await fetch(`/api/testSeries/${testID}`);
@@ -1030,19 +1030,28 @@ input:focus,
     subjectsArr = testData.subjects || [];
 
     // ────────────────────────────────────────────────────────────────────────────
-    // Duration parsing + “startTime” logic
-    const raw = testData.testDuration ?? testData.duration ?? testData.timeLimit ?? 90;
-    const mins = Number.isInteger(+raw) ? +raw : 90;
-    const totalTime = mins * 60;
+    // Duration parsing + simplified “startTime” logic
+    const raw      = testData.testDuration ?? testData.duration ?? testData.timeLimit ?? 90;
+    const mins     = Number.isInteger(+raw) ? +raw : 90;
+    const totalSec = mins * 60;
 
-    const key = `startTime_${testID}_${batchName}_${username}`;
-    let startTs = localStorage.getItem(key);
-    if (!startTs) {
-      startTs = Date.now();
+    // Use a simpler key that only depends on testID
+    const key      = `startTime_${testID}`;
+    let   startTs  = localStorage.getItem(key);
+
+    if (startTs) {
+      console.log("Found existing startTs:", startTs);
+    } else {
+      startTs = Date.now().toString();
+      console.log("No startTs found. Setting startTs to now:", startTs);
       localStorage.setItem(key, startTs);
     }
-    const elapsed = Math.floor((Date.now() - startTs) / 1000);
-    timeLeft = Math.max(totalTime - elapsed, 0);
+
+    // Compute elapsed & remaining
+    const elapsed  = Math.floor((Date.now() - parseInt(startTs,10)) / 1000);
+    timeLeft       = Math.max(totalSec - elapsed, 0);
+
+    console.log(`Duration: ${mins} min (${totalSec}s), Elapsed: ${elapsed}s, timeLeft: ${timeLeft}s`);
     // ────────────────────────────────────────────────────────────────────────────
 
     buildSubjectButtons();
