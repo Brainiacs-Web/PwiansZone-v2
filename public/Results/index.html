@@ -1135,57 +1135,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <script>
-
-    
-
-     function renderResults(data) {
-    const container = document.getElementById("result-container") || document.body;
-    container.innerHTML = ""; // Clear old content
-
-    const title = document.createElement("h2");
-    title.textContent = `📘 Test: ${data.testName}`;
-    container.appendChild(title);
-
-    data.subjects.forEach(subject => {
-      const subjectHeader = document.createElement("h3");
-      subjectHeader.textContent = `📚 Subject: ${subject}`;
-      container.appendChild(subjectHeader);
-
-      const questions = data.results[subject];
-      if (!questions?.length) {
-        const p = document.createElement("p");
-        p.textContent = "No questions found for this subject.";
-        container.appendChild(p);
-        return;
-      }
-
-      questions.forEach((q, i) => {
-        const card = document.createElement("div");
-        card.className = "result-card";
-        card.innerHTML = `
-          <div><strong>Q${i + 1}:</strong> ${q.question}</div>
-          ${Array.isArray(q.options) ? `
-            <ul>
-              ${q.options.map((opt, j) => {
-                const label = String.fromCharCode(65 + j);
-                const isCorrect = q.correctAnswer === label;
-                const isUser = q.selectedAnswer === label;
-                return `<li style="color:${isCorrect ? 'green' : isUser ? 'red' : '#333'}">
-                  ${label}. ${opt}
-                </li>`;
-              }).join('')}
-            </ul>
-          ` : ''}
-          <div><strong>Your Answer:</strong> ${q.selectedAnswer || '—'}</div>
-          <div><strong>Correct Answer:</strong> ${q.correctAnswer}</div>
-          <div><strong>Solution:</strong> ${q.solution || '—'}</div>
-        `;
-        container.appendChild(card);
-      });
-    });
-
-    if (window.MathJax) MathJax.typesetPromise([container]);
-  }
     // ─────────────────────────────────────────────────────────────────────────────
     // 1. Dark mode functionality
     // ─────────────────────────────────────────────────────────────────────────────
@@ -1727,52 +1676,50 @@
       }
     }
 
+   // ─────────────────────────────────────────────────────────────────────────────
+// 13. Main function to display results with new marking scheme
 // ─────────────────────────────────────────────────────────────────────────────
-// Main function to display test results (with full question, answer, solution)
-// ─────────────────────────────────────────────────────────────────────────────
-
 async function displayResults() {
-  console.log(">>> displayResults() start");
   try {
-    // 1. Fetch results from backend API
-    resultsData = await fetchResults(); // Global variable
-    console.log("Fetched resultsData:", resultsData);
-
+    resultsData = await fetchResults();
     const { testName, subjects, results } = resultsData;
 
-    // 2. Normalize result map to array if needed
-    subjects.forEach(subject => {
-      if (results[subject] && !Array.isArray(results[subject])) {
-        results[subject] = Object.values(results[subject]);
-      }
-    });
-    resultsData.results = results;
-
-    // 3. Set page title
+    // Update page title
     if (testName) {
       document.title = `${testName} - PWians Test Results`;
     }
 
-    // 4. Calculate total score
-    let totalCorrect = 0;
-    let totalWrong = 0;
-    let totalUnanswered = 0;
-    let totalScore = 0;
+    // Totals
+    let totalCorrect     = 0;
+    let totalWrong       = 0;
+    let totalUnanswered  = 0;
+    let totalScore       = 0;
 
+    // ─── Normalize and tally ────────────────────────────────────────────────
     Object.values(results).forEach(subQuestions => {
-      subQuestions.forEach(q => {
-        const selected = q.selectedAnswer ? String(q.selectedAnswer).trim() : '';
-        const correct = q.correctAnswer ? String(q.correctAnswer).trim() : '';
-        const isMCQ = Array.isArray(q.options) && q.options.length > 0;
-        const answered = selected !== '';
-        const isCorrect = answered && (
+      subQuestions.forEach(question => {
+        // Always coerce to string first:
+        const rawSel = question.selectedAnswer;
+        const rawCor = question.correctAnswer;
+
+        const selected = rawSel != null
+          ? String(rawSel).trim()
+          : '';
+        const correct  = rawCor != null
+          ? String(rawCor).trim()
+          : '';
+
+        const isMCQ     = Array.isArray(question.options) && question.options.length > 0;
+        const answered  = selected !== '';
+        const correctHit = answered && (
           isMCQ
             ? selected.toUpperCase() === correct.toUpperCase()
             : selected === correct
         );
 
-        if (!answered) totalUnanswered++;
-        else if (isCorrect) {
+        if (!answered) {
+          totalUnanswered++;
+        } else if (correctHit) {
           totalCorrect++;
           totalScore += 4;
         } else {
@@ -1781,99 +1728,23 @@ async function displayResults() {
         }
       });
     });
+    // ─────────────────────────────────────────────────────────────────────────
 
-    console.log("Score => ✅:", totalCorrect, "❌:", totalWrong, "⏳:", totalUnanswered, "Total:", totalScore);
-
-    // 5. Render stats and chart
+    // Render stats & chart
     renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
-    const ctx = document.getElementById("overview-chart").getContext("2d");
+    const ctx = document.getElementById('overview-chart').getContext('2d');
     createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
 
-    // 6. Subject tabs & questions
+    // Subjects & first question
     renderSubjectTabs(subjects);
     if (subjects.length) selectSubject(subjects[0], 0);
 
-    // 7. Show result screen
     showResults();
-    console.log(">>> displayResults() end");
-  } catch (err) {
-    console.error("🔴 Error in displayResults():", err);
-    showError(err.message || "Failed to load results. Please try again.");
+  } catch (error) {
+    console.error('Error displaying results:', error);
+    showError(error.message || 'Failed to load results. Please try again.');
   }
 }
-
-function renderStats(correct, wrong, unanswered, score) {
-  document.getElementById("score-correct").textContent = correct;
-  document.getElementById("score-wrong").textContent = wrong;
-  document.getElementById("score-unanswered").textContent = unanswered;
-  document.getElementById("score-total").textContent = score;
-}
-
-function renderSubjectTabs(subjects) {
-  const tabContainer = document.getElementById("subject-tabs");
-  tabContainer.innerHTML = "";
-
-  subjects.forEach((subject, index) => {
-    const tab = document.createElement("button");
-    tab.textContent = subject;
-    tab.className = "subject-tab";
-    tab.onclick = () => selectSubject(subject, index);
-    tabContainer.appendChild(tab);
-  });
-}
-
-function selectSubject(subjectName, tabIndex) {
-  const questions = resultsData.results[subjectName];
-  const questionContainer = document.getElementById("question-list");
-  const subjectHeading = document.getElementById("subject-title");
-  questionContainer.innerHTML = "";
-  subjectHeading.textContent = subjectName;
-
-  questions.forEach((q, idx) => {
-    const isCorrect = q.selectedAnswer === q.correctAnswer;
-    const isUnanswered = !q.selectedAnswer;
-    const statusClass = isUnanswered ? "unanswered" : (isCorrect ? "correct" : "wrong");
-
-    const qDiv = document.createElement("div");
-    qDiv.className = `question-block ${statusClass}`;
-
-    qDiv.innerHTML = `
-      <div class="question-text"><strong>Q${idx + 1}:</strong> ${q.question || "<i>No question text</i>"}</div>
-      ${q.questionImage ? `<img src="${q.questionImage}" class="question-image" />` : ""}
-
-      <div class="options">
-        ${q.options.map(opt => `
-          <div class="option ${opt === q.selectedAnswer ? 'selected' : ''} ${opt === q.correctAnswer ? 'correct-answer' : ''}">
-            ${opt}
-          </div>
-        `).join("")}
-      </div>
-
-      <div class="answer-summary">
-        <span><b>Selected:</b> ${q.selectedAnswer || "—"}</span><br>
-        <span><b>Correct:</b> ${q.correctAnswer || "—"}</span>
-      </div>
-
-      <div class="solution-block">
-        <strong>Solution:</strong>
-        <div>${q.solution || "<i>No solution provided</i>"}</div>
-        ${q.solutionImage ? `<img src="${q.solutionImage}" class="solution-image" />` : ""}
-      </div>
-    `;
-
-    questionContainer.appendChild(qDiv);
-  });
-
-  // Highlight active tab
-  const tabs = document.querySelectorAll(".subject-tab");
-  tabs.forEach(tab => tab.classList.remove("active-tab"));
-  if (tabs[tabIndex]) tabs[tabIndex].classList.add("active-tab");
-}
-
-// Ensure function runs after page loads
-document.addEventListener("DOMContentLoaded", () => {
-  displayResults();
-});
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 14. Keyboard navigation
