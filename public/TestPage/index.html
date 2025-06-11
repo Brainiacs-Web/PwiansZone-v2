@@ -8,6 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+  href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.css"
+  rel="stylesheet"
+/>
   <style>
 :root {
   --primary-color: #1E40AF;
@@ -914,8 +918,20 @@ input:focus,
     </div>
   </div>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-latex.min.js"></script>
+
 
 <script>
+
+ 
+  // Syntax–highlight all <code class="language-latex"> blocks once the DOM is ready
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.Prism) Prism.highlightAll();
+  });
+
+
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. Read URL params → testID, batchName; initialize username as blank
   // ─────────────────────────────────────────────────────────────────────────────
@@ -992,33 +1008,44 @@ input:focus,
   // ─────────────────────────────────────────────────────────────────────────────
   document.getElementById("logged-batch").textContent = batchName;
 
-  // ─────────────────────────────────────────────────────────────────────────────
+ // ─────────────────────────────────────────────────────────────────────────────
 // 6. Validate Credentials (Username) & Load Test Data
 // ─────────────────────────────────────────────────────────────────────────────
 async function loadTestSeriesData() {
   try {
     showLoading(true);
+
     const res = await fetch(`/api/testSeries/${testID}`);
     if (!res.ok) throw new Error("Fetch failed");
     testData = await res.json();
 
+    // ── DEBUG: inspect what your API is actually returning ──
+    console.log("💡 testData loaded from server:", testData);
+
     // ── Populate test name & subjects ──
     document.getElementById("test-name").textContent = testData.testName;
-    subjectsArr = testData.subjects;
+    subjectsArr = testData.subjects || [];
 
-    // ── UPDATED TIMER LINE: use the value from your DB (parseInt to guard against strings),
-    //    fall back only if it’s truly missing or invalid ──
-    const durationMinutes = parseInt(testData.testDuration, 10);
-    timeLeft = (Number.isInteger(durationMinutes) ? durationMinutes : 90) * 60;
+    // ── ROBUST DURATION PARSING ──
+    const rawMinutes =
+         testData.testDuration   // primary
+      ?? testData.duration       // alternate
+      ?? testData.timeLimit      // another common key
+      ?? 90;                     // default if none found
+
+    const parsed = parseInt(rawMinutes, 10);
+    const minutesToUse = Number.isInteger(parsed) ? parsed : 90;
+    timeLeft = minutesToUse * 60;
 
     buildSubjectButtons();
-    currentSubject = subjectsArr[0];
+    currentSubject = subjectsArr[0] || "";
 
     // ── Load questions etc. ──
     await loadQuestions();
 
     updateTimerDisplay();
     startTimer();
+
   } catch (e) {
     console.error(e);
     showToast("Failed to load test. Please refresh and try again.", "error");
