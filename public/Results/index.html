@@ -1871,7 +1871,9 @@ function selectSubject(subjectName, tabIndex) {
 }
 
 // Ensure function runs after page loads
-window.addEventListener("load", displayResults);
+document.addEventListener("DOMContentLoaded", () => {
+  displayResults();
+});
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 14. Keyboard navigation
