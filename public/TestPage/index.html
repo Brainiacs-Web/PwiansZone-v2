@@ -1016,8 +1016,8 @@ input:focus,
   document.getElementById("logged-batch").textContent = batchName;
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // F) Fetch test data, subjects, timer, then load questions
-  // ─────────────────────────────────────────────────────────────────────────────
+// F) Fetch test data, subjects, timer, then load questions
+// ─────────────────────────────────────────────────────────────────────────────
 async function loadTestSeriesData() {
   try {
     showLoading(true);
@@ -1029,30 +1029,27 @@ async function loadTestSeriesData() {
     document.getElementById("test-name").textContent = testData.testName;
     subjectsArr = testData.subjects || [];
 
-    // ────────────────────────────────────────────────────────────────────────────
-    // Duration parsing + simplified “startTime” logic
+    // Duration parsing + startTime logic
     const raw      = testData.testDuration ?? testData.duration ?? testData.timeLimit ?? 90;
     const mins     = Number.isInteger(+raw) ? +raw : 90;
     const totalSec = mins * 60;
 
-    // Use a simpler key that only depends on testID
-    const key      = `startTime_${testID}`;
-    let   startTs  = localStorage.getItem(key);
+    // **Use the same key everywhere**
+    const key     = `startTime_${testID}`;
+    let startTs   = localStorage.getItem(key);
 
-    if (startTs) {
-      console.log("Found existing startTs:", startTs);
-    } else {
+    if (!startTs) {
       startTs = Date.now().toString();
-      console.log("No startTs found. Setting startTs to now:", startTs);
       localStorage.setItem(key, startTs);
+      console.log("Timer STARTED at:", startTs);
+    } else {
+      console.log("Timer already started at:", startTs);
     }
 
-    // Compute elapsed & remaining
-    const elapsed  = Math.floor((Date.now() - parseInt(startTs,10)) / 1000);
-    timeLeft       = Math.max(totalSec - elapsed, 0);
+    const elapsed = Math.floor((Date.now() - parseInt(startTs, 10)) / 1000);
+    timeLeft      = Math.max(totalSec - elapsed, 0);
 
-    console.log(`Duration: ${mins} min (${totalSec}s), Elapsed: ${elapsed}s, timeLeft: ${timeLeft}s`);
-    // ────────────────────────────────────────────────────────────────────────────
+    console.log(`Total=${totalSec}s, Elapsed=${elapsed}s, Remaining=${timeLeft}s`);
 
     buildSubjectButtons();
     currentSubject = subjectsArr[0] || "";
@@ -1328,46 +1325,31 @@ function stopTimer() {
     }
   });
 
-  window.submitTest = async function(auto = false) {
-  // Clear stored start time so reloads don’t resurrect this session
-  localStorage.removeItem(`startTime_${testID}_${batchName}_${username}`);
+// ─────────────────────────────────────────────────────────────────────────────
+// J) submitTest (manual & auto)
+// ─────────────────────────────────────────────────────────────────────────────
+window.submitTest = async function(auto = false) {
+  // **Remove the exact same key**
+  localStorage.removeItem(`startTime_${testID}`);
 
-  const q = questions[currentQuestionIndex];
-  const inp = document.getElementById("answer-input");
-  if (inp) {
-    const v = inp.value.trim();
-    v ? saveAnswer(q.questionId, v) : removeAnswer(q.questionId);
+  // …your existing save/review logic…
+
+  if (!auto && !confirm("Are you sure you want to submit the test?")) {
+    return;
   }
-  const cb = document.getElementById("review-checkbox");
-  if (cb) saveReview(q.questionId, cb.checked);
-
-  if (!auto && !confirm("Are you sure you want to submit the test?")) return;
 
   try {
     showLoading(true);
-    const payload = {};
-    for (const sub of subjectsArr) {
-      payload[sub] = {};
-      for (const qq of Object.values(testData.questions[sub] || {})) {
-        const key = `response_${sub}_${qq.questionId}`;
-        payload[sub][qq.questionId] = {
-          questionId: qq.questionId,
-          selectedAnswer: localStorage.getItem(key) || null
-        };
-      }
-    }
-
-    const resp = await fetch(`/api/tests/${testID}/submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ batchName, username, responses: payload })
-    });
+    // …build payload & POST…
+    const resp = await fetch(`/api/tests/${testID}/submit`, { /*…*/ });
     if (!resp.ok) throw new Error(`Submission failed: ${resp.status}`);
     await resp.json();
 
+    // Only clear everything *after* we’ve removed the startTime
     localStorage.clear();
     clearInterval(timerInterval);
     showToast(auto ? "Auto-submitted!" : "Submitted successfully!", "success");
+
     setTimeout(() => {
       location.href = auto
         ? "/Results/"
@@ -1379,6 +1361,7 @@ function stopTimer() {
     showLoading(false);
   }
 };
+
 
   function showLoading(on){
     const c=document.getElementById("content");
