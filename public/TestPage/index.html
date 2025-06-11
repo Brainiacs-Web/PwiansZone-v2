@@ -1324,57 +1324,34 @@ function stopTimer() {
     }
   });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// J) submitTest (manual & auto)
-// ─────────────────────────────────────────────────────────────────────────────
-window.submitTest = async function(auto = false) {
-  const urlParams = new URLSearchParams(window.location.search);
-  const testID = urlParams.get('test');
-  const batchName = urlParams.get('batchName') || urlParams.get('batch');
-  const username = localStorage.getItem('username') || "anonymous";
+window.submitTest = async function () {
+  const testId = getQueryParam('test');
+  const batchID = getQueryParam('batchID');
+  const batchName = getQueryParam('batchName');
 
-  if (!testID || !batchName || !username) {
-    console.error("Missing testID, batchName, or username");
-    return showToast("Submission failed: Missing required info", "error");
-  }
-
-  // Remove timer tracking key
-  localStorage.removeItem(`startTime_${testID}`);
-
-  if (!auto && !confirm("Are you sure you want to submit the test?")) {
-    return;
-  }
+  const username = localStorage.getItem('username'); // change if needed
 
   try {
-    showLoading(true);
-
-    // 🔹 Collect answers from your UI (you should replace this logic as per your structure)
-
-    const resp = await fetch(`/api/tests/${testID}/submit`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ batchName, username, responses })
+    const res = await fetch(`/api/tests/${testId}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        batchName,
+        username,
+        responses, // 👈 this must exist and be valid
+      }),
     });
 
-    if (!resp.ok) throw new Error(`Submission failed: ${resp.status}`);
-    const data = await resp.json();
-
-    localStorage.clear();
-    clearInterval(timerInterval);
-
-    showToast(auto ? "Auto-submitted!" : "Submitted successfully!", "success");
-
-    setTimeout(() => {
-      location.href = auto
-        ? "/Results/"
-        : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-    }, 2000);
-  } catch (e) {
-    console.error(e);
-    showToast("Failed to submit. Try again.", "error");
-    showLoading(false);
+    const data = await res.json();
+    if (data.success) {
+      alert('Test submitted successfully!');
+      // optionally redirect or show results
+    } else {
+      alert(data.error || 'Submission failed');
+    }
+  } catch (err) {
+    console.error('Submit error:', err);
+    alert('Error submitting test');
   }
 };
 
