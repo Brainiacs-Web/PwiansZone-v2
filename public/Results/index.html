@@ -1676,63 +1676,75 @@
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 13. Main function to display results with new marking scheme
-    // ─────────────────────────────────────────────────────────────────────────────
-    async function displayResults() {
-      try {
-        resultsData = await fetchResults();
-        const { testName, subjects, results } = resultsData;
+   // ─────────────────────────────────────────────────────────────────────────────
+// 13. Main function to display results with new marking scheme
+// ─────────────────────────────────────────────────────────────────────────────
+async function displayResults() {
+  try {
+    resultsData = await fetchResults();
+    const { testName, subjects, results } = resultsData;
 
-        // Update page title with test name if available
-        if (testName) {
-          document.title = `${testName} - PWians Test Results`;
-        }
-
-        // Calculate totals with new marking scheme: +4 correct, -1 wrong, 0 unanswered
-        let totalCorrect = 0;
-        let totalWrong = 0;
-        let totalUnanswered = 0;
-        let totalScore = 0;
-
-        Object.entries(results).forEach(([subject, questions]) => {
-          questions.forEach(question => {
-            const selected = (question.selectedAnswer || '').trim().toUpperCase();
-            const correct = (question.correctAnswer || '').trim().toUpperCase();
-            
-            if (!selected) {
-              totalUnanswered++;
-            } else if (selected === correct) {
-              totalCorrect++;
-              totalScore += 4; // +4 for correct answer
-            } else {
-              totalWrong++;
-              totalScore -= 1; // -1 for wrong answer
-            }
-          });
-        });
-
-        // Render components
-        renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
-        
-        // Create chart
-        const chartCtx = document.getElementById('overview-chart').getContext('2d');
-        createDoughnutChart(chartCtx, [totalCorrect, totalWrong, totalUnanswered]);
-        
-        // Render subject tabs
-        renderSubjectTabs(subjects);
-        
-        // Select first subject by default
-        if (subjects.length > 0) {
-          selectSubject(subjects[0], 0);
-        }
-
-        showResults();
-      } catch (error) {
-        console.error('Error displaying results:', error);
-        showError(error.message || 'Failed to load results. Please try again.');
-      }
+    // Update page title
+    if (testName) {
+      document.title = `${testName} - PWians Test Results`;
     }
+
+    // Totals
+    let totalCorrect     = 0;
+    let totalWrong       = 0;
+    let totalUnanswered  = 0;
+    let totalScore       = 0;
+
+    // ─── Normalize and tally ────────────────────────────────────────────────
+    Object.values(results).forEach(subQuestions => {
+      subQuestions.forEach(question => {
+        // Always coerce to string first:
+        const rawSel = question.selectedAnswer;
+        const rawCor = question.correctAnswer;
+
+        const selected = rawSel != null
+          ? String(rawSel).trim()
+          : '';
+        const correct  = rawCor != null
+          ? String(rawCor).trim()
+          : '';
+
+        const isMCQ     = Array.isArray(question.options) && question.options.length > 0;
+        const answered  = selected !== '';
+        const correctHit = answered && (
+          isMCQ
+            ? selected.toUpperCase() === correct.toUpperCase()
+            : selected === correct
+        );
+
+        if (!answered) {
+          totalUnanswered++;
+        } else if (correctHit) {
+          totalCorrect++;
+          totalScore += 4;
+        } else {
+          totalWrong++;
+          totalScore -= 1;
+        }
+      });
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Render stats & chart
+    renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
+    const ctx = document.getElementById('overview-chart').getContext('2d');
+    createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
+
+    // Subjects & first question
+    renderSubjectTabs(subjects);
+    if (subjects.length) selectSubject(subjects[0], 0);
+
+    showResults();
+  } catch (error) {
+    console.error('Error displaying results:', error);
+    showError(error.message || 'Failed to load results. Please try again.');
+  }
+}
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 14. Keyboard navigation
