@@ -1134,11 +1134,11 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-<script>
+  <script>
     // ─────────────────────────────────────────────────────────────────────────────
     // 1. Dark mode functionality
     // ─────────────────────────────────────────────────────────────────────────────
-    let isDarkMode = false; // Remove localStorage usage
+    let isDarkMode = localStorage.getItem('darkMode') === 'true';
     const themeToggle = document.getElementById('themeToggle');
     const body = document.body;
 
@@ -1157,6 +1157,7 @@
     function toggleDarkMode() {
       isDarkMode = !isDarkMode;
       body.classList.toggle('dark-mode', isDarkMode);
+      localStorage.setItem('darkMode', isDarkMode);
       
       // Update icon with animation
       const icon = themeToggle.querySelector('i');
@@ -1270,21 +1271,15 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 3. Get URL parameters - Updated to expect ObjectId
+    // 3. Get URL parameters
     // ─────────────────────────────────────────────────────────────────────────────
-    const testID = getParam('testId'); // Changed from 'test' to 'testId' for clarity
-    const batchName = getParam('batchName'); // Changed from 'batch' for consistency
+    const testID = getParam('test');
+    const batchName = getParam('batch');
     const username = getParam('username');
 
     if (!testID || !batchName || !username) {
       showError('Missing required parameters. Please check the URL and try again.');
       throw new Error('Missing URL parameters');
-    }
-
-    // Validate ObjectId format (24 character hex string)
-    if (!/^[0-9a-fA-F]{24}$/.test(testID)) {
-      showError('Invalid test ID format. Please check the URL and try again.');
-      throw new Error('Invalid test ID format');
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
@@ -1317,7 +1312,7 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 6. Fetch results from backend - Updated for ObjectId
+    // 6. Fetch results from backend
     // ─────────────────────────────────────────────────────────────────────────────
     async function fetchResults() {
       try {
@@ -1504,7 +1499,7 @@
     }
 
     // ─────────────────────────────────────────────────────────────────────────────
-    // 11. Render current question - Updated to handle null selectedAnswer properly
+    // 11. Render current question
     // ─────────────────────────────────────────────────────────────────────────────
     function renderQuestion() {
       const questionsContent = document.getElementById('questions-content');
@@ -1523,12 +1518,15 @@
 
       const question = currentSubjectQuestions[currentQuestionIndex];
       
-      // Handle null selectedAnswer properly (from your backend)
-      const selectedAnswer = question.selectedAnswer !== null && question.selectedAnswer !== undefined
-        ? String(question.selectedAnswer).trim()
+      // Normalize answers safely
+      const rawSel = question.selectedAnswer;
+      const rawCor = question.correctAnswer;
+
+      const selectedAnswer = rawSel !== null && rawSel !== undefined
+        ? String(rawSel).trim()
         : '';
-      const correctAnswer = question.correctAnswer !== null && question.correctAnswer !== undefined
-        ? String(question.correctAnswer).trim()
+      const correctAnswer = rawCor !== null && rawCor !== undefined
+        ? String(rawCor).trim()
         : '';
 
       // Determine if MCQ or integer, and compare appropriately
@@ -1678,72 +1676,75 @@
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 13. Main function to display results with new marking scheme
-    // ─────────────────────────────────────────────────────────────────────────────
-    async function displayResults() {
-      try {
-        resultsData = await fetchResults();
-        const { testName, subjects, results } = resultsData;
+   // ─────────────────────────────────────────────────────────────────────────────
+// 13. Main function to display results with new marking scheme
+// ─────────────────────────────────────────────────────────────────────────────
+async function displayResults() {
+  try {
+    resultsData = await fetchResults();
+    const { testName, subjects, results } = resultsData;
 
-        // Update page title
-        if (testName) {
-          document.title = `${testName} - PWians Test Results`;
-        }
-
-        // Totals
-        let totalCorrect     = 0;
-        let totalWrong       = 0;
-        let totalUnanswered  = 0;
-        let totalScore       = 0;
-
-        // ─── Normalize and tally ────────────────────────────────────────────────
-        Object.values(results).forEach(subQuestions => {
-          subQuestions.forEach(question => {
-            // Handle null selectedAnswer properly
-            const selected = question.selectedAnswer !== null && question.selectedAnswer !== undefined
-              ? String(question.selectedAnswer).trim()
-              : '';
-            const correct = question.correctAnswer !== null && question.correctAnswer !== undefined
-              ? String(question.correctAnswer).trim()
-              : '';
-
-            const isMCQ     = Array.isArray(question.options) && question.options.length > 0;
-            const answered  = selected !== '';
-            const correctHit = answered && (
-              isMCQ
-                ? selected.toUpperCase() === correct.toUpperCase()
-                : selected === correct
-            );
-
-            if (!answered) {
-              totalUnanswered++;
-            } else if (correctHit) {
-              totalCorrect++;
-              totalScore += 4;
-            } else {
-              totalWrong++;
-              totalScore -= 1;
-            }
-          });
-        });
-        // ─────────────────────────────────────────────────────────────────────────
-
-        // Render stats & chart
-        renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
-        const ctx = document.getElementById('overview-chart').getContext('2d');
-        createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
-
-        // Subjects & first question
-        renderSubjectTabs(subjects);
-        if (subjects.length) selectSubject(subjects[0], 0);
-
-        showResults();
-      } catch (error) {
-        console.error('Error displaying results:', error);
-        showError(error.message || 'Failed to load results. Please try again.');
-      }
+    // Update page title
+    if (testName) {
+      document.title = `${testName} - PWians Test Results`;
     }
+
+    // Totals
+    let totalCorrect     = 0;
+    let totalWrong       = 0;
+    let totalUnanswered  = 0;
+    let totalScore       = 0;
+
+    // ─── Normalize and tally ────────────────────────────────────────────────
+    Object.values(results).forEach(subQuestions => {
+      subQuestions.forEach(question => {
+        // Always coerce to string first:
+        const rawSel = question.selectedAnswer;
+        const rawCor = question.correctAnswer;
+
+        const selected = rawSel != null
+          ? String(rawSel).trim()
+          : '';
+        const correct  = rawCor != null
+          ? String(rawCor).trim()
+          : '';
+
+        const isMCQ     = Array.isArray(question.options) && question.options.length > 0;
+        const answered  = selected !== '';
+        const correctHit = answered && (
+          isMCQ
+            ? selected.toUpperCase() === correct.toUpperCase()
+            : selected === correct
+        );
+
+        if (!answered) {
+          totalUnanswered++;
+        } else if (correctHit) {
+          totalCorrect++;
+          totalScore += 4;
+        } else {
+          totalWrong++;
+          totalScore -= 1;
+        }
+      });
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Render stats & chart
+    renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
+    const ctx = document.getElementById('overview-chart').getContext('2d');
+    createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
+
+    // Subjects & first question
+    renderSubjectTabs(subjects);
+    if (subjects.length) selectSubject(subjects[0], 0);
+
+    showResults();
+  } catch (error) {
+    console.error('Error displaying results:', error);
+    showError(error.message || 'Failed to load results. Please try again.');
+  }
+}
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 14. Keyboard navigation
