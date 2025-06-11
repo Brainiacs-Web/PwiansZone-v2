@@ -91,40 +91,44 @@ router.get('/:id/results', async (req, res) => {
     if (!batchName || !username) {
       return res.status(400).json({ error: 'batchName and username are required' });
     }
-
     if (!mongoose.Types.ObjectId.isValid(testId)) {
       return res.status(400).json({ error: 'Invalid test ID' });
     }
 
-    const test = await Test.findById(testId).lean();
+    // Load test and submission in parallel
+    const [test, submission] = await Promise.all([
+      Test.findById(testId).lean(),
+      Submission.findOne({ test: testId, batchName, username }).lean()
+    ]);
     if (!test) return res.status(404).json({ error: 'Test not found' });
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
 
-    const submission = await Submission.findOne({ test: testId, batchName, username }).lean();
-    if (!submission) {
-      return res.status(404).json({ error: 'Submission not found for this user' });
-    }
-
+    // Build results from submission.responses
     const results = {};
+    for (const [subjectName, respMap] of Object.entries(submission.responses)) {
+      // Find subject document to get questions data
+      const subjectDoc = test.subjectDocs.find(sd => sd.name === subjectName) || {};
+      const questionList = subjectDoc.questions || [];
 
-    for (const subjectDoc of test.subjectDocs) {
-      const subjectName = subjectDoc.name;
-      results[subjectName] = subjectDoc.questions.map((q) => {
-        const selected = submission.responses?.[subjectName]?.[String(q._id)]?.selectedAnswer;
+      // Map each response entry to full question data
+      results[subjectName] = Object.entries(respMap).map(([qId, { selectedAnswer }]) => {
+        const questionObj = questionList.find(q => String(q._id) === qId) || {};
         return {
-          questionId: String(q._id),
-          question: q.question,
-          options: q.options || [],
-          correctAnswer: q.correctAnswer || q.answer || '',
-          selectedAnswer: selected ?? null,
-          solution: q.solution,
+          questionId:     qId,
+          question:       questionObj.question      || '',
+          options:        questionObj.options       || [],
+          correctAnswer:  questionObj.correctAnswer || questionObj.answer || '',
+          selectedAnswer: selectedAnswer ?? null,
+          solution:       questionObj.solution      || ''
         };
       });
     }
 
+    // Send response in shape front-end expects
     res.json({
       testName: test.testName,
-      subjects: test.subjects,
-      results,
+      subjects: Object.keys(results),
+      results
     });
   } catch (err) {
     console.error('GET /api/tests/:id/results error', err);
