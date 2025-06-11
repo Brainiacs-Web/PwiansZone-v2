@@ -57,32 +57,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // ✅ POST submit test responses
-router.post('/:id/submit', async (req, res) => {
-  try {
-    const { batchName, username, responses } = req.body;
-    if (!batchName || !username || !responses) {
-      return res.status(400).json({ error: 'batchName, username, and responses are required' });
-    }
-
-    const test = await Test.findById(req.params.id);
-    if (!test) return res.status(404).json({ error: 'Test not found' });
-
-    const existing = await Submission.findOne({ test: test._id, batchName, username });
-    if (existing) {
-      return res.status(400).json({ error: 'Test already submitted by this user' });
-    }
-
-    const submission = new Submission({ test: test._id, batchName, username, responses });
-    await submission.save();
-
-    res.json({ success: true, submissionId: submission._id });
-  } catch (err) {
-    console.error('Error in POST /api/tests/:id/submit', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
-// ✅ FIXED: GET results for a user
+// GET results for a user
 router.get('/:id/results', async (req, res) => {
   try {
     const { batchName, username } = req.query;
@@ -91,32 +66,39 @@ router.get('/:id/results', async (req, res) => {
     if (!batchName || !username) {
       return res.status(400).json({ error: 'batchName and username are required' });
     }
+
     if (!mongoose.Types.ObjectId.isValid(testId)) {
       return res.status(400).json({ error: 'Invalid test ID' });
     }
 
-    const [test, submission] = await Promise.all([
+    // Load test and submission in parallel
+    const [test, submission, allQuestions] = await Promise.all([
       Test.findById(testId).lean(),
-      Submission.findOne({ test: testId, batchName, username }).lean()
+      Submission.findOne({ test: testId, batchName, username }).lean(),
+      Question.find({ test: testId }).lean()
     ]);
+
     if (!test) return res.status(404).json({ error: 'Test not found' });
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
 
     const results = {};
+
     for (const [subjectName, respMap] of Object.entries(submission.responses || {})) {
-      const subjectDoc = test.subjectDocs.find(sd => sd.name === subjectName) || {};
-      const questionList = subjectDoc.questions || [];
+      const filteredQuestions = allQuestions.filter(q => q.subject === subjectName);
 
       results[subjectName] = Object.entries(respMap).map(([qId, { selectedAnswer }]) => {
-        const questionObj = questionList.find(q => q._id.toString() === qId.toString()) || {};
+        const questionObj = filteredQuestions.find(q => String(q._id) === qId) || {};
+
+        const correctAns = questionObj.questionType === 'MCQ'
+          ? questionObj.correctAnswer
+          : questionObj.answer;
+
         return {
           questionId:     qId,
           question:       questionObj.question || '',
           questionImage:  questionObj.questionImage || '',
           options:        questionObj.options || [],
-          correctAnswer:  questionObj.questionType === 'MCQ'
-                            ? questionObj.correctAnswer
-                            : questionObj.answer || '',
+          correctAnswer:  correctAns || '',
           selectedAnswer: selectedAnswer ?? null,
           solution:       questionObj.solution || 'No solution provided.',
           solutionImage:  questionObj.solutionImage || ''
@@ -129,6 +111,7 @@ router.get('/:id/results', async (req, res) => {
       subjects: Object.keys(results),
       results
     });
+
   } catch (err) {
     console.error('GET /api/tests/:id/results error', err);
     res.status(500).json({ error: 'Internal server error' });
