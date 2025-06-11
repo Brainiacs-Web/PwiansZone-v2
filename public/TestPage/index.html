@@ -1003,6 +1003,19 @@ input:focus,
     localStorage.setItem('darkMode', isDarkMode);
   });
 
+  // ── 3.5 Define login handler ──
+window.validateCredentials = async function() {
+  const u = document.getElementById("username")?.value.trim();
+  if (!u) {
+    return showToast("Please enter your username.", "error");
+  }
+  username = u;
+  document.getElementById("logged-username").textContent = username;
+  document.getElementById("modal-overlay").style.display = "none";
+  document.getElementById("content").style.filter = "none";
+  await loadTestSeriesData();
+};
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 5. Show Batch Code in Header
   // ─────────────────────────────────────────────────────────────────────────────
