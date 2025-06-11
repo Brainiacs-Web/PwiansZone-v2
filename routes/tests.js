@@ -83,6 +83,7 @@ router.post('/:id/submit', async (req, res) => {
 });
 
 // ✅ GET results for a user (fully fixed version)
+// GET results for a user
 router.get('/:id/results', async (req, res) => {
   try {
     const { batchName, username } = req.query;
@@ -95,56 +96,45 @@ router.get('/:id/results', async (req, res) => {
       return res.status(400).json({ error: 'Invalid test ID' });
     }
 
-    const [testDoc, submissionDoc] = await Promise.all([
-      Test.findById(testId),
-      Submission.findOne({ test: testId, batchName, username })
+    // Load test and submission
+    const [test, submission] = await Promise.all([
+      Test.findById(testId).lean(),
+      Submission.findOne({ test: testId, batchName, username }).lean()
     ]);
 
-    if (!testDoc) return res.status(404).json({ error: 'Test not found' });
-    if (!submissionDoc) return res.status(404).json({ error: 'Submission not found' });
+    if (!test) return res.status(404).json({ error: 'Test not found' });
+    if (!submission) return res.status(404).json({ error: 'Submission not found' });
 
+    // Assemble results
     const results = {};
+    for (const [subjectName, respMap] of Object.entries(submission.responses || {})) {
+      const subjectDoc = test.subjectDocs.find(sd => sd.name === subjectName);
+      const questionList = subjectDoc?.questions || [];
 
-    for (const [subjectName, answers] of Object.entries(submissionDoc.responses || {})) {
-      const subject = testDoc.subjectDocs.find(s => s.name === subjectName);
-      if (!subject) continue;
-
-      results[subjectName] = Object.entries(answers).map(([qId, { selectedAnswer }]) => {
-        const questionObj = subject.questions.find(q => q._id.toString() === qId);
-        if (!questionObj) {
-          return {
-            questionId: qId,
-            question: '',
-            questionImage: '',
-            options: [],
-            correctAnswer: '',
-            selectedAnswer: selectedAnswer ?? null,
-            solution: '',
-            solutionImage: ''
-          };
-        }
+      results[subjectName] = Object.entries(respMap).map(([qId, { selectedAnswer }]) => {
+        const questionObj = questionList.find(q => q._id?.toString() === qId) || {};
 
         return {
-          questionId: questionObj._id.toString(),
-          question: questionObj.question,
-          questionImage: questionObj.questionImage || '',
-          options: questionObj.options || [],
-          correctAnswer:
-            questionObj.questionType === 'MCQ'
-              ? questionObj.correctAnswer
-              : questionObj.answer,
-          selectedAnswer: selectedAnswer ?? null,
-          solution: questionObj.solution || '',
-          solutionImage: questionObj.solutionImage || ''
+          questionId:     qId,
+          question:       questionObj.question || '',
+          questionImage:  questionObj.questionImage || '',
+          options:        questionObj.options || [],
+          correctAnswer:  questionObj.questionType === 'MCQ'
+                            ? questionObj.correctAnswer
+                            : questionObj.answer || '',
+          selectedAnswer: selectedAnswer ?? '',
+          solution:       questionObj.solution || '',
+          solutionImage:  questionObj.solutionImage || ''
         };
       });
     }
 
     res.json({
-      testName: testDoc.testName,
+      testName: test.testName,
       subjects: Object.keys(results),
       results
     });
+
   } catch (err) {
     console.error('GET /api/tests/:id/results error', err);
     res.status(500).json({ error: 'Internal server error' });
