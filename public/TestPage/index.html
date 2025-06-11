@@ -1349,7 +1349,6 @@ window.submitTest = async function(auto = false) {
     showLoading(true);
 
     // 🔹 Collect answers from your UI (you should replace this logic as per your structure)
-    const responses = collectUserResponses(); // <-- Replace with your actual response collection logic
 
     const resp = await fetch(`/api/tests/${testID}/submit`, {
       method: "POST",
