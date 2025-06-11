@@ -1727,14 +1727,14 @@
       }
     }
 
-   // ─────────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // 13. Main function to display results with new marking scheme
 // ─────────────────────────────────────────────────────────────────────────────
 async function displayResults() {
   console.log(">>> displayResults() start");
   try {
-    // 1️⃣ Fetch raw payload from your API
-    const resultsData = await fetchResults();
+    // 1. Fetch raw payload from your API and store it in the GLOBAL
+    resultsData = await fetchResults();        // <-- no "const"!
     console.log("Fetched resultsData:", resultsData);
 
     const { testName, subjects, results } = resultsData;
@@ -1742,20 +1742,23 @@ async function displayResults() {
     console.log("Parsed subjects:", subjects);
     console.log("Parsed results keys:", Object.keys(results));
 
-    // 2️⃣ NORMALIZATION (should be no-op if backend is already sending arrays)
+    // 2. NORMALIZATION: convert each subject’s results-map to an array
     subjects.forEach(subject => {
       if (results[subject] && !Array.isArray(results[subject])) {
-        console.log(`Normalizing subject "${subject}" from object→array`);
+        console.log(`Normalizing subject "${subject}"`);
         results[subject] = Object.values(results[subject]);
       }
     });
 
-    // 3️⃣ Update page title
+    // Important: reassign back to the GLOBAL so selectSubject sees it
+    resultsData.results = results;
+
+    // 3. Update page title
     if (testName) {
       document.title = `${testName} - PWians Test Results`;
     }
 
-    // 4️⃣ Tally totals
+    // 4. Tally totals
     let totalCorrect    = 0;
     let totalWrong      = 0;
     let totalUnanswered = 0;
@@ -1763,19 +1766,21 @@ async function displayResults() {
 
     Object.values(results).forEach(subQuestions => {
       subQuestions.forEach(question => {
-        const selRaw = question.selectedAnswer;
-        const corRaw = question.correctAnswer;
-        const selected = selRaw != null ? String(selRaw).trim() : "";
-        const correct  = corRaw != null ? String(corRaw).trim() : "";
+        const rawSel = question.selectedAnswer;
+        const rawCor = question.correctAnswer;
+        const selected = rawSel != null ? String(rawSel).trim() : '';
+        const correct  = rawCor != null ? String(rawCor).trim() : '';
         const isMCQ    = Array.isArray(question.options) && question.options.length > 0;
-        const answered = selected !== "";
-        const gotIt    = answered && ( isMCQ
-                                ? selected.toUpperCase() === correct.toUpperCase()
-                                : selected === correct );
+        const answered = selected !== '';
+        const correctHit = answered && (
+          isMCQ
+            ? selected.toUpperCase() === correct.toUpperCase()
+            : selected === correct
+        );
 
         if (!answered) {
           totalUnanswered++;
-        } else if (gotIt) {
+        } else if (correctHit) {
           totalCorrect++;
           totalScore += 4;
         } else {
@@ -1790,16 +1795,18 @@ async function displayResults() {
                 "unanswered:", totalUnanswered,
                 "score:", totalScore);
 
-    // 5️⃣ Render stats & chart
+    // 5. Render stats & chart
     renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
     const ctx = document.getElementById("overview-chart").getContext("2d");
     createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
 
-    // 6️⃣ Render subjects & first question
+    // 6. Render subject tabs & first question
     renderSubjectTabs(subjects);
-    if (subjects.length) selectSubject(subjects[0], 0);
+    if (subjects.length) {
+      selectSubject(subjects[0], 0);
+    }
 
-    // 7️⃣ Finally show the results area
+    // 7. Show the results UI
     showResults();
     console.log(">>> displayResults() end, UI should now be visible");
   } catch (err) {
@@ -1808,9 +1815,8 @@ async function displayResults() {
   }
 }
 
-// Make sure this is still wired up:
+// Make sure this listener is still in place:
 window.addEventListener("load", displayResults);
-
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 14. Keyboard navigation
