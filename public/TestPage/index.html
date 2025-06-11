@@ -1328,10 +1328,18 @@ function stopTimer() {
 // J) submitTest (manual & auto)
 // ─────────────────────────────────────────────────────────────────────────────
 window.submitTest = async function(auto = false) {
-  // **Remove the exact same key**
-  localStorage.removeItem(`startTime_${testID}`);
+  const urlParams = new URLSearchParams(window.location.search);
+  const testID = urlParams.get('test');
+  const batchName = urlParams.get('batchName') || urlParams.get('batch');
+  const username = localStorage.getItem('username') || "anonymous";
 
-  // …your existing save/review logic…
+  if (!testID || !batchName || !username) {
+    console.error("Missing testID, batchName, or username");
+    return showToast("Submission failed: Missing required info", "error");
+  }
+
+  // Remove timer tracking key
+  localStorage.removeItem(`startTime_${testID}`);
 
   if (!auto && !confirm("Are you sure you want to submit the test?")) {
     return;
@@ -1339,14 +1347,24 @@ window.submitTest = async function(auto = false) {
 
   try {
     showLoading(true);
-    // …build payload & POST…
-    const resp = await fetch(`/api/tests/${testID}/submit`, { /*…*/ });
-    if (!resp.ok) throw new Error(`Submission failed: ${resp.status}`);
-    await resp.json();
 
-    // Only clear everything *after* we’ve removed the startTime
+    // 🔹 Collect answers from your UI (you should replace this logic as per your structure)
+    const responses = collectUserResponses(); // <-- Replace with your actual response collection logic
+
+    const resp = await fetch(`/api/tests/${testID}/submit`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ batchName, username, responses })
+    });
+
+    if (!resp.ok) throw new Error(`Submission failed: ${resp.status}`);
+    const data = await resp.json();
+
     localStorage.clear();
     clearInterval(timerInterval);
+
     showToast(auto ? "Auto-submitted!" : "Submitted successfully!", "success");
 
     setTimeout(() => {
@@ -1360,7 +1378,6 @@ window.submitTest = async function(auto = false) {
     showLoading(false);
   }
 };
-
 
   function showLoading(on){
     const c=document.getElementById("content");
@@ -1390,6 +1407,29 @@ window.submitTest = async function(auto = false) {
     const inp=document.getElementById("username");
     if(inp){ inp.focus(); inp.addEventListener('keypress',e=>{ if(e.key==='Enter') validateCredentials(); }); }
   });
+
+  function collectUserResponses() {
+  const batchSelect = document.getElementById("batch");
+  const testSelect = document.getElementById("test");
+  const subjectSelect = document.getElementById("subject");
+  const questionPDF = document.getElementById("questionPdf").files[0];
+  const solutionPDF = document.getElementById("solutionPdf").files[0];
+
+  if (!batchSelect.value || !testSelect.value || !subjectSelect.value || !questionPDF || !solutionPDF) {
+    showNotification("Error", "Please fill all fields and upload both PDFs.", "danger");
+    return null;
+  }
+
+  const formData = new FormData();
+  formData.append("batchId", batchSelect.value);
+  formData.append("testId", testSelect.value);
+  formData.append("subject", subjectSelect.value);
+  formData.append("questionPdf", questionPDF);
+  formData.append("solutionPdf", solutionPDF);
+
+  return formData;
+}
+
 </script>
 
 
