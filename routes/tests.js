@@ -56,7 +56,7 @@ router.delete('/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// POST submit test responses
+// ✅ POST submit test responses
 router.post('/:id/submit', async (req, res) => {
   try {
     const { batchName, username, responses } = req.body;
@@ -82,7 +82,7 @@ router.post('/:id/submit', async (req, res) => {
   }
 });
 
-// ✅ FIXED: GET results for a user with full question details
+// ✅ GET results for a user (fully fixed version)
 router.get('/:id/results', async (req, res) => {
   try {
     const { batchName, username } = req.query;
@@ -91,55 +91,57 @@ router.get('/:id/results', async (req, res) => {
     if (!batchName || !username) {
       return res.status(400).json({ error: 'batchName and username are required' });
     }
-
     if (!mongoose.Types.ObjectId.isValid(testId)) {
       return res.status(400).json({ error: 'Invalid test ID' });
     }
 
-    const [test, submission] = await Promise.all([
-      Test.findById(testId).lean(),
-      Submission.findOne({ test: testId, batchName, username }).lean()
+    const [testDoc, submissionDoc] = await Promise.all([
+      Test.findById(testId),
+      Submission.findOne({ test: testId, batchName, username })
     ]);
 
-    if (!test) return res.status(404).json({ error: 'Test not found' });
-    if (!submission) return res.status(404).json({ error: 'Submission not found' });
+    if (!testDoc) return res.status(404).json({ error: 'Test not found' });
+    if (!submissionDoc) return res.status(404).json({ error: 'Submission not found' });
 
     const results = {};
 
-    for (const [subjectName, responsesMap] of Object.entries(submission.responses || {})) {
-      const subjectDoc = test.subjectDocs?.find(sd => sd.name === subjectName);
+    for (const [subjectName, answers] of Object.entries(submissionDoc.responses || {})) {
+      const subject = testDoc.subjectDocs.find(s => s.name === subjectName);
+      if (!subject) continue;
 
-      if (!subjectDoc || !Array.isArray(subjectDoc.questions)) {
-        results[subjectName] = [];
-        continue;
-      }
-
-      const questionMap = {};
-      for (const q of subjectDoc.questions) {
-        questionMap[String(q._id)] = q;
-      }
-
-      results[subjectName] = Object.entries(responsesMap).map(([qId, { selectedAnswer }]) => {
-        const q = questionMap[qId] || {};
-
-        const isMCQ = q.questionType === 'MCQ';
-        const correctAnswer = isMCQ ? q.correctAnswer : (q.answer || '');
+      results[subjectName] = Object.entries(answers).map(([qId, { selectedAnswer }]) => {
+        const questionObj = subject.questions.find(q => q._id.toString() === qId);
+        if (!questionObj) {
+          return {
+            questionId: qId,
+            question: '',
+            questionImage: '',
+            options: [],
+            correctAnswer: '',
+            selectedAnswer: selectedAnswer ?? null,
+            solution: '',
+            solutionImage: ''
+          };
+        }
 
         return {
-          questionId: qId,
-          question: q.question || '',
-          questionImage: q.questionImage || '',
-          options: q.options || [],
-          correctAnswer: correctAnswer || '',
+          questionId: questionObj._id.toString(),
+          question: questionObj.question,
+          questionImage: questionObj.questionImage || '',
+          options: questionObj.options || [],
+          correctAnswer:
+            questionObj.questionType === 'MCQ'
+              ? questionObj.correctAnswer
+              : questionObj.answer,
           selectedAnswer: selectedAnswer ?? null,
-          solution: q.solution || '',
-          solutionImage: q.solutionImage || ''
+          solution: questionObj.solution || '',
+          solutionImage: questionObj.solutionImage || ''
         };
       });
     }
 
     res.json({
-      testName: test.testName,
+      testName: testDoc.testName,
       subjects: Object.keys(results),
       results
     });
