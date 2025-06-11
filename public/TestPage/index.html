@@ -1018,37 +1018,46 @@ input:focus,
   // ─────────────────────────────────────────────────────────────────────────────
   // F) Fetch test data, subjects, timer, then load questions
   // ─────────────────────────────────────────────────────────────────────────────
-  async function loadTestSeriesData() {
-    try {
-      showLoading(true);
-      const res = await fetch(`/api/testSeries/${testID}`);
-      if (!res.ok) throw new Error("Fetch failed");
-      testData = await res.json();
+ async function loadTestSeriesData() {
+  try {
+    showLoading(true);
+    const res = await fetch(`/api/testSeries/${testID}`);
+    if (!res.ok) throw new Error("Fetch failed");
+    testData = await res.json();
 
-      // Populate test name + subjects
-      document.getElementById("test-name").textContent = testData.testName;
-      subjectsArr = testData.subjects || [];
+    // Populate test name + subjects
+    document.getElementById("test-name").textContent = testData.testName;
+    subjectsArr = testData.subjects || [];
 
-      // Duration parsing
-      const raw = testData.testDuration ?? testData.duration ?? testData.timeLimit ?? 90;
-      const mins = Number.isInteger(+raw) ? +raw : 90;
-      timeLeft = mins * 60;
+    // ────────────────────────────────────────────────────────────────────────────
+    // Duration parsing + “startTime” logic
+    const raw = testData.testDuration ?? testData.duration ?? testData.timeLimit ?? 90;
+    const mins = Number.isInteger(+raw) ? +raw : 90;
+    const totalTime = mins * 60;
 
-      buildSubjectButtons();
-      currentSubject = subjectsArr[0] || "";
-      await loadQuestions();
-
-      updateTimerDisplay();
-      startTimer();
-    } catch (e) {
-      console.error(e);
-      showToast("Failed to load test. Please refresh.", "error");
-    } finally {
-      showLoading(false);
+    const key = `startTime_${testID}_${batchName}_${username}`;
+    let startTs = localStorage.getItem(key);
+    if (!startTs) {
+      startTs = Date.now();
+      localStorage.setItem(key, startTs);
     }
+    const elapsed = Math.floor((Date.now() - startTs) / 1000);
+    timeLeft = Math.max(totalTime - elapsed, 0);
+    // ────────────────────────────────────────────────────────────────────────────
+
+    buildSubjectButtons();
+    currentSubject = subjectsArr[0] || "";
+    await loadQuestions();
+
+    updateTimerDisplay();
+    startTimer();
+  } catch (e) {
+    console.error(e);
+    showToast("Failed to load test. Please refresh.", "error");
+  } finally {
+    showLoading(false);
   }
-  
-  
+}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // G) Build subject tabs
@@ -1310,42 +1319,57 @@ function stopTimer() {
     }
   });
 
-  window.submitTest = async (auto=false)=>{
-    const q = questions[currentQuestionIndex];
-    const inp = document.getElementById("answer-input");
-    if (inp){ const v=inp.value.trim(); v?saveAnswer(q.questionId,v):removeAnswer(q.questionId); }
-    const cb = document.getElementById("review-checkbox");
-    if (cb) saveReview(q.questionId,cb.checked);
+  window.submitTest = async function(auto = false) {
+  // Clear stored start time so reloads don’t resurrect this session
+  localStorage.removeItem(`startTime_${testID}_${batchName}_${username}`);
 
-    if (!auto && !confirm("Are you sure you want to submit the test?")) return;
+  const q = questions[currentQuestionIndex];
+  const inp = document.getElementById("answer-input");
+  if (inp) {
+    const v = inp.value.trim();
+    v ? saveAnswer(q.questionId, v) : removeAnswer(q.questionId);
+  }
+  const cb = document.getElementById("review-checkbox");
+  if (cb) saveReview(q.questionId, cb.checked);
 
-    try {
-      showLoading(true);
-      const payload = {};
-      for (const sub of subjectsArr) {
-        payload[sub] = {};
-        for (const qq of Object.values(testData.questions[sub]||{})) {
-          const key = `response_${sub}_${qq.questionId}`;
-          payload[sub][qq.questionId] = { questionId: qq.questionId, selectedAnswer: localStorage.getItem(key)||null };
-        }
+  if (!auto && !confirm("Are you sure you want to submit the test?")) return;
+
+  try {
+    showLoading(true);
+    const payload = {};
+    for (const sub of subjectsArr) {
+      payload[sub] = {};
+      for (const qq of Object.values(testData.questions[sub] || {})) {
+        const key = `response_${sub}_${qq.questionId}`;
+        payload[sub][qq.questionId] = {
+          questionId: qq.questionId,
+          selectedAnswer: localStorage.getItem(key) || null
+        };
       }
-      const resp = await fetch(`/api/tests/${testID}/submit`, {
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({ batchName,username,responses:payload })
-      });
-      if (!resp.ok) throw new Error(`Submission failed: ${resp.status}`);
-      await resp.json();
-      localStorage.clear(); clearInterval(timerInterval);
-      showToast(auto?"Auto-submitted!":"Submitted successfully!","success");
-      setTimeout(()=>{
-        location.href = auto?"/Results/":`/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-      },2000);
-    } catch(e){
-      console.error(e);
-      showToast("Failed to submit. Try again.","error");
-      showLoading(false);
     }
-  };
+
+    const resp = await fetch(`/api/tests/${testID}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ batchName, username, responses: payload })
+    });
+    if (!resp.ok) throw new Error(`Submission failed: ${resp.status}`);
+    await resp.json();
+
+    localStorage.clear();
+    clearInterval(timerInterval);
+    showToast(auto ? "Auto-submitted!" : "Submitted successfully!", "success");
+    setTimeout(() => {
+      location.href = auto
+        ? "/Results/"
+        : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+    }, 2000);
+  } catch (e) {
+    console.error(e);
+    showToast("Failed to submit. Try again.", "error");
+    showLoading(false);
+  }
+};
 
   function showLoading(on){
     const c=document.getElementById("content");
