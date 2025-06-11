@@ -105,7 +105,7 @@ router.get('/:id/results', async (req, res) => {
 
     // Build results from submission.responses
     const results = {};
-    for (const [subjectName, respMap] of Object.entries(submission.responses)) {
+    for (const [subjectName, respMap] of Object.entries(submission.responses || {})) {
       // Find subject document to get questions data
       const subjectDoc = test.subjectDocs.find(sd => sd.name === subjectName) || {};
       const questionList = subjectDoc.questions || [];
@@ -116,10 +116,14 @@ router.get('/:id/results', async (req, res) => {
         return {
           questionId:     qId,
           question:       questionObj.question      || '',
+          questionImage:  questionObj.questionImage || '',
           options:        questionObj.options       || [],
-          correctAnswer:  questionObj.correctAnswer || questionObj.answer || '',
+          correctAnswer:  questionObj.questionType === 'MCQ'
+                            ? questionObj.correctAnswer
+                            : questionObj.answer || '',
           selectedAnswer: selectedAnswer ?? null,
-          solution:       questionObj.solution      || ''
+          solution:       questionObj.solution      || '',
+          solutionImage:  questionObj.solutionImage || ''
         };
       });
     }
