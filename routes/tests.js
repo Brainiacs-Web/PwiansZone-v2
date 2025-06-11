@@ -95,46 +95,63 @@ router.get('/:id/results', async (req, res) => {
       return res.status(400).json({ error: 'Invalid test ID' });
     }
 
+    // Load test and submission
     const [test, submission] = await Promise.all([
       Test.findById(testId).lean(),
       Submission.findOne({ test: testId, batchName, username }).lean()
     ]);
+
     if (!test) return res.status(404).json({ error: 'Test not found' });
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
 
     const results = {};
-    for (const [subjectName, respMap] of Object.entries(submission.responses || {})) {
-      const subjectDoc = test.subjectDocs.find(sd => sd.name === subjectName);
-      if (!subjectDoc) continue;
+    const allQuestionIds = [];
 
-      const questionList = subjectDoc.questions || [];
-
-      results[subjectName] = Object.entries(respMap).map(([qId, { selectedAnswer }]) => {
-        const questionObj = questionList.find(q => String(q._id) === qId);
-
-        return {
-          questionId: qId,
-          question: questionObj?.question || '',
-          questionImage: questionObj?.questionImage || '',
-          options: questionObj?.options || [],
-          correctAnswer:
-            questionObj?.questionType === 'MCQ'
-              ? questionObj?.correctAnswer || ''
-              : questionObj?.answer || '',
-          selectedAnswer: selectedAnswer ?? null,
-          solution: questionObj?.solution || '',
-          solutionImage: questionObj?.solutionImage || ''
-        };
-      });
+    // Collect all questionIds from submission
+    for (const subjectName in submission.responses) {
+      const subjectResponses = submission.responses[subjectName];
+      for (const questionId in subjectResponses) {
+        allQuestionIds.push(questionId);
+      }
     }
 
-    res.json({
+    // Fetch all Question docs in one go
+    const questionDocs = await Question.find({ _id: { $in: allQuestionIds } }).lean();
+    const questionMap = {};
+    questionDocs.forEach(q => questionMap[q._id.toString()] = q);
+
+    // Build structured result
+    for (const subjectName in submission.responses) {
+      const subjectResults = [];
+      const subjectResponses = submission.responses[subjectName];
+
+      for (const questionId in subjectResponses) {
+        const qDoc = questionMap[questionId] || {};
+        const selectedAnswer = subjectResponses[questionId]?.selectedAnswer ?? null;
+
+        subjectResults.push({
+          questionId,
+          question: qDoc.question || '',
+          questionImage: qDoc.questionImage || '',
+          options: qDoc.options || [],
+          correctAnswer: qDoc.questionType === 'MCQ' ? qDoc.correctAnswer : qDoc.answer,
+          selectedAnswer,
+          solution: qDoc.solution || 'No solution provided.',
+          solutionImage: qDoc.solutionImage || ''
+        });
+      }
+
+      results[subjectName] = subjectResults;
+    }
+
+    return res.json({
       testName: test.testName,
       subjects: Object.keys(results),
       results
     });
+
   } catch (err) {
-    console.error('GET /api/tests/:id/results error', err);
+    console.error('GET /api/tests/:id/results error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
