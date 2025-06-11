@@ -1,4 +1,3 @@
-// routes/tests.js
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
@@ -57,7 +56,7 @@ router.delete('/:id', async (req, res) => {
   res.json({ success: true });
 });
 
-// POST submit test responses
+// ✅ POST submit test responses
 router.post('/:id/submit', async (req, res) => {
   try {
     const { batchName, username, responses } = req.body;
@@ -68,10 +67,15 @@ router.post('/:id/submit', async (req, res) => {
     const test = await Test.findById(req.params.id);
     if (!test) return res.status(404).json({ error: 'Test not found' });
 
-    const sub = new Submission({ test: test._id, batchName, username, responses });
-    await sub.save();
+    const existing = await Submission.findOne({ test: test._id, batchName, username });
+    if (existing) {
+      return res.status(400).json({ error: 'Test already submitted by this user' });
+    }
 
-    res.json({ success: true, submissionId: sub._id });
+    const submission = new Submission({ test: test._id, batchName, username, responses });
+    await submission.save();
+
+    res.json({ success: true, submissionId: submission._id });
   } catch (err) {
     console.error('Error in POST /api/tests/:id/submit', err);
     res.status(500).json({ error: 'Internal server error' });
@@ -100,20 +104,18 @@ router.get('/:id/results', async (req, res) => {
       return res.status(404).json({ error: 'Submission not found for this user' });
     }
 
-    // Extract answers from embedded subjectDocs
     const results = {};
 
     for (const subjectDoc of test.subjectDocs) {
       const subjectName = subjectDoc.name;
       results[subjectName] = subjectDoc.questions.map((q) => {
-        const raw = submission.responses?.[subjectName]?.[String(q._id)]?.selectedAnswer;
-
+        const selected = submission.responses?.[subjectName]?.[String(q._id)]?.selectedAnswer;
         return {
           questionId: String(q._id),
           question: q.question,
           options: q.options || [],
           correctAnswer: q.correctAnswer || q.answer || '',
-          selectedAnswer: raw ?? null,
+          selectedAnswer: selected ?? null,
           solution: q.solution,
         };
       });
