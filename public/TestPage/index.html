@@ -918,6 +918,7 @@ input:focus,
     </div>
   </div>
 <!-- 1) MathJax config (before loading mathjax.js!) -->
+<!-- 1) MathJax configuration -->
 <script>
   window.MathJax = {
     tex: {
@@ -945,480 +946,465 @@ input:focus,
 
 <!-- 4) All your application logic in one place -->
 <script>
-  
   // ─────────────────────────────────────────────────────────────────────────────
-  // A) Wrap “bare” LaTeX in delimiters for MathJax
+  // A) Helpers: sanitize, wrapLatex, formatText, showToast, showLoading
   // ─────────────────────────────────────────────────────────────────────────────
-  function renderLatex(str) {
-    if (!str || typeof str !== "string") return "—";
-    const already =
-         /\\\(.+?\\\)/.test(str)
-      || /\\\[.+?\\\]/.test(str)
-      || /\$\$[\s\S]+?\$\$/.test(str)
-      || /\\begin\{.*?\}[\s\S]*?\\end\{.*?\}/.test(str);
-    if (already) return str;
-    const looksLike = /\\[a-zA-Z]+|[_^{}]|\\begin|\\end/.test(str);
-    return looksLike ? `\\(${str}\\)` : str;
+  const sanitize = str => {
+    const tmp = document.createElement('div');
+    tmp.textContent = str;
+    return tmp.innerHTML;
+  };
+
+  const wrapLatex = str => {
+    if (!str) return '—';
+    if (/\$\$[\s\S]+?\$\$/.test(str) || /\\\(.+?\\\)/.test(str) || /\\begin\{[\s\S]*?}/.test(str)) {
+      return str;
+    }
+    return /\\[a-zA-Z]+|[_^{}]/.test(str)
+      ? `\\(${str}\\)`
+      : str;
+  };
+
+  const formatText = txt => {
+    if (!txt) return '';
+    let s = wrapLatex(txt);
+    return s.replace(/(https?:\/\/\S+)/gi, url => {
+      return /\.(png|jpe?g|gif|svg)$/i.test(url)
+        ? `<img src="${url}" class="question-image" loading="lazy">`
+        : `<a href="${url}" target="_blank" rel="noopener">${sanitize(url)}</a>`;
+    });
+  };
+
+  function showToast(message, type = 'info') {
+    const colors = {
+      success: 'var(--success-color)',
+      error:   'var(--error-color)',
+      warning: 'var(--warning-color)',
+      info:    'var(--primary)'
+    };
+    const toast = document.createElement('div');
+    toast.textContent = message;
+    toast.style.cssText = `
+      position:fixed;top:20px;right:20px;
+      background:${colors[type]};color:#fff;
+      padding:10px 16px;border-radius:4px;
+      z-index:10000;transform:translateX(100%);
+      transition:transform .3s;
+    `;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => toast.style.transform = 'translateX(0)');
+    setTimeout(() => {
+      toast.style.transform = 'translateX(100%)';
+      toast.addEventListener('transitionend', () => toast.remove());
+    }, 3000);
   }
 
-  // Ensure any <code class="language-latex"> is highlighted
-  document.addEventListener('DOMContentLoaded', () => {
-    if (window.Prism) Prism.highlightAll();
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // B) Read URL params & initialize state
-  // ─────────────────────────────────────────────────────────────────────────────
-  const params            = new URLSearchParams(window.location.search);
-  const testID            = params.get("test")      || "";
-  let   batchName         = params.get("batchName") || "";
-  let   username          = "";
-
-  let   testData          = {};
-  let   subjectsArr       = [];
-  let   questions         = [];
-  let   currentSubject    = "";
-  let   currentQuestionIndex = 0;
-  let   timeLeft          = 0, timerInterval    = null;
-  let   tabSwitchCount    = 0, maxTabSwitches  = 5;
-  let   isDarkMode        = localStorage.getItem('darkMode') === 'true';
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // C) Dark mode toggle
-  // ─────────────────────────────────────────────────────────────────────────────
-  if (isDarkMode) {
-    document.body.classList.add('dark-mode');
-    document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+  function showLoading(on) {
+    document.getElementById('content').classList.toggle('loading', on);
   }
-  document.getElementById('theme-toggle').addEventListener('click', () => {
-    isDarkMode = !isDarkMode;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // B) URL Params & State
+  // ─────────────────────────────────────────────────────────────────────────────
+  const params        = new URLSearchParams(location.search);
+  const testId        = params.get('testId')     || '';
+  const batchName     = params.get('batchName')  || '';
+  let   username      = '';
+  let   testData      = {};
+  let   subjects      = [];
+  let   questions     = [];
+  let   currentSub    = '';
+  let   currentIndex  = 0;
+  let   timeLeft      = 0;
+  let   timerInt      = null;
+  let   tabSwitches   = 0;
+  const maxTabSwitches = 5;
+  let   isDarkMode    = localStorage.getItem('darkMode') === 'true';
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // C) Dark Mode Toggle (persisted)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const themeBtn = document.getElementById('theme-toggle');
+  const applyDark = () => {
     document.body.classList.toggle('dark-mode', isDarkMode);
-    document.getElementById('theme-toggle').innerHTML =
-      isDarkMode ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
+    themeBtn.innerHTML = isDarkMode
+      ? '<i class="fas fa-sun"></i>'
+      : '<i class="fas fa-moon"></i>';
+  };
+  themeBtn.addEventListener('click', () => {
+    isDarkMode = !isDarkMode;
     localStorage.setItem('darkMode', isDarkMode);
+    applyDark();
   });
+  applyDark();
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // D) Login handler (called by your Login button: <button onclick="validateCredentials()">)
+  // D) Login Handler
   // ─────────────────────────────────────────────────────────────────────────────
-  window.validateCredentials = async function() {
-    const u = document.getElementById("username")?.value.trim();
-    if (!u) return showToast("Please enter your username.", "error");
+  window.validateCredentials = async () => {
+    const u = document.getElementById('username').value.trim();
+    if (!u) return showToast('Enter username', 'error');
     username = u;
-    document.getElementById("logged-username").textContent = u;
-    document.getElementById("modal-overlay").style.display = "none";
-    document.getElementById("content").style.filter = "none";
-    await loadTestSeriesData();
+    document.getElementById('logged-username').textContent = sanitize(u);
+    document.getElementById('modal-overlay').style.display = 'none';
+    document.getElementById('content').style.filter = 'none';
+    await loadTestData();
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // E) Show batch code
+  // E) Display Batch Code
   // ─────────────────────────────────────────────────────────────────────────────
-  document.getElementById("logged-batch").textContent = batchName;
+  document.getElementById('logged-batch').textContent = sanitize(batchName);
 
   // ─────────────────────────────────────────────────────────────────────────────
-// F) Fetch test data, subjects, timer, then load questions
-// ─────────────────────────────────────────────────────────────────────────────
-async function loadTestSeriesData() {
-  try {
-    showLoading(true);
-    const res = await fetch(`/api/testSeries/${testID}`);  // ✅ Ensure this route is correct
-    if (!res.ok) throw new Error("Fetch failed");
-    testData = await res.json();
+  // F) Fetch Test Data & Initialize Timer
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function loadTestData() {
+    if (!testId) return showToast('Missing testId in URL', 'error');
+    try {
+      showLoading(true);
+      const res = await fetch(`/api/testSeries/${testId}`);
+      if (!res.ok) throw new Error('Failed to fetch test data');
+      testData = await res.json();
 
-    // ✅ Show test name and subject buttons
-    document.getElementById("test-name").textContent = testData.testName;
-    subjectsArr = testData.subjects || [];
+      document.getElementById('test-name').textContent = sanitize(testData.testName);
+      subjects = testData.subjects || [];
+      currentSub = subjects[0] || '';
 
-    // ✅ Use consistent key
-    const key = `startTime_${testID}`;
+      // Timer setup
+      const key = `start_${testId}`;
+      const durationMin = Number(testData.testDuration) || 90;
+      const totalSec = durationMin * 60;
+      let startTS = localStorage.getItem(key);
+      if (!startTS) {
+        startTS = Date.now();
+        localStorage.setItem(key, startTS);
+      }
+      const elapsed = Math.floor((Date.now() - startTS) / 1000);
+      timeLeft = Math.max(totalSec - elapsed, 0);
 
-    // ✅ Timer duration logic
-    const raw = testData.testDuration ?? 90;
-    const mins = Number.isInteger(+raw) ? +raw : 90;
-    const totalSec = mins * 60;
-
-    let startTs = localStorage.getItem(key);
-    if (!startTs) {
-      startTs = Date.now().toString();
-      localStorage.setItem(key, startTs);
-      console.log("Timer STARTED at:", startTs);
-    } else {
-      console.log("Timer already started at:", startTs);
+      buildSubjectTabs();
+      await loadQuestions();
+      updateTimer();
+      startTimer();
+    } catch (err) {
+      console.error(err);
+      showToast(err.message, 'error');
+    } finally {
+      showLoading(false);
     }
-
-    const elapsed = Math.floor((Date.now() - parseInt(startTs, 10)) / 1000);
-    timeLeft = Math.max(totalSec - elapsed, 0);
-    console.log(`Total=${totalSec}s, Elapsed=${elapsed}s, Remaining=${timeLeft}s`);
-
-    buildSubjectButtons();
-    currentSubject = subjectsArr[0] || "";
-    await loadQuestions();
-
-    updateTimerDisplay();
-    startTimer();
-  } catch (e) {
-    console.error(e);
-    showToast("Failed to load test. Please refresh.", "error");
-  } finally {
-    showLoading(false);
   }
-}
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // G) Build subject tabs
+  // G) Subject Tabs
   // ─────────────────────────────────────────────────────────────────────────────
-  function buildSubjectButtons() {
-    const c = document.getElementById("subject-buttons");
-    c.innerHTML = "";
-    subjectsArr.forEach(sub => {
-      const btn = document.createElement("button");
-      btn.className = "nav-tab";
+  function buildSubjectTabs() {
+    const container = document.getElementById('subject-buttons');
+    container.innerHTML = '';
+    subjects.forEach(sub => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-tab';
       btn.textContent = sub;
       btn.onclick = () => {
-        currentSubject = sub;
-        updateSubjectButtons();
+        currentSub = sub;
+        highlightTabs();
         loadQuestions();
       };
-      c.appendChild(btn);
+      container.appendChild(btn);
     });
-    updateSubjectButtons();
+    highlightTabs();
   }
-  function updateSubjectButtons() {
-    document.querySelectorAll("#subject-buttons .nav-tab")
-      .forEach(b => b.classList.toggle("active", b.textContent === currentSubject));
+  function highlightTabs() {
+    document.querySelectorAll('#subject-buttons .nav-tab')
+      .forEach(b => b.classList.toggle('active', b.textContent === currentSub));
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // H) Load & render questions
+  // H) Load & Display Questions
   // ─────────────────────────────────────────────────────────────────────────────
   async function loadQuestions() {
     showLoading(true);
-    const qMap = testData.questions[currentSubject] || {};
-    questions = Object.values(qMap).sort((a,b) => {
-      const ai = Array.isArray(a.options)&&a.options.length;
-      const bi = Array.isArray(b.options)&&b.options.length;
-      return (ai?0:1)-(bi?0:1);
-    });
-    currentQuestionIndex = 0;
-    if (questions.length) markAsVisited(questions[0].questionId);
+    const qMap = (testData.questions?.[currentSub] || {});
+    questions = Object.values(qMap);
+    currentIndex = 0;
+    markVisited(questions[0]?.questionId);
     displayQuestion();
     updateNavInfo();
-    updateProgress();
+    updateProgressGrid();
     showLoading(false);
   }
 
   function displayQuestion() {
-    const q = questions[currentQuestionIndex];
-    const c = document.getElementById("question-card");
+    const q = questions[currentIndex];
+    const card = document.getElementById('question-card');
     if (!q) {
-      c.innerHTML = "<p>No questions in this section.</p>";
+      card.innerHTML = '<p>No questions available.</p>';
       return;
     }
-
-    const isImageURL = str => /^https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
-    const saved       = getSavedAnswer(q.questionId);
-    const reviewed    = getSavedReview(q.questionId);
+    const saved = getAnswer(q.questionId);
+    const marked = getReview(q.questionId);
 
     let html = `
       <div class="question-header">
-        <div class="question-number">Question ${currentQuestionIndex+1}</div>
+        <div class="question-number">Q${currentIndex+1}</div>
         <button class="menu-btn" onclick="toggleProgress()"><i class="fas fa-bars"></i></button>
       </div>
-      <div class="question-content">
-        <div class="question-text">
-          ${isImageURL(q.question)
-            ? `<img src="${q.question}" class="question-image"/>`
-            : renderLatex(q.question)}
-        </div>
-        <div class="review-section">
-          <input type="checkbox" id="review-checkbox" ${reviewed?"checked":""}/>
-          <label for="review-checkbox"><i class="fas fa-bookmark"></i> Mark for Review</label>
-        </div>`;
+      <div class="question-text">
+        ${/^https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(q.question)
+          ? `<img src="${q.question}" class="question-image">`
+          : wrapLatex(q.question)}
+      </div>
+      <div class="review">
+        <input type="checkbox" id="review-chk" ${marked?'checked':''}>
+        <label for="review-chk"><i class="fas fa-bookmark"></i> Mark for Review</label>
+      </div>`;
 
     if (Array.isArray(q.options) && q.options.length) {
-      html += `<div class="options-container">`;
+      html += '<div class="options-container">';
       q.options.forEach((opt,i) => {
-        const L = String.fromCharCode(65+i);
-        const sel = saved===L ? 'selected' : '';
+        const L = String.fromCharCode(65 + i);
         html += `
-          <div class="option-item ${sel}" onclick="selectOption('${q.questionId}','${L}',this)">
-            <div class="option-content">
-              <input type="radio" name="opt_${q.questionId}" value="${L}" ${sel?"checked":""}/>
-              <div class="option-text">
-                ${isImageURL(opt)?`<img src="${opt}"/>`:`${L}. ${renderLatex(opt)}`}
-              </div>
+          <div class="option-item ${saved===L?'selected':''}" onclick="selectOpt('${q.questionId}','${L}',this)">
+            <input type="radio" name="opt_${q.questionId}" value="${L}" ${saved===L?'checked':''}>
+            <div class="option-text">
+              ${/^https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(opt)
+                ? `<img src="${opt}" class="question-image">`
+                : `${L}. ${wrapLatex(opt)}`}
             </div>
           </div>`;
       });
-      html += `</div>`;
+      html += '</div>';
     } else {
       html += `
-        <div class="input-section">
-          <label><i class="fas fa-edit"></i> Your Answer:</label>
-          <input type="number" id="answer-input" value="${saved}" placeholder="Enter answer"/>
+        <div class="input-answer">
+          <label><i class="fas fa-edit"></i>Your Answer:</label>
+          <input type="number" id="num-input" value="${saved}" placeholder="Enter answer">
         </div>`;
     }
 
     html += `
-        <div class="nav-buttons">
-          <button class="nav-btn secondary" onclick="goToPrevious()" ${currentQuestionIndex===0?'disabled':''}>
-            <i class="fas fa-arrow-left"></i> Previous
-          </button>
-          <button class="nav-btn primary" onclick="saveAndNext()">
-            ${currentQuestionIndex===questions.length-1?'Save & Finish':'Save & Next'}
-            <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
+      <div class="nav-buttons">
+        <button onclick="prevQ()" ${currentIndex===0?'disabled':''}><i class="fas fa-arrow-left"></i> Prev</button>
+        <button onclick="saveAndNext()">
+          ${currentIndex === questions.length - 1 ? 'Finish' : 'Next'} <i class="fas fa-arrow-right"></i>
+        </button>
       </div>`;
 
-    c.innerHTML = html;
-    if (window.MathJax) MathJax.typesetPromise([c]).catch(console.error);
+    card.innerHTML = html;
+    if (window.MathJax) MathJax.typesetPromise([card]);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // I) Handlers: selectOption, saveAndNext, goToPrevious, progress, storage…
+  // I) Answer & Navigation Handlers
   // ─────────────────────────────────────────────────────────────────────────────
-  function selectOption(q,val,el){
-    document.querySelectorAll('.option-item').forEach(x=>x.classList.remove('selected'));
+  window.selectOpt = (qid, val, el) => {
+    document.querySelectorAll('.option-item').forEach(x => x.classList.remove('selected'));
     el.classList.add('selected');
     el.querySelector('input').checked = true;
-    saveAnswer(q,val);
-  }
-  function handleOptionChange(e,q){ saveAnswer(q,e.target.value); }
+    saveAnswer(qid, val);
+  };
 
   window.saveAndNext = () => {
-    const q = questions[currentQuestionIndex];
-    const inp = document.getElementById("answer-input");
-    if (inp) { const v=inp.value.trim(); v?saveAnswer(q.questionId,v):removeAnswer(q.questionId); }
-    const cb = document.getElementById("review-checkbox");
-    if (cb) saveReview(q.questionId,cb.checked);
+    const q = questions[currentIndex];
+    const numInp = document.getElementById('num-input');
+    if (numInp) {
+      const v = numInp.value.trim();
+      v ? saveAnswer(q.questionId, v) : removeAnswer(q.questionId);
+    }
+    document.getElementById('review-chk')?.checked
+      ? saveReview(q.questionId, true)
+      : removeReview(q.questionId);
 
-    if (currentQuestionIndex<questions.length-1) {
-      currentQuestionIndex++;
-      markAsVisited(questions[currentQuestionIndex].questionId);
+    if (currentIndex < questions.length - 1) {
+      currentIndex++;
     } else {
-      const idx = subjectsArr.indexOf(currentSubject);
-      if (idx<subjectsArr.length-1) {
-        currentSubject = subjectsArr[idx+1];
-        updateSubjectButtons();
-        loadQuestions(); return;
-      } else {
-        showToast("All questions complete!","success");
+      // Move to next subject or finish
+      const idx = subjects.indexOf(currentSub);
+      if (idx < subjects.length - 1) {
+        currentSub = subjects[idx+1];
+        highlightTabs();
+        loadQuestions();
         return;
+      } else {
+        return submitTest();
       }
     }
-    displayQuestion(); updateNavInfo(); updateProgress();
+    markVisited(questions[currentIndex].questionId);
+    displayQuestion();
+    updateNavInfo();
+    updateProgressGrid();
   };
 
-  window.goToPrevious = () => {
-    if (currentQuestionIndex>0) {
-      currentQuestionIndex--;
-      displayQuestion(); updateNavInfo(); updateProgress();
+  window.prevQ = () => {
+    if (currentIndex > 0) {
+      currentIndex--;
+      displayQuestion();
+      updateNavInfo();
+      updateProgressGrid();
     }
   };
 
-  function updateNavInfo(){
-    document.getElementById("current-subject").textContent = currentSubject;
-    document.getElementById("current-question-index").textContent = currentQuestionIndex+1;
-    document.getElementById("total-questions").textContent = questions.length;
+  function updateNavInfo() {
+    document.getElementById('current-subject').textContent = sanitize(currentSub);
+    document.getElementById('current-question').textContent = currentIndex + 1;
+    document.getElementById('total-questions').textContent = questions.length;
   }
 
-  function updateProgress(){
-    const c = document.getElementById("question-progress"); c.innerHTML = "";
-    questions.forEach((q,i)=>{
-      const itm = document.createElement("div");
-      itm.className = "progress-item";
-      itm.textContent = i+1;
-      const has = !!getSavedAnswer(q.questionId);
-      const rev = getSavedReview(q.questionId);
-      const vis = getSavedVisited(q.questionId);
-      if (has&&rev) itm.classList.add("status-answered-review");
-      else if (has) itm.classList.add("status-answered");
-      else if (rev) itm.classList.add("status-review");
-      else if (vis) itm.classList.add("status-visited");
-      itm.onclick = ()=>{
-        currentQuestionIndex = i;
-        markAsVisited(q.questionId);
-        displayQuestion(); updateNavInfo(); updateProgress(); toggleProgress();
+  function updateProgressGrid() {
+    const grid = document.getElementById('question-progress');
+    grid.innerHTML = '';
+    questions.forEach((q,i) => {
+      const cell = document.createElement('div');
+      cell.textContent = i+1;
+      const ans = getAnswer(q.questionId), rev = getReview(q.questionId), vis = getVisited(q.questionId);
+      if (ans && rev) cell.className = 'status-answered-review';
+      else if (ans)    cell.className = 'status-answered';
+      else if (rev)    cell.className = 'status-review';
+      else if (vis)    cell.className = 'status-visited';
+      cell.onclick = () => {
+        currentIndex = i;
+        markVisited(q.questionId);
+        toggleProgress(false);
+        displayQuestion();
+        updateNavInfo();
+        updateProgressGrid();
       };
-      c.appendChild(itm);
+      grid.appendChild(cell);
     });
   }
 
-  window.toggleProgress = () => {
-    const m = document.getElementById("progress-modal");
-    m.style.display = (m.style.display==="block"?"none":"block");
-    if (m.style.display==="block") updateProgress();
+  window.toggleProgress = (autoToggle = true) => {
+    const m = document.getElementById('progress-modal');
+    if (autoToggle) m.style.display = m.style.display === 'block' ? 'none' : 'block';
+    updateProgressGrid();
   };
 
-  function saveAnswer(q,a){
-    localStorage.setItem(`response_${currentSubject}_${q}`,a);
+  function saveAnswer(qid, val) {
+    localStorage.setItem(`resp_${currentSub}_${qid}`, val);
   }
-  function getSavedAnswer(q){
-    return localStorage.getItem(`response_${currentSubject}_${q}`) || "";
+  function getAnswer(qid) {
+    return localStorage.getItem(`resp_${currentSub}_${qid}`) || '';
   }
-  function removeAnswer(q){
-    localStorage.removeItem(`response_${currentSubject}_${q}`);
-  }
-
-  function saveReview(q,f){
-    f?
-      localStorage.setItem(`review_${currentSubject}_${q}`,"true") :
-      localStorage.removeItem(`review_${currentSubject}_${q}`);
-  }
-  function getSavedReview(q){
-    return localStorage.getItem(`review_${currentSubject}_${q}`)==="true";
+  function removeAnswer(qid) {
+    localStorage.removeItem(`resp_${currentSub}_${qid}`);
   }
 
-  function markAsVisited(q){
-    localStorage.setItem(`visited_${currentSubject}_${q}`,"true");
+  function saveReview(qid) {
+    localStorage.setItem(`rev_${currentSub}_${qid}`, '1');
   }
-  function getSavedVisited(q){
-    return localStorage.getItem(`visited_${currentSubject}_${q}`)==="true";
+  function getReview(qid) {
+    return localStorage.getItem(`rev_${currentSub}_${qid}`) === '1';
+  }
+  function removeReview(qid) {
+    localStorage.removeItem(`rev_${currentSub}_${qid}`);
   }
 
- // J) Timer + auto-submit
-// ─────────────────────────────────────────────────────────────────────────────
-
-function updateTimerDisplay() {
-  const h = Math.floor(timeLeft / 3600),
-        m = Math.floor((timeLeft % 3600) / 60),
-        s = timeLeft % 60;
-  const txt = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  const el = document.getElementById("time-left");
-  const tm = document.getElementById("timer");
-
-  if (el) el.textContent = txt;
-  if (tm) {
-    if (timeLeft <= 300) {
-      tm.style.cssText = "background:rgba(239,68,68,0.1);color:var(--error-color);border-color:var(--error-color)";
-    } else if (timeLeft <= 600) {
-      tm.style.cssText = "background:rgba(245,158,11,0.1);color:var(--warning-color);border-color:var(--warning-color)";
-    }
+  function markVisited(qid) {
+    localStorage.setItem(`vis_${currentSub}_${qid}`, '1');
   }
-}
-
-function startTimer() {
-  stopTimer(); // Ensure previous interval is cleared
-  timerInterval = setInterval(() => {
-    timeLeft--;
-    updateTimerDisplay();
-    if (timeLeft <= 0) {
-      stopTimer();
-      submitTest(true); // Auto-submit
-    }
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timerInterval !== null) {
-    clearInterval(timerInterval);
-    timerInterval = null;
+  function getVisited(qid) {
+    return localStorage.getItem(`vis_${currentSub}_${qid}`) === '1';
   }
-}
-  document.addEventListener("visibilitychange",()=>{
-    if (document.hidden){
-      tabSwitchCount++;
-      if (tabSwitchCount>=maxTabSwitches) submitTest(true);
-      else showToast(`Warning: ${maxTabSwitches-tabSwitchCount} tab switches remaining before auto‐submit.`,"warning");
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // J) Timer & Auto-Submit
+  // ─────────────────────────────────────────────────────────────────────────────
+  function updateTimer() {
+    const hh = Math.floor(timeLeft/3600),
+          mm = Math.floor((timeLeft%3600)/60),
+          ss = timeLeft%60;
+    const text = `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    document.getElementById('time-left').textContent = text;
+    const tm = document.getElementById('timer');
+    if (timeLeft <= 300) tm.classList.add('warning');
+    else if (timeLeft <= 600) tm.classList.add('caution');
+  }
+
+  function startTimer() {
+    clearInterval(timerInt);
+    timerInt = setInterval(() => {
+      timeLeft--;
+      updateTimer();
+      if (timeLeft <= 0) {
+        clearInterval(timerInt);
+        submitTest(true);
+      }
+    }, 1000);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      tabSwitches++;
+      if (tabSwitches >= maxTabSwitches) submitTest(true);
+      else showToast(`${maxTabSwitches - tabSwitches} tab switches left`, 'warning');
     }
   });
 
-window.submitTest = async (auto = false) => {
-  if (!auto && !confirm("Are you sure you want to submit the test?")) {
-    return;
-  }
-  try {
-    showLoading(true);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // K) Submit Test
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function submitTest(auto = false) {
+    if (!auto && !confirm('Submit test now?')) return;
+    try {
+      showLoading(true);
+      const payload = subjects.reduce((acc, sub) => {
+        const map = {};
+        const qMap = testData.questions[sub] || {};
+        Object.values(qMap).forEach(q => {
+          const ans = getAnswer(q.questionId) || null;
+          map[q.questionId] = { questionId: q.questionId, selectedAnswer: ans };
+        });
+        acc[sub] = map;
+        return acc;
+      }, {});
 
-    const payload = {};
-    for (const subject of subjectsArr) {
-      payload[subject] = {};
-      const questionMap = testData.questions[subject] || {};
-      Object.values(questionMap).forEach(question => {
-        const key = `response_${subject}_${question.questionId}`;
-        const savedAnswer = localStorage.getItem(key);
-        payload[subject][question.questionId] = {
-          questionId: question.questionId,
-          selectedAnswer: savedAnswer || null
-        };
+      const res = await fetch(`/api/tests/${testId}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ batchName, username, responses: payload })
       });
+      if (!res.ok) throw new Error('Submission failed');
+      localStorage.clear();
+      clearInterval(timerInt);
+      showToast(auto ? 'Auto-submitted' : 'Submitted', 'success');
+      setTimeout(() => {
+        window.location.href = `/results.html?testId=${testId}&batchName=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+      }, 1500);
+    } catch (err) {
+      console.error(err);
+      showToast(err.message, 'error');
+      showLoading(false);
     }
-
-    console.log('Submitting payload:', payload);
-
-    const response = await fetch(`/api/tests/${testID}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        batchName,
-        username,
-        responses: payload
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Submission failed: ${response.status}`);
-    }
-
-    const result = await response.json();
-    console.log('Submission result:', result);
-
-    // ✅ Success handling
-    localStorage.clear();
-    clearInterval(timerInterval);
-    showToast(
-      auto ? "Test auto-submitted successfully!" : "Test submitted successfully!",
-      "success"
-    );
-
-    setTimeout(() => {
-  window.location.href = auto
-    ? "/Results/"
-    :`/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-}, 2000);
-
-  } catch (error) {
-    console.error("Submission error:", error);
-    showToast("Failed to submit test. Please try again.", "error");
-    showLoading(false);
-  }
-};
-
-
-
-  function showLoading(on){
-    const c=document.getElementById("content");
-    on?c.classList.add("loading"):c.classList.remove("loading");
-  }
-  function showToast(msg,type="info"){
-    const t=document.createElement("div");
-    t.style.cssText=`position:fixed;top:20px;right:20px;background:${
-      type==="error"?"var(--error-color)":type==="warning"?"var(--warning-color)":"var(--success-color)"
-    };color:white;padding:12px 20px;border-radius:4px;z-index:10000;transform:translateX(100%);transition:transform .3s`;
-    t.textContent=msg;document.body.appendChild(t);
-    setTimeout(()=>t.style.transform="translateX(0)",100);
-    setTimeout(()=>{t.style.transform="translateX(100%)";setTimeout(()=>t.remove(),300);},3000);
   }
 
-  document.addEventListener('keydown',e=>{
-    if(e.key==='ArrowLeft'&&currentQuestionIndex>0){ e.preventDefault(); goToPrevious(); }
-    else if(e.key==='ArrowRight'){ e.preventDefault(); saveAndNext(); }
-    else if(e.key==='Escape'){ const m=document.getElementById("progress-modal"); if(m.style.display==="block") toggleProgress(); }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // L) Keyboard & Touch Navigation
+  // ─────────────────────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') prevQ();
+    else if (e.key === 'ArrowRight') saveAndNext();
+    else if (e.key === 'Escape') toggleProgress();
+  });
+  let startX = 0;
+  document.addEventListener('touchstart', e => startX = e.changedTouches[0].screenX);
+  document.addEventListener('touchend', e => {
+    const diff = startX - e.changedTouches[0].screenX;
+    if (diff > 50) saveAndNext();
+    else if (diff < -50) prevQ();
   });
 
-  let touchStartX=0,touchEndX=0;
-  document.addEventListener('touchstart',e=>touchStartX=e.changedTouches[0].screenX);
-  document.addEventListener('touchend',e=>{ touchEndX=e.changedTouches[0].screenX; const d=touchStartX-touchEndX; if(Math.abs(d)>50) d>0?saveAndNext():goToPrevious(); });
-  
-  document.addEventListener('DOMContentLoaded',()=>{
-    const inp=document.getElementById("username");
-    if(inp){ inp.focus(); inp.addEventListener('keypress',e=>{ if(e.key==='Enter') validateCredentials(); }); }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // M) Init Login Focus
+  // ─────────────────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const inp = document.getElementById('username');
+    if (inp) {
+      inp.focus();
+      inp.addEventListener('keypress', e => e.key === 'Enter' && validateCredentials());
+    }
   });
-
-  
 </script>
+
 
 
 </body>
