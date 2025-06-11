@@ -993,48 +993,39 @@ input:focus,
   document.getElementById("logged-batch").textContent = batchName;
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 6. Validate Credentials (Username) & Load Test Data
-  // ─────────────────────────────────────────────────────────────────────────────
-  window.validateCredentials = async () => {
-    const u = document.getElementById("username").value.trim();
-    if (!u) {
-      showToast("Please enter your username.", "error");
-      return;
-    }
-    username = u;
-    document.getElementById("logged-username").textContent = username;
-    document.getElementById("modal-overlay").style.display = "none";
-    document.getElementById("content").style.filter = "none";
-    await loadTestSeriesData();
-  };
+// 6. Validate Credentials (Username) & Load Test Data
+// ─────────────────────────────────────────────────────────────────────────────
+async function loadTestSeriesData() {
+  try {
+    showLoading(true);
+    const res = await fetch(`/api/testSeries/${testID}`);
+    if (!res.ok) throw new Error("Fetch failed");
+    testData = await res.json();
 
-  async function loadTestSeriesData() {
-    try {
-      showLoading(true);
-      const res = await fetch(`/api/testSeries/${testID}`);
-      if (!res.ok) throw new Error("Fetch failed");
-      testData = await res.json();
+    // ── Populate test name & subjects ──
+    document.getElementById("test-name").textContent = testData.testName;
+    subjectsArr = testData.subjects;
 
-      // Populate test name & subjects; set timer
-      document.getElementById("test-name").textContent = testData.testName;
-      subjectsArr = testData.subjects;
-      timeLeft = (testData.testDuration || 90) * 60;
+    // ── UPDATED TIMER LINE: use the value from your DB (parseInt to guard against strings),
+    //    fall back only if it’s truly missing or invalid ──
+    const durationMinutes = parseInt(testData.testDuration, 10);
+    timeLeft = (Number.isInteger(durationMinutes) ? durationMinutes : 90) * 60;
 
-      buildSubjectButtons();
-      currentSubject = subjectsArr[0];
+    buildSubjectButtons();
+    currentSubject = subjectsArr[0];
 
-      // Directly load questions (no separate chapter logic in this version)
-      await loadQuestions();
+    // ── Load questions etc. ──
+    await loadQuestions();
 
-      updateTimerDisplay();
-      startTimer();
-    } catch (e) {
-      console.error(e);
-      showToast("Failed to load test. Please refresh and try again.", "error");
-    } finally {
-      showLoading(false);
-    }
+    updateTimerDisplay();
+    startTimer();
+  } catch (e) {
+    console.error(e);
+    showToast("Failed to load test. Please refresh and try again.", "error");
+  } finally {
+    showLoading(false);
   }
+}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 7. Build & Update Subject Tabs
