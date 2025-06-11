@@ -4,67 +4,654 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>BRAINIACS – Access Required</title>
-  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
   <style>
     :root {
-      --primary:     #1E40AF;
-      --accent:      #2563EB;
-      --bg:          #F8FAFC;
-      --text:        #1F2937;
-      --shadow-light:rgba(0,0,0,0.05);
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #8b5cf6;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-card: rgba(255, 255, 255, 0.05);
+      --bg-glass: rgba(255, 255, 255, 0.1);
+      
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      
+      --border: rgba(255, 255, 255, 0.1);
+      --shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      --shadow-lg: 0 35px 60px -12px rgba(0, 0, 0, 0.4);
+      
+      --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --gradient-accent: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --gradient-success: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      
+      --animation-speed: 0.3s;
+      --animation-curve: cubic-bezier(0.4, 0, 0.2, 1);
     }
+
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
     }
+
     body {
-      font-family: "Poppins", sans-serif;
-      background: var(--bg);
-      background-image: linear-gradient(135deg, var(--bg), #ffffff);
-      color: var(--text);
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
       display: flex;
-      flex-direction: column;
-      justify-content: center;
       align-items: center;
-      height: 100vh;
+      justify-content: center;
       padding: 20px;
-      text-align: center;
+      overflow: hidden;
+      position: relative;
     }
-    h2 {
-      font-size: 1.8rem;
-      margin-bottom: 1.5em;
-      color: var(--primary);
-      background: #fff;
-      padding: 24px 32px;
-      border-left: 6px solid var(--accent);
-      border-radius: 8px;
-      box-shadow: 0 4px 12px var(--shadow-light);
+
+    /* Animated Background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+      z-index: -2;
+      animation: backgroundShift 20s ease-in-out infinite;
     }
-    .btn {
-      font-size: 1.1rem;
-      padding: 0.8em 1.6em;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+
+    @keyframes backgroundShift {
+      0%, 100% { transform: scale(1) rotate(0deg); }
+      50% { transform: scale(1.1) rotate(5deg); }
+    }
+
+    /* Floating Particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
       background: var(--accent);
-      color: #fff;
-      transition: background 0.25s, box-shadow 0.25s;
-      text-decoration: none;
-      box-shadow: 0 4px 12px var(--shadow-light);
+      border-radius: 50%;
+      opacity: 0.6;
+      animation: float 6s ease-in-out infinite;
     }
-    .btn:hover {
-      background: var(--primary);
-      box-shadow: 0 6px 16px var(--shadow-light);
+
+    .particle:nth-child(1) { left: 10%; animation-delay: 0s; }
+    .particle:nth-child(2) { left: 20%; animation-delay: 1s; }
+    .particle:nth-child(3) { left: 30%; animation-delay: 2s; }
+    .particle:nth-child(4) { left: 40%; animation-delay: 3s; }
+    .particle:nth-child(5) { left: 50%; animation-delay: 4s; }
+    .particle:nth-child(6) { left: 60%; animation-delay: 5s; }
+    .particle:nth-child(7) { left: 70%; animation-delay: 0.5s; }
+    .particle:nth-child(8) { left: 80%; animation-delay: 1.5s; }
+    .particle:nth-child(9) { left: 90%; animation-delay: 2.5s; }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(100vh) scale(0); }
+      10% { transform: translateY(90vh) scale(1); }
+      90% { transform: translateY(10vh) scale(1); }
+      100% { transform: translateY(0vh) scale(0); }
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 500px;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Glass Card */
+    .access-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      text-align: center;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+      animation: slideUp 0.8s var(--animation-curve);
+    }
+
+    .access-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: var(--gradient-accent);
+      opacity: 0.8;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Logo/Icon */
+    .logo {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 32px;
+      background: var(--gradient-primary);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      color: white;
+      box-shadow: 0 20px 40px rgba(102, 126, 234, 0.4);
+      animation: logoFloat 3s ease-in-out infinite;
+      position: relative;
+    }
+
+    .logo::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: var(--gradient-accent);
+      border-radius: 22px;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity var(--animation-speed);
+    }
+
+    .logo:hover::after {
+      opacity: 1;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* Typography */
+    .brand-name {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .description {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      line-height: 1.6;
+    }
+
+    /* Security Badge */
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success);
+      padding: 8px 16px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 32px;
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .security-badge i {
+      font-size: 14px;
+    }
+
+    /* Generate Key Button */
+    .generate-btn {
+      width: 100%;
+      padding: 18px 32px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 16px;
+      background: var(--gradient-primary);
+      color: white;
+      cursor: pointer;
+      transition: all var(--animation-speed) var(--animation-curve);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .generate-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .generate-btn:hover::before {
+      left: 100%;
+    }
+
+    .generate-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(102, 126, 234, 0.6);
+    }
+
+    .generate-btn:active {
+      transform: translateY(0);
+    }
+
+    .btn-icon {
+      font-size: 18px;
+      transition: transform var(--animation-speed);
+    }
+
+    .generate-btn:hover .btn-icon {
+      transform: translateX(4px);
+    }
+
+    /* Features List */
+    .features {
+      margin-top: 32px;
+      text-align: left;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .feature-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--gradient-success);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+      transition: color var(--animation-speed);
+    }
+
+    .footer a:hover {
+      color: var(--primary);
+    }
+
+    /* Loading Animation */
+    .loading {
+      display: none;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 640px) {
+      .access-card {
+        padding: 32px 24px;
+        margin: 16px;
+        border-radius: 20px;
+      }
+
+      .brand-name {
+        font-size: 2rem;
+      }
+
+      .logo {
+        width: 64px;
+        height: 64px;
+        font-size: 24px;
+        margin-bottom: 24px;
+      }
+
+      .generate-btn {
+        padding: 16px 24px;
+        font-size: 1rem;
+      }
+    }
+
+    /* Accessibility */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* Focus States */
+    .generate-btn:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Hover Effects for Interactive Elements */
+    .access-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 40px 80px rgba(0, 0, 0, 0.3);
+      transition: all var(--animation-speed) var(--animation-curve);
+    }
+
+    /* Success State */
+    .success-state {
+      display: none;
+      text-align: center;
+      color: var(--success);
+    }
+
+    .success-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      animation: successPulse 0.6s ease-out;
+    }
+
+    @keyframes successPulse {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.2); }
+      100% { transform: scale(1); }
+    }
+
+    /* Glowing Effect */
+    .glow {
+      position: relative;
+    }
+
+    .glow::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: inherit;
+      padding: 2px;
+      background: var(--gradient-primary);
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      opacity: 0;
+      transition: opacity var(--animation-speed);
+    }
+
+    .glow:hover::after {
+      opacity: 1;
     }
   </style>
 </head>
 <body>
+  <!-- Floating Particles -->
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
 
-  <h2>Kindly generate your key before moving forward</h2>
-  <button class="btn" onclick="window.location.href='key.html'">
-    Generate key
-  </button>
+  <div class="container">
+    <div class="access-card glow">
+      <!-- Logo -->
+      <div class="logo">
+        <i class="fas fa-brain"></i>
+      </div>
 
+      <!-- Brand Name -->
+      <h1 class="brand-name">BRAINIACS</h1>
+      
+      <!-- Subtitle -->
+      <p class="subtitle">Secure Access Portal</p>
+      
+      <!-- Description -->
+      <p class="description">
+        Generate your unique access key to unlock premium features and join our exclusive community of learners.
+      </p>
+
+      <!-- Security Badge -->
+      <div class="security-badge">
+        <i class="fas fa-shield-alt"></i>
+        <span>Secure & Encrypted</span>
+      </div>
+
+      <!-- Generate Key Button -->
+      <button class="generate-btn" onclick="handleGenerateKey()">
+        <span class="btn-text">Generate Access Key</span>
+        <i class="fas fa-arrow-right btn-icon"></i>
+        <div class="loading"></div>
+      </button>
+
+      <!-- Features -->
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-check"></i>
+          </div>
+          <span>Instant key generation</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-check"></i>
+          </div>
+          <span>256-bit encryption security</span>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">
+            <i class="fas fa-check"></i>
+          </div>
+          <span>Lifetime access guarantee</span>
+        </div>
+      </div>
+
+      <!-- Success State -->
+      <div class="success-state" id="successState">
+        <div class="success-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <p>Key generated successfully!</p>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <p>Need help? <a href="#support">Contact Support</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Enhanced button interaction
+    function handleGenerateKey() {
+      const btn = document.querySelector('.generate-btn');
+      const btnText = document.querySelector('.btn-text');
+      const btnIcon = document.querySelector('.btn-icon');
+      const loading = document.querySelector('.loading');
+      const successState = document.getElementById('successState');
+      
+      // Show loading state
+      btnText.style.opacity = '0';
+      btnIcon.style.opacity = '0';
+      loading.style.display = 'block';
+      btn.style.pointerEvents = 'none';
+      
+      // Simulate loading
+      setTimeout(() => {
+        // Hide loading and show success
+        loading.style.display = 'none';
+        successState.style.display = 'block';
+        
+        // Navigate after showing success
+        setTimeout(() => {
+          window.location.href = 'key.html';
+        }, 1500);
+      }, 2000);
+    }
+
+    // Add ripple effect to button
+    document.querySelector('.generate-btn').addEventListener('click', function(e) {
+      const ripple = document.createElement('span');
+      const rect = this.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      const x = e.clientX - rect.left - size / 2;
+      const y = e.clientY - rect.top - size / 2;
+      
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = x + 'px';
+      ripple.style.top = y + 'px';
+      ripple.style.position = 'absolute';
+      ripple.style.borderRadius = '50%';
+      ripple.style.background = 'rgba(255, 255, 255, 0.3)';
+      ripple.style.transform = 'scale(0)';
+      ripple.style.animation = 'ripple 0.6s linear';
+      ripple.style.pointerEvents = 'none';
+      
+      this.appendChild(ripple);
+      
+      setTimeout(() => {
+        ripple.remove();
+      }, 600);
+    });
+
+    // Add ripple animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes ripple {
+        to {
+          transform: scale(4);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Parallax effect for particles
+    document.addEventListener('mousemove', (e) => {
+      const particles = document.querySelectorAll('.particle');
+      const x = e.clientX / window.innerWidth;
+      const y = e.clientY / window.innerHeight;
+      
+      particles.forEach((particle, index) => {
+        const speed = (index + 1) * 0.5;
+        const xPos = (x - 0.5) * speed;
+        const yPos = (y - 0.5) * speed;
+        
+        particle.style.transform = `translate(${xPos}px, ${yPos}px)`;
+      });
+    });
+
+    // Add entrance animation delay for features
+    window.addEventListener('load', () => {
+      const features = document.querySelectorAll('.feature-item');
+      features.forEach((feature, index) => {
+        feature.style.opacity = '0';
+        feature.style.transform = 'translateX(-20px)';
+        feature.style.transition = 'all 0.5s ease';
+        
+        setTimeout(() => {
+          feature.style.opacity = '1';
+          feature.style.transform = 'translateX(0)';
+        }, 800 + (index * 100));
+      });
+    });
+
+    // Enhanced keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        const btn = document.querySelector('.generate-btn');
+        if (document.activeElement === btn) {
+          e.preventDefault();
+          btn.click();
+        }
+      }
+    });
+
+    // Add smooth scroll behavior
+    document.documentElement.style.scrollBehavior = 'smooth';
+
+    // Performance optimization: Reduce animations on low-end devices
+    if (navigator.hardwareConcurrency && navigator.hardwareConcurrency < 4) {
+      document.body.classList.add('reduced-motion');
+    }
+
+    console.log('🚀 BRAINIACS Access Portal loaded successfully!');
+  </script>
 </body>
 </html>

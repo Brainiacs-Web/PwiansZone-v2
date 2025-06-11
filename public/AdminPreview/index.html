@@ -1166,56 +1166,73 @@ textarea:focus-visible {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 12. View mode with LaTeX rendering
-  // ─────────────────────────────────────────────────────────────────────────────
-  function renderQuestionView(q) {
-    const c = document.getElementById('question-content');
-    let html = `<div class="question-card">
-      <div class="question-meta">
-        <div class="meta-item"><i class="fas fa-hashtag"></i> Q${currentIdx+1}</div>
-        <div class="meta-item"><i class="fas fa-tag"></i> ${q.questionType}</div>
-      </div>
-      <div class="question-text">${renderLatex(q.question)}</div>`;
-    if (q.questionType === 'MCQ') {
-      html += `<div class="options-container">
-        <div class="options-title"><i class="fas fa-list"></i> Options</div>
-        <ol class="options-list" type="A">`;
-      q.options.forEach((opt, idx) => {
-        const L = String.fromCharCode(65 + idx);
-        html += `<li class="option-item${q.correctAnswer === L ? ' correct' : ''}">
-          <div class="option-label">${L}</div>
-          <span>${renderLatex(opt)}</span>
-        </li>`;
-      });
-      html += `</ol></div>
-        <div class="answer-section">
-          <div class="answer-title"><i class="fas fa-check-circle"></i> Correct Answer</div>
-          <div class="answer-value">Option ${q.correctAnswer}</div>
-        </div>`;
-    } else {
-      html += `<div class="answer-section">
-        <div class="answer-title"><i class="fas fa-hashtag"></i> Correct Answer</div>
-        <div class="answer-value">${renderLatex(q.answer)}</div>
-      </div>`;
-    }
-    if (q.solution) {
-      html += `<div class="solution-section">
-        <div class="solution-title"><i class="fas fa-lightbulb"></i> Solution</div>
-        <div class="solution-text">${renderLatex(q.solution)}</div>
-      </div>`;
-    }
-    html += `<div class="action-buttons">
-        <button class="btn btn-danger" onclick="deleteQuestion()"><i class="fas fa-trash"></i> Delete</button>
-        <button class="btn btn-primary" onclick="enterEditMode()"><i class="fas fa-edit"></i> Edit</button>
-      </div>
-    </div>`;
-    c.innerHTML = html;
+// 12. View mode with LaTeX & image‐URL rendering
+// ─────────────────────────────────────────────────────────────────────────────
+function renderQuestionView(q) {
+  const c = document.getElementById('question-content');
 
-    // Trigger MathJax to typeset any LaTeX
-    if (window.MathJax) {
-      MathJax.typesetPromise([c]).catch(err => console.error("MathJax error:", err));
-    }
+  // helper to detect image URLs
+  const isImageURL = str => 
+    typeof str === 'string' &&
+    /^https?:\/\/.+\.(png|jpe?g|gif|svg)$/i.test(str);
+
+  // wrap either an <img> or your existing renderLatex
+  const renderContent = str => 
+    isImageURL(str)
+      ? `<img src="${str}" class="content-image" alt="Image content">`
+      : renderLatex(str);
+
+  let html = `<div class="question-card">
+    <div class="question-meta">
+      <div class="meta-item"><i class="fas fa-hashtag"></i> Q${currentIdx+1}</div>
+      <div class="meta-item"><i class="fas fa-tag"></i> ${q.questionType}</div>
+    </div>
+
+    <div class="question-text">${renderContent(q.question)}</div>`;
+
+  if (q.questionType === 'MCQ') {
+    html += `<div class="options-container">
+      <div class="options-title"><i class="fas fa-list"></i> Options</div>
+      <ol class="options-list" type="A">`;
+    q.options.forEach((opt, idx) => {
+      const L = String.fromCharCode(65 + idx);
+      html += `<li class="option-item${q.correctAnswer === L ? ' correct' : ''}">
+        <div class="option-label">${L}</div>
+        <div class="option-content">${renderContent(opt)}</div>
+      </li>`;
+    });
+    html += `</ol></div>
+      <div class="answer-section">
+        <div class="answer-title"><i class="fas fa-check-circle"></i> Correct Answer</div>
+        <div class="answer-value">Option ${q.correctAnswer}</div>
+      </div>`;
+  } else {
+    html += `<div class="answer-section">
+      <div class="answer-title"><i class="fas fa-hashtag"></i> Correct Answer</div>
+      <div class="answer-value">${renderContent(q.answer)}</div>
+    </div>`;
   }
+
+  if (q.solution) {
+    html += `<div class="solution-section">
+      <div class="solution-title"><i class="fas fa-lightbulb"></i> Solution</div>
+      <div class="solution-text">${renderContent(q.solution)}</div>
+    </div>`;
+  }
+
+  html += `<div class="action-buttons">
+      <button class="btn btn-danger" onclick="deleteQuestion()"><i class="fas fa-trash"></i> Delete</button>
+      <button class="btn btn-primary" onclick="enterEditMode()"><i class="fas fa-edit"></i> Edit</button>
+    </div>
+  </div>`;
+
+  c.innerHTML = html;
+
+  // Re-typeset any LaTeX
+  if (window.MathJax) {
+    MathJax.typesetPromise([c]).catch(err => console.error("MathJax error:", err));
+  }
+}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 13. Edit mode (no LaTeX rendering, raw editing)
