@@ -1355,6 +1355,12 @@ window.submitTest = async function () {
   }
 };
 
+function getQueryParam(name) {
+  const urlParams = new URLSearchParams(window.location.search);
+  return urlParams.get(name);
+}
+
+
   function showLoading(on){
     const c=document.getElementById("content");
     on?c.classList.add("loading"):c.classList.remove("loading");
