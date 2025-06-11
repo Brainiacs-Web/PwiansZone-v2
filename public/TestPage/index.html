@@ -1048,26 +1048,7 @@ input:focus,
     }
   }
   
-  function startTimer() {
-  stopTimer(); // Clear previous timer if running
-  timerInterval = setInterval(() => {
-    if (timeLeft <= 0) {
-      stopTimer();
-      onTimeUp();
-      return;
-    }
-    timeLeft--;
-    updateTimerDisplay();
-  }, 1000);
-}
-
-function stopTimer() {
-  if (timerInterval !== null) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-}
-
+  
 
   // ─────────────────────────────────────────────────────────────────────────────
   // G) Build subject tabs
@@ -1282,29 +1263,45 @@ function stopTimer() {
     return localStorage.getItem(`visited_${currentSubject}_${q}`)==="true";
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // J) Timer + auto-submit
-  // ─────────────────────────────────────────────────────────────────────────────
-  function updateTimerDisplay(){
-    const h = Math.floor(timeLeft/3600), m = Math.floor((timeLeft%3600)/60), s = timeLeft%60;
-    const txt = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-    const el = document.getElementById("time-left");
-    el.textContent = txt;
-    const tm = document.getElementById("timer");
-    if (timeLeft<=300) tm.style.cssText = "background:rgba(239,68,68,0.1);color:var(--error-color);border-color:var(--error-color)";
-    else if (timeLeft<=600) tm.style.cssText = "background:rgba(245,158,11,0.1);color:var(--warning-color);border-color:var(--warning-color)";
-  }
-  function startTimer(){
-    timerInterval = setInterval(()=>{
-      timeLeft--;
-      updateTimerDisplay();
-      if (timeLeft<=0){
-        clearInterval(timerInterval);
-        submitTest(true);
-      }
-    },1000);
-  }
+ // J) Timer + auto-submit
+// ─────────────────────────────────────────────────────────────────────────────
 
+function updateTimerDisplay() {
+  const h = Math.floor(timeLeft / 3600),
+        m = Math.floor((timeLeft % 3600) / 60),
+        s = timeLeft % 60;
+  const txt = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  const el = document.getElementById("time-left");
+  const tm = document.getElementById("timer");
+
+  if (el) el.textContent = txt;
+  if (tm) {
+    if (timeLeft <= 300) {
+      tm.style.cssText = "background:rgba(239,68,68,0.1);color:var(--error-color);border-color:var(--error-color)";
+    } else if (timeLeft <= 600) {
+      tm.style.cssText = "background:rgba(245,158,11,0.1);color:var(--warning-color);border-color:var(--warning-color)";
+    }
+  }
+}
+
+function startTimer() {
+  stopTimer(); // Ensure previous interval is cleared
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateTimerDisplay();
+    if (timeLeft <= 0) {
+      stopTimer();
+      submitTest(true); // Auto-submit
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+}
   document.addEventListener("visibilitychange",()=>{
     if (document.hidden){
       tabSwitchCount++;
