@@ -23,61 +23,43 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create new test
+// POST create test
 router.post('/', async (req, res) => {
-  try {
-    const { testName, batch, testDuration, subjects, subjectDocs, scheduledAt } = req.body;
-    const code = await getNextCode('test', 'T');
-
-    const test = new Test({
-      code,
-      testName,
-      batch,
-      testDuration,
-      subjects,
-      subjectDocs,
-      scheduledAt
-    });
-
-    await test.save();
-    res.json(test);
-  } catch (err) {
-    console.error('POST /api/tests error', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  const { testName, batch, testDuration, subjects, subjectDocs, scheduledAt } = req.body;
+  const code = await getNextCode('test', 'T');
+  const test = new Test({
+    code,
+    testName,
+    batch,
+    testDuration,
+    subjects,
+    subjectDocs,
+    scheduledAt
+  });
+  await test.save();
+  res.json(test);
 });
 
 // PATCH publish test
 router.patch('/:id/publish', async (req, res) => {
-  try {
-    const test = await Test.findByIdAndUpdate(
-      req.params.id,
-      { published: true, publishedAt: Date.now() },
-      { new: true }
-    );
-    res.json(test);
-  } catch (err) {
-    console.error('PATCH /api/tests/:id/publish error', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  const test = await Test.findByIdAndUpdate(
+    req.params.id,
+    { published: true, publishedAt: Date.now() },
+    { new: true }
+  );
+  res.json(test);
 });
 
 // DELETE test
 router.delete('/:id', async (req, res) => {
-  try {
-    await Test.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (err) {
-    console.error('DELETE /api/tests/:id error', err);
-    res.status(500).json({ error: 'Internal server error' });
-  }
+  await Test.findByIdAndDelete(req.params.id);
+  res.json({ success: true });
 });
 
-// ✅ POST submit test
+// POST submit test responses
 router.post('/:id/submit', async (req, res) => {
   try {
     const { batchName, username, responses } = req.body;
-
     if (!batchName || !username || !responses) {
       return res.status(400).json({ error: 'batchName, username, and responses are required' });
     }
@@ -90,22 +72,17 @@ router.post('/:id/submit', async (req, res) => {
       return res.status(400).json({ error: 'Test already submitted by this user' });
     }
 
-    const submission = new Submission({
-      test: test._id,
-      batchName,
-      username,
-      responses
-    });
-
+    const submission = new Submission({ test: test._id, batchName, username, responses });
     await submission.save();
+
     res.json({ success: true, submissionId: submission._id });
   } catch (err) {
-    console.error('POST /api/tests/:id/submit error', err);
+    console.error('Error in POST /api/tests/:id/submit', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// ✅ GET test results for a student
+// ✅ FIXED: GET results for a user with full question details
 router.get('/:id/results', async (req, res) => {
   try {
     const { batchName, username } = req.query;
@@ -129,27 +106,34 @@ router.get('/:id/results', async (req, res) => {
 
     const results = {};
 
-    for (const [subjectName, answers] of Object.entries(submission.responses || {})) {
-      const subjectDoc = test.subjectDocs.find(doc => doc.name === subjectName) || {};
-      const questionList = subjectDoc.questions || [];
+    for (const [subjectName, responsesMap] of Object.entries(submission.responses || {})) {
+      const subjectDoc = test.subjectDocs?.find(sd => sd.name === subjectName);
 
-      results[subjectName] = Object.entries(answers).map(([qId, { selectedAnswer }]) => {
-        const qObj = questionList.find(q => String(q._id) === qId) || {};
+      if (!subjectDoc || !Array.isArray(subjectDoc.questions)) {
+        results[subjectName] = [];
+        continue;
+      }
 
-        const correctAnswer =
-          qObj.questionType === 'MCQ'
-            ? qObj.correctAnswer
-            : qObj.answer || '';
+      const questionMap = {};
+      for (const q of subjectDoc.questions) {
+        questionMap[String(q._id)] = q;
+      }
+
+      results[subjectName] = Object.entries(responsesMap).map(([qId, { selectedAnswer }]) => {
+        const q = questionMap[qId] || {};
+
+        const isMCQ = q.questionType === 'MCQ';
+        const correctAnswer = isMCQ ? q.correctAnswer : (q.answer || '');
 
         return {
           questionId: qId,
-          question: qObj.question || '',
-          questionImage: qObj.questionImage || '',
-          options: qObj.options || [],
-          correctAnswer,
+          question: q.question || '',
+          questionImage: q.questionImage || '',
+          options: q.options || [],
+          correctAnswer: correctAnswer || '',
           selectedAnswer: selectedAnswer ?? null,
-          solution: qObj.solution || '',
-          solutionImage: qObj.solutionImage || ''
+          solution: q.solution || '',
+          solutionImage: q.solutionImage || ''
         };
       });
     }
