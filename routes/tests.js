@@ -5,13 +5,13 @@ const Test = require('../models/Test');
 const Submission = require('../models/Submission');
 const { getNextCode } = require('../utils/getNextSequence');
 
-// GET all tests
+// ─── GET all tests ───────────────────────────────────────────────────────
 router.get('/', async (req, res) => {
   const tests = await Test.find().populate('batch').sort('createdAt');
   res.json(tests);
 });
 
-// GET test by ID
+// ─── GET test by ID ───────────────────────────────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
     const test = await Test.findById(req.params.id).lean();
@@ -23,7 +23,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// POST create test
+// ─── POST create test ─────────────────────────────────────────────────────
 router.post('/', async (req, res) => {
   const { testName, batch, testDuration, subjects, subjectDocs, scheduledAt } = req.body;
   const code = await getNextCode('test', 'T');
@@ -40,7 +40,7 @@ router.post('/', async (req, res) => {
   res.json(test);
 });
 
-// PATCH publish test
+// ─── PATCH publish test ───────────────────────────────────────────────────
 router.patch('/:id/publish', async (req, res) => {
   const test = await Test.findByIdAndUpdate(
     req.params.id,
@@ -50,13 +50,13 @@ router.patch('/:id/publish', async (req, res) => {
   res.json(test);
 });
 
-// DELETE test
+// ─── DELETE test ──────────────────────────────────────────────────────────
 router.delete('/:id', async (req, res) => {
   await Test.findByIdAndDelete(req.params.id);
   res.json({ success: true });
 });
 
-// ✅ POST submit test responses
+// ─── POST submit test responses ───────────────────────────────────────────
 router.post('/:id/submit', async (req, res) => {
   try {
     const { batchName, username, responses } = req.body;
@@ -82,8 +82,7 @@ router.post('/:id/submit', async (req, res) => {
   }
 });
 
-// ✅ GET results for a user (fully fixed version)
-// GET results for a user
+// ─── GET results for a user ───────────────────────────────────────────────
 router.get('/:id/results', async (req, res) => {
   try {
     const { batchName, username } = req.query;
@@ -96,34 +95,29 @@ router.get('/:id/results', async (req, res) => {
       return res.status(400).json({ error: 'Invalid test ID' });
     }
 
-    // Load test and submission
     const [test, submission] = await Promise.all([
       Test.findById(testId).lean(),
       Submission.findOne({ test: testId, batchName, username }).lean()
     ]);
-
     if (!test) return res.status(404).json({ error: 'Test not found' });
     if (!submission) return res.status(404).json({ error: 'Submission not found' });
 
-    // Assemble results
     const results = {};
     for (const [subjectName, respMap] of Object.entries(submission.responses || {})) {
-      const subjectDoc = test.subjectDocs.find(sd => sd.name === subjectName);
-      const questionList = subjectDoc?.questions || [];
+      const subjectDoc = test.subjectDocs.find(sd => sd.name === subjectName) || {};
+      const questionList = subjectDoc.questions || [];
 
       results[subjectName] = Object.entries(respMap).map(([qId, { selectedAnswer }]) => {
-        const questionObj = questionList.find(q => q._id?.toString() === qId) || {};
+        const questionObj = questionList.find(q => String(q._id) === qId) || {};
 
         return {
           questionId:     qId,
           question:       questionObj.question || '',
           questionImage:  questionObj.questionImage || '',
           options:        questionObj.options || [],
-          correctAnswer:  questionObj.questionType === 'MCQ'
-                            ? questionObj.correctAnswer
-                            : questionObj.answer || '',
+          correctAnswer:  questionObj.correctAnswer || questionObj.answer || '',
           selectedAnswer: selectedAnswer ?? '',
-          solution:       questionObj.solution || '',
+          solution:       questionObj.solution || 'No solution provided.',
           solutionImage:  questionObj.solutionImage || ''
         };
       });
@@ -134,14 +128,13 @@ router.get('/:id/results', async (req, res) => {
       subjects: Object.keys(results),
       results
     });
-
   } catch (err) {
     console.error('GET /api/tests/:id/results error', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
-// GET test by code
+// ─── GET test by code ─────────────────────────────────────────────────────
 router.get('/code/:code', async (req, res) => {
   try {
     const test = await Test.findOne({ code: req.params.code }).lean();
