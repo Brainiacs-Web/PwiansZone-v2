@@ -1732,36 +1732,39 @@
 // ─────────────────────────────────────────────────────────────────────────────
 async function displayResults() {
   try {
+    // 1. Fetch raw payload from your API
     resultsData = await fetchResults();
     const { testName, subjects, results } = resultsData;
 
-    // Update page title
+    // 2. NORMALIZATION: convert each subject’s results-map into an array
+    subjects.forEach(subject => {
+      const subj = results[subject];
+      if (subj && !Array.isArray(subj)) {
+        results[subject] = Object.values(subj);
+      }
+    });
+    // (optional) reassign back to resultsData if you reference it elsewhere
+    resultsData.results = results;
+
+    // 3. Update page title
     if (testName) {
       document.title = `${testName} - PWians Test Results`;
     }
 
-    // Totals
-    let totalCorrect     = 0;
-    let totalWrong       = 0;
-    let totalUnanswered  = 0;
-    let totalScore       = 0;
+    // 4. Tally totals
+    let totalCorrect    = 0;
+    let totalWrong      = 0;
+    let totalUnanswered = 0;
+    let totalScore      = 0;
 
-    // ─── Normalize and tally ────────────────────────────────────────────────
     Object.values(results).forEach(subQuestions => {
       subQuestions.forEach(question => {
-        // Always coerce to string first:
         const rawSel = question.selectedAnswer;
         const rawCor = question.correctAnswer;
-
-        const selected = rawSel != null
-          ? String(rawSel).trim()
-          : '';
-        const correct  = rawCor != null
-          ? String(rawCor).trim()
-          : '';
-
-        const isMCQ     = Array.isArray(question.options) && question.options.length > 0;
-        const answered  = selected !== '';
+        const selected = rawSel != null ? String(rawSel).trim() : '';
+        const correct  = rawCor != null ? String(rawCor).trim() : '';
+        const isMCQ    = Array.isArray(question.options) && question.options.length > 0;
+        const answered = selected !== '';
         const correctHit = answered && (
           isMCQ
             ? selected.toUpperCase() === correct.toUpperCase()
@@ -1779,23 +1782,26 @@ async function displayResults() {
         }
       });
     });
-    // ─────────────────────────────────────────────────────────────────────────
 
-    // Render stats & chart
+    // 5. Render stats and chart
     renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
     const ctx = document.getElementById('overview-chart').getContext('2d');
     createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
 
-    // Subjects & first question
+    // 6. Render subject tabs and first question
     renderSubjectTabs(subjects);
-    if (subjects.length) selectSubject(subjects[0], 0);
+    if (subjects.length) {
+      selectSubject(subjects[0], 0);
+    }
 
+    // 7. Show the results section
     showResults();
   } catch (error) {
     console.error('Error displaying results:', error);
     showError(error.message || 'Failed to load results. Please try again.');
   }
 }
+
 
     // ─────────────────────────────────────────────────────────────────────────────
     // 14. Keyboard navigation

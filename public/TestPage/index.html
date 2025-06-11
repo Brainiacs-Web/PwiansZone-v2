@@ -1332,19 +1332,20 @@ window.submitTest = async (auto = false) => {
   try {
     showLoading(true);
 
-    const payload = {};
-    for (const subject of subjectsArr) {
-      payload[subject] = {};
-      const questionMap = testData.questions[subject] || {};
-      Object.values(questionMap).forEach(question => {
-        const key = `response_${subject}_${question.questionId}`;
-        const savedAnswer = localStorage.getItem(key);
-        payload[subject][question.questionId] = {
-          questionId: question.questionId,
-          selectedAnswer: savedAnswer || null
-        };
-      });
-    }
+   const payload = {};
+for (const subject of subjectsArr) {
+  payload[subject] = {};
+  const questionMap = testData.questions[subject] || {};
+  Object.values(questionMap).forEach(question => {
+    const key = `response_${subject}_${question.questionId}`;
+    const savedAnswer = localStorage.getItem(key);
+    payload[subject][question.questionId] = {
+      questionId: question.questionId,
+      selectedAnswer: savedAnswer || null
+    };
+  });
+}
+
 
     console.log('Submitting payload:', payload);
 
