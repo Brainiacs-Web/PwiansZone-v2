@@ -1136,9 +1136,56 @@
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
   <script>
 
-    window.addEventListener('load', displayResults);
-
     
+
+     function renderResults(data) {
+    const container = document.getElementById("result-container") || document.body;
+    container.innerHTML = ""; // Clear old content
+
+    const title = document.createElement("h2");
+    title.textContent = `📘 Test: ${data.testName}`;
+    container.appendChild(title);
+
+    data.subjects.forEach(subject => {
+      const subjectHeader = document.createElement("h3");
+      subjectHeader.textContent = `📚 Subject: ${subject}`;
+      container.appendChild(subjectHeader);
+
+      const questions = data.results[subject];
+      if (!questions?.length) {
+        const p = document.createElement("p");
+        p.textContent = "No questions found for this subject.";
+        container.appendChild(p);
+        return;
+      }
+
+      questions.forEach((q, i) => {
+        const card = document.createElement("div");
+        card.className = "result-card";
+        card.innerHTML = `
+          <div><strong>Q${i + 1}:</strong> ${q.question}</div>
+          ${Array.isArray(q.options) ? `
+            <ul>
+              ${q.options.map((opt, j) => {
+                const label = String.fromCharCode(65 + j);
+                const isCorrect = q.correctAnswer === label;
+                const isUser = q.selectedAnswer === label;
+                return `<li style="color:${isCorrect ? 'green' : isUser ? 'red' : '#333'}">
+                  ${label}. ${opt}
+                </li>`;
+              }).join('')}
+            </ul>
+          ` : ''}
+          <div><strong>Your Answer:</strong> ${q.selectedAnswer || '—'}</div>
+          <div><strong>Correct Answer:</strong> ${q.correctAnswer}</div>
+          <div><strong>Solution:</strong> ${q.solution || '—'}</div>
+        `;
+        container.appendChild(card);
+      });
+    });
+
+    if (window.MathJax) MathJax.typesetPromise([container]);
+  }
     // ─────────────────────────────────────────────────────────────────────────────
     // 1. Dark mode functionality
     // ─────────────────────────────────────────────────────────────────────────────
