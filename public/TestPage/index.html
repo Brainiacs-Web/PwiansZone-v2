@@ -711,6 +711,7 @@ body {
   
   .question-text {
     font-size: 18px;
+    white-space: pre-wrap;
   }
   
   .nav-buttons {
@@ -1593,6 +1594,19 @@ window.submitTest = async (auto = false) => {
       setTimeout(() => document.body.removeChild(toast), 300);
     }, 3000);
   }
+function escapeAndPreserveSpaces(str) {
+  // escape HTML entities first:
+  const esc = str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  // then replace each pair of spaces with two &nbsp;
+  return esc.replace(/ {2}/g, "&nbsp;&nbsp;");
+}
+
+// in your render function:
+const clean = escapeAndPreserveSpaces(q.question);
+questionContainer.innerHTML = renderLatex(clean);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 19. Keyboard Navigation & Touch Gestures
