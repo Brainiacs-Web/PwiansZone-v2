@@ -955,62 +955,56 @@ window.MathJax = {
   let tabSwitchCount = 0, maxTabSwitches = 5;
   let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 3. Inject MathJax Rendering Helper
-  //    - Only wrap “bare” TeX; leave already‐wrapped TeX alone
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ─────────────────────────────────────────────────────────────────────────────
-// 1. LaTeX Rendering Helper (Ultra-Robust)
-//    - Leaves alone any text already wrapped in \(…\), \[…\], $$…$$ or
-//      \begin{…}…\end{…}.
-//    - Otherwise, scans for display vs inline cues and wraps accordingly.
-// ─────────────────────────────────────────────────────────────────────────────
+function isMathString(s) {
+  return /\\(?:frac|sqrt|sum|int|ce|text|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
+}
+
 function renderLatex(str) {
   if (!str || typeof str !== "string") return "—";
 
-  // 1) Already wrapped?
-  const already = (
-       /\\\(.+?\\\)/s.test(str)       // \( … \)
-    || /\\\[.+?\\\]/s.test(str)       // \[ … \]
-    || /\$\$[\s\S]+?\$\$/.test(str)   // $$ … $$
-    || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str)  // any LaTeX env
-  );
-  if (already) return str;
+  // 1. Already LaTeX?
+  const alreadyLatex =
+    /\\\(.+?\\\)/s.test(str) ||       // \( ... \)
+    /\\\[.+?\\\]/s.test(str) ||       // \[ ... \]
+    /\$\$[\s\S]+?\$\$/.test(str) ||   // $$ ... $$
+    /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str); // LaTeX environments
+  if (alreadyLatex) return str;
 
-  // 2) DISPLAY-level cues
+  // 2. Display-level math cues
   const displayCues = [
-    /\\begin\{(?:align|gather|multline|cases|equation)\}/, // env
-    /\\\\\s*$/,                // explicit line-break "\\"
-    /\\displaystyle\b/,         // displaystyle
-    /\\(?:sum|prod|int|lim)\b/, // big operators
-    /\\x?rightarrow?/,         // arrows
-    /\n/,                       // newline
+    /\\begin\{(?:align|gather|multline|cases|equation)\}/,
+    /\\\\\s*$/,                 // ends with \\
+    /\\displaystyle\b/,
+    /\\(?:sum|prod|int|lim|to)\b/,
+    /\\x?rightarrow?|\\leftarrow/,
+    /\n/,
   ];
   const isDisplay = displayCues.some(rx => rx.test(str));
 
-  // 3) INLINE-level cues
+  // 3. Inline-level math cues
   const inlineCues = [
-    /\\frac\s*{[^}]+}{[^}]+}/,     // fraction
-    /\\(?:pi|alpha|beta|gamma|delta|epsilon|mu|nu|rho|sigma)\b/, // Greek
-    /[A-Za-z0-9]+_\{[^}]+\}/,      // subscript
-    /\^[{]?[A-Za-z0-9]/,            // superscript
-    /[A-Za-z]+\s*\(.*\)/,           // f(x)
-    /\\text\{[^}]+\}/,              // \text{…}
-    /\\ce\{[^}]+\}/,                // mhchem
-    /\\(?:bra|ket|braket|ev|grad|div|curl)\b/, // physics macros
+    /\\frac\s*{[^}]+}{[^}]+}/,
+    /\\(?:pi|alpha|beta|gamma|delta|mu|nu|rho|sigma|theta|phi|epsilon)\b/,
+    /[A-Za-z0-9]+_\{[^}]+\}/,
+    /\^[{]?[A-Za-z0-9]/,
+    /\\text\{[^}]+\}/,
+    /\\ce\{[^}]+\}/,
+    /\\(?:bra|ket|braket|ev|grad|div|curl)\b/,
   ];
   const isInline = inlineCues.some(rx => rx.test(str));
 
-  // 4) Wrap appropriately
-  if (isDisplay) {
-    return `$$\n${str}\n$$`;
-  }
-  if (isInline) {
-    return `\\(${str}\\)`;
+  // 4. Plain text (no math detected at all)
+  if (!isInline && !isDisplay && !isMathString(str)) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/ {2}/g, " &nbsp;")
+      .replace(/\n/g, "<br>");
   }
 
-  // 5) No math detected
-  return str;
+  // 5. Wrap appropriately
+  return isDisplay ? `$$\n${str}\n$$` : `\\(${str}\\)`;
 }
 
   // ─────────────────────────────────────────────────────────────────────────────
