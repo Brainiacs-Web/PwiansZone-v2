@@ -261,9 +261,13 @@ body {
 }
 
 .question-text {
+      white-space: pre-wrap;      /* respect explicit newlines */
   font-size: 16px;
+      word-break: break-word;     /* break long words/math if needed */
+          overflow-wrap: anywhere;    /* allow breaking anywhere */
+
   line-height: 1.6;
-  margin-bottom: 20px;
+  margin-bottom: 1rem;
   color: var(--text-color);
   font-weight: 500;
 }
@@ -915,18 +919,13 @@ input:focus,
   </div>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<script>
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 1. Read URL params → testID, batchName; initialize username as blank
-  // ─────────────────────────────────────────────────────────────────────────────
+ // 1. Read URL params → testID, batchName; initialize username
   const params = new URLSearchParams(window.location.search);
   const testID = params.get("test") || "";
   let batchName = params.get("batchName") || "";
   let username = "";
 
-  // ─────────────────────────────────────────────────────────────────────────────
   // 2. State Management
-  // ─────────────────────────────────────────────────────────────────────────────
   let testData = {};
   let subjectsArr = [];
   let questions = [];
@@ -936,71 +935,60 @@ input:focus,
   let tabSwitchCount = 0, maxTabSwitches = 5;
   let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 3. Inject MathJax Rendering Helper
-  //    - Only wrap “bare” TeX; leave already‐wrapped TeX alone
-  // ─────────────────────────────────────────────────────────────────────────────
-  function renderLatex(str) {
-    if (!str) return "—";
-
-    // 1) Detect existing TeX delimiters: \(…\), \[…\], $$…$$, or \begin{…}…\end{…}
-    const alreadyHasDelimiters =
-         /\\\(.+?\\\)/.test(str)         // \( … \)
-      || /\\\[.+?\\\]/.test(str)         // \[ … \]
-      || /\$\$[\s\S]+?\$\$/.test(str)    // $$ … $$
-      || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);  // any \begin{…} … \end{…}
-
-    if (alreadyHasDelimiters) {
-      return str;
-    }
-
-    // 2) If we see a “bare” TeX pattern, wrap once in \( … \)
-    const hasInlineMath =
-         /\\frac\s*{[^}]+}\s*{[^}]+}/.test(str)
-      || /\\hat\{[^}]+\}/.test(str)
-      || /\\pi\b/.test(str)
-      || /\\varepsilon/.test(str)
-      || /[A-Za-z]+_\{.+?\}/.test(str);
-
-    if (hasInlineMath) {
-      return `\\(${str}\\)`;
-    }
-
-    // 3) Otherwise leave it unchanged
-    return str;
+  // 3. LaTeX Normalizer & Renderer
+  function normalizeQuestionText(text) {
+    if (!text) return '';
+    const mathSegments = [];
+    text = text.replace(
+      /(\\\(.+?\\\)|\\\[.+?\\\]|\$\$[\s\S]+?\$\$|\\begin\{[^}]*\}[\s\S]+?\\end\{[^}]*\})/g,
+      (m) => { mathSegments.push(m); return `@@MATH${mathSegments.length-1}@@`; }
+    );
+    text = text.replace(/\s+/g, ' ').trim();
+    return text.replace(/@@MATH(\d+)@@/g, (_, idx) => mathSegments[+idx]);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  function renderLatex(str) {
+    if (!str) return "—";
+    const hasExplicit =
+         /\\\(.+?\\\)/s.test(str)
+      || /\\\[.+?\\\]/s.test(str)
+      || /\$\$[\s\S]+?\$\$/.test(str)
+      || /\\begin\{(?:equation|align|gather|matrix)[^}]*\}[\s\S]+?\\end\{\1\}/s.test(str);
+    if (hasExplicit) return str;
+
+    const numCommands = (str.match(/\\[a-zA-Z]+/g) || []).length;
+    const numBraces   = (str.match(/[{}]/g)       || []).length;
+    const complexity  = numCommands * 3 + numBraces + str.length/50;
+
+    if (/\b(begin|align|equation|gather)\b/.test(str) || complexity > 50) {
+      return `\\[\n${str.trim()}\n\\]`;
+    }
+
+    return str.replace(
+      /(?:\\[a-zA-Z]+(?:\{[^}]*\})*|[_\^{}=+\-<>]|[0-9][a-zA-Z]|[a-zA-Z][0-9])/g,
+      match => `\\(${match}\\)`
+    );
+  }
+
   // 4. Dark Mode Initialization & Toggle
-  // ─────────────────────────────────────────────────────────────────────────────
   if (isDarkMode) {
     document.body.classList.add('dark-mode');
     document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
   }
-
   document.getElementById('theme-toggle').addEventListener('click', () => {
     isDarkMode = !isDarkMode;
     document.body.classList.toggle('dark-mode', isDarkMode);
-    document.getElementById('theme-toggle').innerHTML = isDarkMode 
-      ? '<i class="fas fa-sun"></i>' 
+    document.getElementById('theme-toggle').innerHTML = isDarkMode
+      ? '<i class="fas fa-sun"></i>'
       : '<i class="fas fa-moon"></i>';
     localStorage.setItem('darkMode', isDarkMode);
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 5. Show Batch Code in Header
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 5. Show Batch Code & Validate Credentials
   document.getElementById("logged-batch").textContent = batchName;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 6. Validate Credentials (Username) & Load Test Data
-  // ─────────────────────────────────────────────────────────────────────────────
   window.validateCredentials = async () => {
     const u = document.getElementById("username").value.trim();
-    if (!u) {
-      showToast("Please enter your username.", "error");
-      return;
-    }
+    if (!u) { showToast("Enter username.", "error"); return; }
     username = u;
     document.getElementById("logged-username").textContent = username;
     document.getElementById("modal-overlay").style.display = "none";
@@ -1008,6 +996,7 @@ input:focus,
     await loadTestSeriesData();
   };
 
+  // 6. Fetch & Normalize Data
   async function loadTestSeriesData() {
     try {
       showLoading(true);
@@ -1015,589 +1004,259 @@ input:focus,
       if (!res.ok) throw new Error("Fetch failed");
       testData = await res.json();
 
-      // Populate test name & subjects; set timer
+      Object.values(testData.questions).forEach(map => {
+        Object.values(map).forEach(q => {
+          q.question = normalizeQuestionText(q.question);
+          if (Array.isArray(q.options)) q.options = q.options.map(opt => normalizeQuestionText(opt));
+        });
+      });
+
       document.getElementById("test-name").textContent = testData.testName;
       subjectsArr = testData.subjects;
-      timeLeft = (testData.testDuration || 90) * 60;
+      timeLeft    = (testData.testDuration||90)*60;
 
       buildSubjectButtons();
-      currentSubject = subjectsArr[0];
-
-      // Directly load questions (no separate chapter logic in this version)
+      currentSubject = subjectsArr[0]||'';
       await loadQuestions();
-
-      updateTimerDisplay();
-      startTimer();
+      updateTimerDisplay(); startTimer();
     } catch (e) {
       console.error(e);
-      showToast("Failed to load test. Please refresh and try again.", "error");
-    } finally {
-      showLoading(false);
-    }
+      showToast("Failed to load test.", "error");
+    } finally { showLoading(false); }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 7. Build & Update Subject Tabs
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. Subject Tabs
   function buildSubjectButtons() {
     const container = document.getElementById("subject-buttons");
-    container.innerHTML = "";
+    container.innerHTML = '';
     subjectsArr.forEach(sub => {
       const btn = document.createElement("button");
-      btn.className = "nav-tab";
-      btn.textContent = sub;
-      btn.onclick = () => {
-        currentSubject = sub;
-        updateSubjectButtons();
-        loadQuestions();
-      };
+      btn.className = "nav-tab"; btn.textContent = sub;
+      btn.onclick = () => { currentSubject = sub; updateSubjectButtons(); loadQuestions(); };
       container.appendChild(btn);
     });
     updateSubjectButtons();
   }
-
   function updateSubjectButtons() {
-    document.querySelectorAll("#subject-buttons .nav-tab")
-      .forEach(btn => btn.classList.toggle("active", btn.textContent === currentSubject));
+    document.querySelectorAll("#subject-buttons .nav-tab").forEach(b =>
+      b.classList.toggle("active", b.textContent === currentSubject)
+    );
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 8. Load Questions for Current Subject → Sort MCQ first, Track Visited
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 8. Load Questions
   async function loadQuestions() {
     showLoading(true);
-
-    const questionMap = testData.questions[currentSubject] || {};
-    questions = Object.values(questionMap);
-
-    // Sort: MCQs (with options) first, then numerical-input questions
-    questions.sort((a, b) => {
-      const aIsInput = !Array.isArray(a.options) || !a.options.length;
-      const bIsInput = !Array.isArray(b.options) || !b.options.length;
-      return aIsInput - bIsInput;
-    });
-
+    const map = testData.questions[currentSubject] || {};
+    questions = Object.values(map);
+    questions.sort((a,b)=> (!a.options||!a.options.length) - (!b.options||!b.options.length));
     currentQuestionIndex = 0;
-    if (questions.length) {
-      markAsVisited(questions[0].questionId);
-    }
-
-    displayQuestion();
-    updateNavInfo();
-    updateProgress();
+    if (questions.length) markAsVisited(questions[0].questionId);
+    displayQuestion(); updateNavInfo(); updateProgress();
     showLoading(false);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 9. Render a Question (+ Options) into the DOM, then Typeset with MathJax
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 9. Render Question
   function displayQuestion() {
-    const question = questions[currentQuestionIndex];
+    const q = questions[currentQuestionIndex];
     const container = document.getElementById("question-card");
+    if (!q) { container.innerHTML = `<p>No questions available.</p>`; return; }
 
-    if (!question) {
-      container.innerHTML = `
-        <div class="question-header">
-          <div class="question-number">No Questions</div>
-        </div>
-        <div class="question-content">
-          <p>No questions available for this section.</p>
-        </div>
-      `;
-      return;
-    }
+    const isImg = str => /https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
+    const saved    = getSavedAnswer(q.questionId);
+    const reviewed = getSavedReview(q.questionId);
 
-    const isImageURL = (str) => /https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
-    const savedAnswer = getSavedAnswer(question.questionId);
-    const isReviewed = getSavedReview(question.questionId);
+    let html = `<div class="question-header">` +
+               `<div class="question-number">Question ${currentQuestionIndex+1}</div>` +
+               `<button class="menu-btn" onclick="toggleProgress()"><i class="fas fa-bars"></i></button>` +
+               `</div><div class="question-content">`;
 
-    // Build question header + text
-    let questionContent = `
-      <div class="question-header">
-        <div class="question-number">Question ${currentQuestionIndex + 1}</div>
-        <button class="menu-btn" onclick="toggleProgress()">
-          <i class="fas fa-bars"></i>
-        </button>
-      </div>
-      <div class="question-content">
-        <div class="question-text">
-          ${
-            isImageURL(question.question)
-              ? `<img src="${question.question}" class="question-image" alt="Question image"/>`
-              : renderLatex(question.question)
-          }
-        </div>
-        
-        <div class="review-section">
-          <input type="checkbox" class="review-checkbox"
-                 id="review-checkbox"
-                 ${isReviewed ? "checked" : ""}/>
-          <label for="review-checkbox" class="review-label">
-            <i class="fas fa-bookmark"></i> Mark for Review
-          </label>
-        </div>
-    `;
+    html += `<div class="question-text">` +
+            (isImg(q.question)
+              ? `<img src="${q.question}" class="question-image"/>`
+              : renderLatex(q.question)) +
+            `</div>`;
 
-    // If MCQ (array of options)
-    if (Array.isArray(question.options) && question.options.length) {
-      questionContent += `<div class="options-container">`;
+    html += `<div class="review-section">` +
+            `<input type="checkbox" id="review-checkbox" ${reviewed?"checked":""}/> ` +
+            `<label for="review-checkbox"><i class="fas fa-bookmark"></i> Mark for Review</label>` +
+            `</div>`;
 
-      question.options.forEach((option, index) => {
-        const optionValue = String.fromCharCode(65 + index);
-        const isSelected = savedAnswer === optionValue;
-
-        questionContent += `
-          <div class="option-item ${isSelected ? 'selected' : ''}"
-               onclick="selectOption('${question.questionId}','${optionValue}', this)">
-            <div class="option-content">
-              <input type="radio"
-                     class="option-radio"
-                     name="opt_${question.questionId}"
-                     value="${optionValue}"
-                     ${isSelected ? 'checked' : ''}
-                     onchange="handleOptionChange(event,'${question.questionId}')">
-              <div class="option-text">
-                ${
-                  isImageURL(option)
-                    ? `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`
-                    : `${optionValue}. ${renderLatex(option)}`
-                }
-              </div>
-            </div>
-          </div>
-        `;
+    if (Array.isArray(q.options) && q.options.length) {
+      html += `<div class="options-container">`;
+      q.options.forEach((opt, idx) => {
+        const val = String.fromCharCode(65+idx);
+        const sel = saved === val;
+        html += `<div class="option-item ${sel? 'selected':''}" onclick="selectOption('${q.questionId}','${val}',this)">` +
+                `<input type="radio" name="opt_${q.questionId}" value="${val}" ${sel? 'checked':''}/> ` +
+                `<div class="option-text">` +
+                (isImg(opt)
+                  ? `<img src="${opt}" class="option-image"/>`
+                  : `${val}. ${renderLatex(opt)}`) +
+                `</div></div>`;
       });
-
-      questionContent += `</div>`; // Close options-container
-    }
-    // Else: numerical-input question
-    else {
-      questionContent += `
-        <div class="input-section">
-          <label class="input-label">
-            <i class="fas fa-edit"></i> Your Answer:
-          </label>
-          <input type="number"
-                 class="input-field"
-                 id="answer-input"
-                 value="${savedAnswer}"
-                 placeholder="Enter your answer"/>
-        </div>
-      `;
+      html += `</div>`;
+    } else {
+      html += `<div class="input-section"><label>Your Answer:</label>` +
+              `<input type="number" id="answer-input" value="${saved}" placeholder="Enter your answer"/>` +
+              `</div>`;
     }
 
-    // Navigation buttons (Previous + Save & Next/Finish)
-    questionContent += `
-        <div class="nav-buttons">
-          <button class="nav-btn secondary"
-                  onclick="goToPrevious()"
-                  ${currentQuestionIndex === 0 ? 'disabled' : ''}>
-            <i class="fas fa-arrow-left"></i> Previous
-          </button>
-          <button class="nav-btn primary" onclick="saveAndNext()">
-            ${
-              currentQuestionIndex === questions.length - 1
-                ? 'Save & Finish'
-                : 'Save & Next'
-            }
-            <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
-      </div>
-    `;
+    html += `<div class="nav-buttons">` +
+            `<button class="nav-btn secondary" onclick="goToPrevious()" ${currentQuestionIndex===0?"disabled":""}>` +
+            `<i class="fas fa-arrow-left"></i> Previous</button>` +
+            `<button class="nav-btn primary" onclick="saveAndNext()">` +
+            `${currentQuestionIndex === questions.length-1 ? 'Save & Finish' : 'Save & Next'} ` +
+            `<i class="fas fa-arrow-right"></i></button>` +
+            `</div></div>`;
 
-    // Inject into DOM
-    container.innerHTML = questionContent;
-
-    // ── Trigger MathJax typesetting on the newly-inserted content ──
-    if (window.MathJax) {
-      MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
-    }
+    container.innerHTML = html;
+    if (window.MathJax) MathJax.typesetPromise([container]).catch(console.error);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 10. Option Selection & Change Handlers
-  // ─────────────────────────────────────────────────────────────────────────────
-  function selectOption(questionId, value, element) {
-    // Deselect all, then mark this as selected
-    document.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
-    element.classList.add('selected');
-
-    // Update the corresponding radio input
-    const radio = element.querySelector('input[type="radio"]');
-    radio.checked = true;
-
-    // Persist in LocalStorage
-    saveAnswer(questionId, value);
+  // 10. Selection Handlers
+  function selectOption(qId, val, el) {
+    document.querySelectorAll('.option-item').forEach(o=>o.classList.remove('selected'));
+    el.classList.add('selected');
+    el.querySelector('input[type="radio"]').checked = true;
+    saveAnswer(qId, val);
   }
+  function handleOptionChange(ev,qId) { saveAnswer(qId, ev.target.value); }
 
-  function handleOptionChange(event, questionId) {
-    saveAnswer(questionId, event.target.value);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 11. Save & Next / Go To Previous Navigation
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 11. Navigation: Save & Next / Previous
   window.saveAndNext = () => {
-    const question = questions[currentQuestionIndex];
-    // Save numeric answer if present
-    const answerInput = document.getElementById("answer-input");
-    if (answerInput) {
-      const value = answerInput.value.trim();
-      if (value) saveAnswer(question.questionId, value);
-      else removeAnswer(question.questionId);
+    const q = questions[currentQuestionIndex];
+    const input = document.getElementById('answer-input');
+    if (input) {
+      const v = input.value.trim();
+      v ? saveAnswer(q.questionId, v) : removeAnswer(q.questionId);
     }
-    // Save review checkbox state
-    const reviewCheckbox = document.getElementById("review-checkbox");
-    if (reviewCheckbox) saveReview(question.questionId, reviewCheckbox.checked);
+    const chk = document.getElementById('review-checkbox');
+    if (chk) saveReview(q.questionId, chk.checked);
 
-    // Advance index or switch subject
-    if (currentQuestionIndex < questions.length - 1) {
+    if (currentQuestionIndex < questions.length-1) {
       currentQuestionIndex++;
-      markAsVisited(questions[currentQuestionIndex].questionId);
     } else {
-      // Move to next subject or notify completion
-      const currentIndex = subjectsArr.indexOf(currentSubject);
-      if (currentIndex < subjectsArr.length - 1) {
-        currentSubject = subjectsArr[currentIndex + 1];
-        updateSubjectButtons();
-        loadQuestions();
-        return;
+      const idx = subjectsArr.indexOf(currentSubject);
+      if (idx < subjectsArr.length-1) {
+        currentSubject = subjectsArr[idx+1]; updateSubjectButtons(); loadQuestions(); return;
       } else {
-        showToast("You have completed all questions!", "success");
-        return;
+        showToast("All done!", "success"); return;
       }
     }
-
-    displayQuestion();
-    updateNavInfo();
-    updateProgress();
+    markAsVisited(questions[currentQuestionIndex].questionId);
+    displayQuestion(); updateNavInfo(); updateProgress();
   };
-
   window.goToPrevious = () => {
-    if (currentQuestionIndex > 0) {
+    if (currentQuestionIndex>0) {
       currentQuestionIndex--;
-      displayQuestion();
-      updateNavInfo();
-      updateProgress();
+      displayQuestion(); updateNavInfo(); updateProgress();
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 12. Update Navigation Info (Subject, Q-No, Total)
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 12. Update Nav Info
   function updateNavInfo() {
-    document.getElementById("current-subject").textContent = currentSubject;
-    document.getElementById("current-question-index").textContent = currentQuestionIndex + 1;
-    document.getElementById("total-questions").textContent = questions.length;
+    document.getElementById('current-subject').textContent = currentSubject;
+    document.getElementById('current-question-index').textContent = currentQuestionIndex+1;
+    document.getElementById('total-questions').textContent = questions.length;
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 13. Progress Modal: Render Question-status Grid
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 13. Progress Modal
   function updateProgress() {
-    const container = document.getElementById("question-progress");
-    container.innerHTML = "";
-
-    questions.forEach((question, index) => {
-      const item = document.createElement("div");
-      item.className = "progress-item";
-      item.textContent = index + 1;
-
-      const hasAnswer = !!getSavedAnswer(question.questionId);
-      const isReviewed = getSavedReview(question.questionId);
-      const isVisited  = getSavedVisited(question.questionId);
-
-      if (hasAnswer && isReviewed) {
-        item.classList.add("status-answered-review");
-      } else if (hasAnswer) {
-        item.classList.add("status-answered");
-      } else if (isReviewed) {
-        item.classList.add("status-review");
-      } else if (isVisited) {
-        item.classList.add("status-visited");
-      }
-
-      item.onclick = () => {
-        currentQuestionIndex = index;
-        markAsVisited(question.questionId);
-        displayQuestion();
-        updateNavInfo();
-        updateProgress();
-        toggleProgress(); // auto‐close progress on mobile
-      };
-
-      container.appendChild(item);
+    const cont = document.getElementById('question-progress'); cont.innerHTML='';
+    questions.forEach((q,i) => {
+      const item = document.createElement('div'); item.textContent = i+1;
+      const a = getSavedAnswer(q.questionId), r = getSavedReview(q.questionId), v = getSavedVisited(q.questionId);
+      if (a && r) item.classList.add('status-answered-review');
+      else if (a)  item.classList.add('status-answered');
+      else if (r)  item.classList.add('status-review');
+      else if (v)  item.classList.add('status-visited');
+      item.onclick = () => { currentQuestionIndex=i; displayQuestion(); updateNavInfo(); updateProgress(); toggleProgress(); };
+      cont.appendChild(item);
     });
   }
-
   window.toggleProgress = () => {
-    const modal = document.getElementById("progress-modal");
-    const isVisible = modal.style.display === "block";
-    modal.style.display = isVisible ? "none" : "block";
-    if (!isVisible) updateProgress();
+    const m = document.getElementById('progress-modal');
+    m.style.display = m.style.display==='block'?'none':'block';
+    if (m.style.display==='block') updateProgress();
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 14. LocalStorage Helpers: Answer, Review, Visited
-  // ─────────────────────────────────────────────────────────────────────────────
-  function saveAnswer(questionId, answer) {
-    const key = `response_${currentSubject}_${questionId}`;
-    localStorage.setItem(key, answer);
-    console.log(`Saved answer: ${key} = ${answer}`); // Debug
-  }
-  function getSavedAnswer(questionId) {
-    const key = `response_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) || "";
-  }
-  function removeAnswer(questionId) {
-    const key = `response_${currentSubject}_${questionId}`;
-    localStorage.removeItem(key);
-  }
+  // 14. LocalStorage Helpers
+  function saveAnswer(id,val) { localStorage.setItem(`response_${currentSubject}_${id}`,val); }
+  function getSavedAnswer(id){ return localStorage.getItem(`response_${currentSubject}_${id}`)||''; }
+  function removeAnswer(id){ localStorage.removeItem(`response_${currentSubject}_${id}`); }
+  function saveReview(id,f){ f? localStorage.setItem(`review_${currentSubject}_${id}`,'true') : localStorage.removeItem(`review_${currentSubject}_${id}`); }
+  function getSavedReview(id){ return localStorage.getItem(`review_${currentSubject}_${id}`)==='true'; }
+  function markAsVisited(id){ localStorage.setItem(`visited_${currentSubject}_${id}`,'true'); }
+  function getSavedVisited(id){ return localStorage.getItem(`visited_${currentSubject}_${id}`)==='true'; }
 
-  function saveReview(questionId, isReviewed) {
-    const key = `review_${currentSubject}_${questionId}`;
-    if (isReviewed) localStorage.setItem(key, "true");
-    else localStorage.removeItem(key);
-  }
-  function getSavedReview(questionId) {
-    const key = `review_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) === "true";
-  }
-
-  function markAsVisited(questionId) {
-    const key = `visited_${currentSubject}_${questionId}`;
-    localStorage.setItem(key, "true");
-  }
-  function getSavedVisited(questionId) {
-    const key = `visited_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) === "true";
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 15. Timer: Display & Auto‐Submit on Zero
-  // ─────────────────────────────────────────────────────────────────────────────
+  // 15. Timer
   function updateTimerDisplay() {
-    const hours   = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
-    const minutes = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
-    const seconds = String(timeLeft % 60).padStart(2, '0');
-    document.getElementById("time-left").textContent = `${hours}:${minutes}:${seconds}`;
-
-    const timerEl = document.getElementById("timer");
-    if (timeLeft <= 300) { // last 5 min → red alert
-      timerEl.style.background   = "rgba(239, 68, 68, 0.1)";
-      timerEl.style.color        = "var(--error-color)";
-      timerEl.style.borderColor  = "var(--error-color)";
-    } else if (timeLeft <= 600) { // last 10 min → orange
-      timerEl.style.background   = "rgba(245, 158, 11, 0.1)";
-      timerEl.style.color        = "var(--warning-color)";
-      timerEl.style.borderColor  = "var(--warning-color)";
-    }
+    const h = String(Math.floor(timeLeft/3600)).padStart(2,'0');
+    const m = String(Math.floor((timeLeft%3600)/60)).padStart(2,'0');
+    const s = String(timeLeft%60).padStart(2,'0');
+    const el = document.getElementById('time-left'); el.textContent = `${h}:${m}:${s}`;
+    const bar = document.getElementById('timer');
+    if(timeLeft<=300){ bar.style.color='var(--error-color)'; }
+    else if(timeLeft<=600){ bar.style.color='var(--warning-color)'; }
   }
+  function startTimer(){ timerInterval = setInterval(() => { timeLeft--; updateTimerDisplay(); if(timeLeft<=0){ clearInterval(timerInterval); submitTest(true); } },1000); }
 
-  function startTimer() {
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      updateTimerDisplay();
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        submitTest(true);
+  // 16. Tab Switch Detection
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){ tabSwitchCount++; if(tabSwitchCount>=maxTabSwitches) submitTest(true);
+      else showToast(`Warning: ${maxTabSwitches-tabSwitchCount} switches left`,`warning`);
+    }
+  });
+
+  // 17. Submit Test
+  window.submitTest = async(auto=false) => {
+    const q = questions[currentQuestionIndex];
+    const inp = document.getElementById('answer-input'); if(inp){ const v=inp.value.trim(); v? saveAnswer(q.questionId,v):removeAnswer(q.questionId); }
+    const chk = document.getElementById('review-checkbox'); if(chk) saveReview(q.questionId,chk.checked);
+    if(!auto && !confirm("Submit test?")) return;
+    try{
+      showLoading(true);
+      const payload = {};
+      for(const sub of subjectsArr){ payload[sub]={}; const map = testData.questions[sub]||{};
+        Object.values(map).forEach(q=>{
+          const k=`response_${sub}_${q.questionId}`;
+          payload[sub][q.questionId] = { questionId:q.questionId, selectedAnswer: localStorage.getItem(k)||null };
+        });
       }
-    }, 1000);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 16. Tab‐Switch Detection (Auto‐Submit)
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      tabSwitchCount++;
-      if (tabSwitchCount >= maxTabSwitches) {
-        submitTest(true);
-      } else {
-        showToast(
-          `Warning: ${maxTabSwitches - tabSwitchCount} tab switches remaining before auto‐submit.`,
-          "warning"
-        );
-      }
-    }
-  });
-
- // ─────────────────────────────────────────────────────────────────────────────
-// 17. Submit Test (Manual/Auto) → Build Payload & POST
-// ─────────────────────────────────────────────────────────────────────────────
-window.submitTest = async (auto = false) => {
-  // ─────── NEW: Pre-save current integer input and review state ───────
-  const currentQ = questions[currentQuestionIndex];
-  const answerInput = document.getElementById("answer-input");
-  if (answerInput) {
-    const val = answerInput.value.trim();
-    if (val) {
-      saveAnswer(currentQ.questionId, val);
-    } else {
-      removeAnswer(currentQ.questionId);
-    }
-  }
-  const reviewCheckbox = document.getElementById("review-checkbox");
-  if (reviewCheckbox) {
-    saveReview(currentQ.questionId, reviewCheckbox.checked);
-  }
-  // ─────────────────────────────────────────────────────────────────────
-
-  // If manual submit, confirm
-  if (!auto && !confirm("Are you sure you want to submit the test?")) {
-    return;
-  }
-
-  try {
-    showLoading(true);
-
-    // Build payload from LocalStorage for all subjects/questions
-    const payload = {};
-    for (const subject of subjectsArr) {
-      payload[subject] = {};
-      const qMap = testData.questions[subject] || {};
-      Object.values(qMap).forEach(q => {
-        const key = `response_${subject}_${q.questionId}`;
-        const stored = localStorage.getItem(key);
-        payload[subject][q.questionId] = {
-          questionId: q.questionId,
-          selectedAnswer: stored || null
-        };
+      const res = await fetch(`/api/tests/${testID}/submit`,{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ batchName, username, responses:payload })
       });
-    }
+      if(!res.ok) throw new Error(`Status ${res.status}`);
+      await res.json();
+      clearInterval(timerInterval); localStorage.clear();
+      showToast(auto?"Auto-submitted!":"Submitted!",`success`);
+      setTimeout(()=> window.location.href = auto? "/Results/" : 
+        `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`
+      ,2000);
+    } catch(e){ console.error(e); showToast("Submit failed.",`error`); showLoading(false);}  
+  };
 
-    console.log('Submitting payload:', payload);
-
-    // POST to server
-    const response = await fetch(`/api/tests/${testID}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        batchName,
-        username,
-        responses: payload
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Submission failed: ${response.status}`);
-    }
-    const result = await response.json();
-    console.log('Submission result:', result);
-
-    // Cleanup & Redirect
-    localStorage.clear();
-    clearInterval(timerInterval);
-    showToast(
-      auto ? "Test auto-submitted successfully!" : "Test submitted successfully!",
-      "success"
-    );
-    setTimeout(() => {
-      window.location.href = auto
-        ? "/Results/"
-        : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-    }, 2000);
-
-  } catch (error) {
-    console.error("Submission error:", error);
-    showToast("Failed to submit test. Please try again.", "error");
-    showLoading(false);
-  }
-};
-
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 18. Utility: Loading Overlay & Toast Notifications
-  // ─────────────────────────────────────────────────────────────────────────────
-  function showLoading(show) {
-    const content = document.getElementById("content");
-    if (show) content.classList.add("loading");
-    else       content.classList.remove("loading");
+  // 18. Loading & Toast
+  function showLoading(s){ document.getElementById('content').classList.toggle('loading',s); }
+  function showToast(msg,type='info'){ const t=document.createElement('div');
+    t.textContent=msg; t.className='toast '+type; document.body.appendChild(t);
+    setTimeout(()=>t.remove(),3000);
   }
 
-  function showToast(message, type = "info") {
-    const toast = document.createElement("div");
-    toast.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      background: ${
-        type === "error"   ? "var(--error-color)" :
-        type === "warning" ? "var(--warning-color)" :
-        type === "success" ? "var(--success-color)" : "var(--primary-color)"
-      };
-      color: white;
-      padding: 12px 20px;
-      border-radius: var(--border-radius-sm);
-      font-size: 14px; font-weight: 500;
-      z-index: 10000;
-      box-shadow: 0 4px 12px var(--card-shadow);
-      transform: translateX(100%);
-      transition: transform 0.3s ease;
-      max-width: 300px;
-    `;
-    toast.textContent = message;
-    document.body.appendChild(toast);
-
-    // Slide in
-    setTimeout(() => {
-      toast.style.transform = "translateX(0)";
-    }, 100);
-
-    // Auto‐remove
-    setTimeout(() => {
-      toast.style.transform = "translateX(100%)";
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 19. Keyboard Navigation & Touch Gestures
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowLeft' && currentQuestionIndex > 0) {
-      e.preventDefault();
-      goToPrevious();
-    } else if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      saveAndNext();
-    } else if (e.key === 'Escape') {
-      const modal = document.getElementById("progress-modal");
-      if (modal.style.display === "block") toggleProgress();
-    }
+  // 19. Keyboard & Touch
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowLeft') goToPrevious();
+    else if(e.key==='ArrowRight') saveAndNext();
+    else if(e.key==='Escape') toggleProgress();
   });
+  let sx=0; document.addEventListener('touchstart',e=>{ sx=e.changedTouches[0].screenX; });
+  document.addEventListener('touchend',e=>{ const ex=e.changedTouches[0].screenX; const d=sx-ex; if(d>50) saveAndNext(); else if(d< -50) goToPrevious(); });
 
-  let touchStartX = 0, touchEndX = 0;
-  document.addEventListener('touchstart', (e) => {
-    touchStartX = e.changedTouches[0].screenX;
+  // 20. Init
+  document.addEventListener('DOMContentLoaded',()=>{
+    const inp = document.getElementById('username'); if(inp){ inp.focus(); inp.addEventListener('keypress',e=>{ if(e.key==='Enter') validateCredentials(); }); }
   });
-  document.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].screenX;
-    handleSwipe();
-  });
-  function handleSwipe() {
-    const swipeThreshold = 50;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > swipeThreshold) {
-      if (diff > 0) saveAndNext(); // Swipe left → Next
-      else goToPrevious();         // Swipe right → Previous
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 20. Initial Setup on DOMContentLoaded
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', () => {
-    const usernameInput = document.getElementById("username");
-    if (usernameInput) {
-      usernameInput.focus();
-      usernameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') validateCredentials();
-      });
-    }
-  });
-</script>
 
 </body>
 </html>
