@@ -1154,7 +1154,7 @@ textarea:focus-visible {
     const c = document.getElementById('question-content');
     if (!questions.length) {
       c.innerHTML = `<div class="loading-container">
-        <i class="fas fa-inbox loading-icon"></i>
+        <i class="fas fa-inbox loading-icon"></i>it
         <div class="loading-text">No questions available</div>
       </div>`;
       return;
@@ -1237,61 +1237,91 @@ function renderQuestionView(q) {
   // ─────────────────────────────────────────────────────────────────────────────
   // 13. Edit mode (no LaTeX rendering, raw editing)
   // ─────────────────────────────────────────────────────────────────────────────
-  function renderEditForm(q) {
-    const c = document.getElementById('question-content');
-    let html = `<div class="question-card">
-      <form class="edit-form" onsubmit="saveQuestion(event)" novalidate>
-        <div class="form-group">
-          <label for="edit-question"><i class="fas fa-edit"></i> Question Text</label>
-          <textarea id="edit-question" name="question" class="form-textarea" required>${q.question || ''}</textarea>
-        </div>
-        <div class="form-group">
-          <label for="edit-type"><i class="fas fa-list"></i> Question Type</label>
-          <select id="edit-type" name="type" class="form-select" onchange="toggleQuestionType()" required>
-            <option value="MCQ"${q.questionType === 'MCQ' ? ' selected' : ''}>MCQ</option>
-            <option value="Integer"${q.questionType === 'Integer' ? ' selected' : ''}>Integer</option>
-          </select>
-        </div>
-        <div id="mcq-options" style="display:${q.questionType === 'MCQ' ? 'block' : 'none'}">
-          <div class="form-group"><label><i class="fas fa-list-ol"></i> Options</label>
-            <div class="grid-options">`;
-    ['A','B','C','D'].forEach((L, i) => {
-      html += `<div>
-        <label for="edit-option-${L}">Option ${L}</label>
-        <input type="text" id="edit-option-${L}" name="option${L}"
-               class="form-input" value="${q.options[i] || ''}" required>
-      </div>`;
-    });
-    html += `   </div></div>
-          <div class="form-group">
-            <label for="edit-correct"><i class="fas fa-check-circle"></i> Correct Answer</label>
-            <select id="edit-correct" name="correctAnswer" class="form-select" required>
-              <option value="">Select correct answer</option>`;
-    ['A','B','C','D'].forEach(L => {
-      html += `<option value="${L}"${q.correctAnswer === L ? ' selected' : ''}>${L}</option>`;
-    });
-    html += `   </select>
-          </div>
-        </div>
-        <div id="integer-answer" style="display:${q.questionType === 'Integer' ? 'block' : 'none'}">
-          <div class="form-group">
-            <label for="edit-answer"><i class="fas fa-hashtag"></i> Correct Answer</label>
-            <input type="number" id="edit-answer" name="answer"
-                   class="form-input" value="${q.answer || ''}" required>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="edit-solution"><i class="fas fa-lightbulb"></i> Solution</label>
-          <textarea id="edit-solution" name="solution" class="form-textarea">${q.solution || ''}</textarea>
-        </div>
-        <div class="action-buttons">
-          <button type="button" class="btn btn-secondary" onclick="cancelEdit()"><i class="fas fa-times"></i> Cancel</button>
-          <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Save Changes</button>
-        </div>
-      </form>
+ // ─────────────────────────────────────────────────────────────────────────────
+// Edit mode (with Subject selector)
+// ─────────────────────────────────────────────────────────────────────────────
+function renderEditForm(q) {
+  const c = document.getElementById('question-content');
+  let html = `<div class="question-card">
+    <form class="edit-form" onsubmit="saveQuestion(event)" novalidate>
+      
+      <!-- Subject selector -->
+      <div class="form-group">
+        <label for="edit-subject"><i class="fas fa-tag"></i> Subject</label>
+        <select id="edit-subject" name="subject" class="form-select" required>
+          ${subjects.map(sub => `
+            <option value="${sub}"${sub === q.subject ? ' selected' : ''}>${sub}</option>
+          `).join('')}
+        </select>
+      </div>
+
+      <!-- Question text -->
+      <div class="form-group">
+        <label for="edit-question"><i class="fas fa-edit"></i> Question Text</label>
+        <textarea id="edit-question" name="question" class="form-textarea" required>${q.question || ''}</textarea>
+      </div>
+
+      <!-- Question type -->
+      <div class="form-group">
+        <label for="edit-type"><i class="fas fa-list"></i> Question Type</label>
+        <select id="edit-type" name="type" class="form-select" onchange="toggleQuestionType()" required>
+          <option value="MCQ"${q.questionType === 'MCQ' ? ' selected' : ''}>MCQ</option>
+          <option value="Integer"${q.questionType === 'Integer' ? ' selected' : ''}>Integer</option>
+        </select>
+      </div>
+
+      <!-- MCQ options -->
+      <div id="mcq-options" style="display:${q.questionType === 'MCQ' ? 'block' : 'none'}">
+        <div class="form-group"><label><i class="fas fa-list-ol"></i> Options</label>
+          <div class="grid-options">`;
+  ['A','B','C','D'].forEach((L, i) => {
+    html += `<div>
+      <label for="edit-option-${L}">Option ${L}</label>
+      <input type="text" id="edit-option-${L}" name="option${L}"
+             class="form-input" value="${q.options[i] || ''}" required>
     </div>`;
-    c.innerHTML = html;
-  }
+  });
+  html += `   </div></div>
+        <div class="form-group">
+          <label for="edit-correct"><i class="fas fa-check-circle"></i> Correct Answer</label>
+          <select id="edit-correct" name="correctAnswer" class="form-select" required>
+            <option value="">Select correct answer</option>`;
+  ['A','B','C','D'].forEach(L => {
+    html += `<option value="${L}"${q.correctAnswer === L ? ' selected' : ''}>${L}</option>`;
+  });
+  html += `   </select>
+        </div>
+      </div>
+
+      <!-- Integer answer -->
+      <div id="integer-answer" style="display:${q.questionType === 'Integer' ? 'block' : 'none'}">
+        <div class="form-group">
+          <label for="edit-answer"><i class="fas fa-hashtag"></i> Correct Answer</label>
+          <input type="number" id="edit-answer" name="answer"
+                 class="form-input" value="${q.answer || ''}" required>
+        </div>
+      </div>
+
+      <!-- Solution -->
+      <div class="form-group">
+        <label for="edit-solution"><i class="fas fa-lightbulb"></i> Solution</label>
+        <textarea id="edit-solution" name="solution" class="form-textarea">${q.solution || ''}</textarea>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="action-buttons">
+        <button type="button" class="btn btn-secondary" onclick="cancelEdit()">
+          <i class="fas fa-times"></i> Cancel
+        </button>
+        <button type="submit" class="btn btn-success">
+          <i class="fas fa-save"></i> Save Changes
+        </button>
+      </div>
+    </form>
+  </div>`;
+
+  c.innerHTML = html;
+}
 
   function toggleQuestionType() {
     const t = document.getElementById('edit-type').value;
@@ -1301,32 +1331,43 @@ function renderQuestionView(q) {
   function enterEditMode() { inEditMode = true; renderQuestion(); }
   function cancelEdit()    { inEditMode = false; renderQuestion(); }
 
-  async function saveQuestion(e) {
-    e.preventDefault();
-    const q = questions[currentIdx];
-    const payload = {
-      question:     document.getElementById('edit-question').value.trim(),
-      questionType: document.getElementById('edit-type').value,
-      solution:     document.getElementById('edit-solution').value.trim()
-    };
-    if (payload.questionType === 'MCQ') {
-      payload.options       = ['A','B','C','D'].map(L => document.getElementById(`edit-option-${L}`).value.trim());
-      payload.correctAnswer = document.getElementById('edit-correct').value;
-      if (payload.options.some(o => !o))     { showToast('Fill all options', 'error'); return; }
-      if (!payload.correctAnswer)           { showToast('Select correct answer', 'error'); return; }
-    } else {
-      payload.answer = document.getElementById('edit-answer').value.trim();
-      if (!payload.answer) { showToast('Enter the answer', 'error'); return; }
-    }
-    try {
-      await api(`questions/${q._id}`, { method: 'PATCH', body: JSON.stringify(payload) });
-      showToast('Question updated', 'success');
-      inEditMode = false;
-      await loadQuestions();
-    } catch {
-      showToast('Error saving question', 'error');
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+// Save (include Subject in payload)
+// ─────────────────────────────────────────────────────────────────────────────
+async function saveQuestion(e) {
+  e.preventDefault();
+  const q = questions[currentIdx];
+
+  // Build payload with the (possibly changed) subject
+  const payload = {
+    subject:      document.getElementById('edit-subject').value,
+    question:     document.getElementById('edit-question').value.trim(),
+    questionType: document.getElementById('edit-type').value,
+    solution:     document.getElementById('edit-solution').value.trim()
+  };
+
+  if (payload.questionType === 'MCQ') {
+    payload.options       = ['A','B','C','D'].map(L => document.getElementById(`edit-option-${L}`).value.trim());
+    payload.correctAnswer = document.getElementById('edit-correct').value;
+    if (payload.options.some(o => !o))     { showToast('Fill all options', 'error'); return; }
+    if (!payload.correctAnswer)            { showToast('Select correct answer', 'error'); return; }
+  } else {
+    payload.answer = document.getElementById('edit-answer').value.trim();
+    if (!payload.answer) { showToast('Enter the answer', 'error'); return; }
   }
+
+  try {
+    await api(`questions/${q._id}`, {
+      method: 'PATCH',
+      body:   JSON.stringify(payload)
+    });
+    showToast('Question updated', 'success');
+    inEditMode = false;
+    await loadQuestions();
+  } catch {
+    showToast('Error saving question', 'error');
+  }
+}
 
   async function deleteQuestion() {
     if (!confirm('Delete this question?')) return;
