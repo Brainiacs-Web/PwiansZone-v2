@@ -7,170 +7,319 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
 :root {
   --primary-color: #1E40AF;
+  --primary-light: #3B82F6;
+  --primary-dark: #1E3A8A;
   --secondary-color: #2563EB;
   --accent-color: #9333EA;
+  --accent-light: #C084FC;
   --light-bg: #F8FAFC;
   --white: #ffffff;
   --text-color: #1E293B;
   --text-secondary: #64748B;
-  --card-shadow: rgba(0, 0, 0, 0.1);
+  --text-muted: #94A3B8;
+  --card-shadow: rgba(0, 0, 0, 0.08);
+  --card-shadow-hover: rgba(0, 0, 0, 0.15);
   --hover-bg: rgba(30, 64, 175, 0.05);
   --border-color: #E2E8F0;
+  --border-light: #F1F5F9;
   --success-color: #10B981;
+  --success-light: #34D399;
   --warning-color: #F59E0B;
+  --warning-light: #FBBF24;
   --error-color: #EF4444;
-  --border-radius: 16px;
-  --border-radius-sm: 8px;
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --error-light: #F87171;
+  --border-radius: 20px;
+  --border-radius-lg: 24px;
+  --border-radius-sm: 12px;
+  --border-radius-xs: 8px;
+  --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --blur-backdrop: blur(20px) saturate(180%);
+  --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
+  --gradient-success: linear-gradient(135deg, var(--success-color) 0%, var(--success-light) 100%);
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.12);
+  --shadow-strong: 0 20px 60px rgba(0, 0, 0, 0.15);
 }
 
 body.dark-mode {
   --primary-color: #60A5FA;
+  --primary-light: #93C5FD;
+  --primary-dark: #3B82F6;
   --secondary-color: #3B82F6;
   --accent-color: #C084FC;
+  --accent-light: #DDD6FE;
   --light-bg: #0F172A;
   --white: #1E293B;
   --text-color: #E2E8F0;
   --text-secondary: #94A3B8;
-  --card-shadow: rgba(0, 0, 0, 0.3);
+  --text-muted: #64748B;
+  --card-shadow: rgba(0, 0, 0, 0.4);
+  --card-shadow-hover: rgba(0, 0, 0, 0.6);
   --hover-bg: rgba(96, 165, 250, 0.1);
   --border-color: #334155;
+  --border-light: #475569;
+  --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  --gradient-accent: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-light) 100%);
 }
 
-/* Base Reset */
+/* Enhanced Base Reset */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: var(--light-bg);
   color: var(--text-color);
   overflow-x: hidden;
   transition: var(--transition);
-  line-height: 1.5;
+  line-height: 1.6;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* Mobile-first approach */
+/* Enhanced App Container */
 .app-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  background: var(--light-bg);
 }
 
-/* Compact Top Header */
+.app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(30, 64, 175, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Enhanced Top Header */
 .top-header {
-  background: var(--white);
-  border-bottom: 1px solid var(--border-color);
-  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: var(--blur-backdrop);
+  border-bottom: 1px solid var(--border-light);
+  padding: 16px 20px;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 1px 3px var(--card-shadow);
+  box-shadow: var(--shadow-soft);
+  transition: var(--transition);
+}
+
+.top-header:hover {
+  box-shadow: var(--shadow-medium);
 }
 
 .header-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  animation: slideInDown 0.6s ease-out;
 }
 
 .header-row:last-child {
   margin-bottom: 0;
+  animation-delay: 0.1s;
 }
 
 .user-info {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-secondary);
-}
-
-.user-info strong {
-  color: var(--text-color);
-  font-weight: 600;
-}
-
-.timer-section {
+  font-weight: 500;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+.user-info::before {
+  content: '👤';
+  font-size: 16px;
+}
+
+.user-info strong {
+  color: var(--text-color);
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.timer-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .timer {
-  background: rgba(30, 64, 175, 0.1);
+  background: rgba(30, 64, 175, 0.08);
   color: var(--primary-color);
-  padding: 6px 12px;
+  padding: 10px 16px;
   border-radius: var(--border-radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  border: 1px solid rgba(30, 64, 175, 0.2);
+  font-size: 14px;
+  font-weight: 700;
+  border: 2px solid rgba(30, 64, 175, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: var(--transition-bounce);
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.timer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.timer:hover::before {
+  left: 100%;
+}
+
+.timer:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-soft);
 }
 
 .submit-btn {
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
   border: none;
-  padding: 8px 16px;
+  padding: 10px 20px;
   border-radius: var(--border-radius-sm);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-soft);
+}
+
+.submit-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.submit-btn:hover::before {
+  left: 100%;
 }
 
 .submit-btn:hover {
-  background: var(--secondary-color);
-  transform: translateY(-1px);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: var(--shadow-medium);
+}
+
+.submit-btn:active {
+  transform: translateY(-1px) scale(1.02);
 }
 
 .test-info {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  font-size: 11px;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
+  font-size: 12px;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: var(--border-radius-xs);
+  border: 1px solid var(--border-light);
+  transition: var(--transition);
+}
+
+.info-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
 }
 
 .info-label {
-  color: var(--text-secondary);
-  font-weight: 500;
+  color: var(--text-muted);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  font-size: 10px;
+  margin-bottom: 4px;
 }
 
 .info-value {
   color: var(--primary-color);
-  font-weight: 600;
-  margin-top: 2px;
+  font-weight: 800;
+  font-size: 14px;
+  font-family: "JetBrains Mono", monospace;
 }
 
-/* Navigation Tabs */
+/* Enhanced Navigation Tabs */
 .nav-section {
-  background: var(--white);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: var(--blur-backdrop);
+  border-bottom: 1px solid var(--border-light);
+  padding: 0 20px;
+  position: sticky;
+  top: 80px;
+  z-index: 90;
 }
 
 .nav-tabs {
   display: flex;
-  gap: 4px;
+  gap: 8px;
   overflow-x: auto;
-  padding: 8px 0;
+  padding: 12px 0;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -180,92 +329,187 @@ body {
 }
 
 .nav-tab {
-  background: transparent;
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid var(--border-color);
   color: var(--text-color);
-  padding: 8px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
   white-space: nowrap;
   min-width: fit-content;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.nav-tab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--gradient-primary);
+  transition: left 0.3s ease;
+  z-index: -1;
 }
 
 .nav-tab.active {
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
   border-color: var(--primary-color);
+  transform: scale(1.05);
+  box-shadow: var(--shadow-soft);
+}
+
+.nav-tab.active::before {
+  left: 0;
 }
 
 .nav-tab:hover:not(.active) {
   background: var(--hover-bg);
   border-color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
 }
 
-/* Main Content */
+/* Enhanced Main Content */
 .main-content {
   flex: 1;
-  padding: 16px;
+  padding: 24px 20px;
   max-width: 100%;
+  animation: fadeInUp 0.8s ease-out;
 }
 
-/* Question Card */
+/* Enhanced Question Card */
 .question-card {
-  background: var(--white);
-  border-radius: var(--border-radius);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: var(--blur-backdrop);
+  border-radius: var(--border-radius-lg);
+  border: 1px solid var(--border-light);
   overflow: hidden;
-  box-shadow: 0 2px 8px var(--card-shadow);
+  box-shadow: var(--shadow-medium);
   position: relative;
+  transition: var(--transition-slow);
+}
+
+.question-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
+  z-index: 1;
+}
+
+.question-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-strong);
 }
 
 .question-header {
-  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  background: var(--gradient-primary);
   color: white;
-  padding: 16px;
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.question-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  animation: shimmer 3s infinite;
 }
 
 .question-number {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 16px;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.question-number::before {
+  content: '📝';
+  font-size: 18px;
 }
 
 .menu-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   color: white;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  transition: var(--transition);
+  font-size: 18px;
+  transition: var(--transition-bounce);
+  backdrop-filter: blur(10px);
 }
 
 .menu-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .question-content {
-  padding: 20px;
+  padding: 32px 24px;
 }
 
 .question-text {
-  font-size: 16px;
-  line-height: 1.6;
-  margin-bottom: 20px;
+  font-size: 18px;
+  line-height: 1.7;
+  margin-bottom: 24px;
   color: var(--text-color);
   font-weight: 500;
+  position: relative;
+}
+
+/* Enhanced LaTeX Styling */
+.question-text .MathJax,
+.option-text .MathJax {
+  font-size: 1.1em !important;
+  color: var(--text-color) !important;
+}
+
+.question-text .MathJax_Display {
+  margin: 20px 0 !important;
+  padding: 16px !important;
+  background: rgba(30, 64, 175, 0.03) !important;
+  border-radius: var(--border-radius-sm) !important;
+  border-left: 4px solid var(--primary-color) !important;
+}
+
+.question-text mjx-container {
+  margin: 8px 0 !important;
+}
+
+.question-text mjx-container[display="true"] {
+  margin: 20px 0 !important;
+  padding: 20px !important;
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.03), rgba(147, 51, 234, 0.03)) !important;
+  border-radius: var(--border-radius-sm) !important;
+  border: 1px solid rgba(30, 64, 175, 0.1) !important;
+  box-shadow: var(--shadow-soft) !important;
 }
 
 .question-image,
@@ -273,27 +517,35 @@ body {
   max-width: 100%;
   height: auto;
   border-radius: var(--border-radius-sm);
-  margin: 12px 0;
-  box-shadow: 0 2px 8px var(--card-shadow);
+  margin: 16px 0;
+  box-shadow: var(--shadow-medium);
+  transition: var(--transition);
 }
 
-/* Options */
+.question-image:hover,
+.option-image:hover {
+  transform: scale(1.02);
+  box-shadow: var(--shadow-strong);
+}
+
+/* Enhanced Options */
 .options-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin: 20px 0;
+  gap: 16px;
+  margin: 24px 0;
 }
 
 .option-item {
-  background: var(--white);
+  background: rgba(255, 255, 255, 0.8);
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  padding: 16px;
+  padding: 20px;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
 }
 
 .option-item::before {
@@ -301,11 +553,23 @@ body {
   position: absolute;
   left: 0;
   top: 0;
-  width: 4px;
+  width: 6px;
   height: 100%;
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   transform: scaleY(0);
-  transition: transform 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  transform-origin: bottom;
+}
+
+.option-item::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(30, 64, 175, 0.05), transparent);
+  transition: left 0.6s ease;
 }
 
 .option-item:hover::before,
@@ -313,212 +577,332 @@ body {
   transform: scaleY(1);
 }
 
+.option-item:hover::after {
+  left: 100%;
+}
+
 .option-item:hover,
 .option-item.selected {
   border-color: var(--primary-color);
   background: var(--hover-bg);
-  transform: translateX(4px);
+  transform: translateX(8px) translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.option-item.selected {
+  background: rgba(30, 64, 175, 0.08);
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.1);
 }
 
 .option-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   width: 100%;
 }
 
 .option-radio {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   accent-color: var(--primary-color);
   cursor: pointer;
+  transition: var(--transition);
+}
+
+.option-radio:hover {
+  transform: scale(1.1);
 }
 
 .option-text {
   flex: 1;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.6;
   cursor: pointer;
+  font-weight: 500;
 }
 
-/* Input Answer */
+/* Enhanced Input Section */
 .input-section {
-  background: rgba(30, 64, 175, 0.05);
-  border: 2px solid rgba(30, 64, 175, 0.1);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.05), rgba(147, 51, 234, 0.05));
+  border: 2px solid rgba(30, 64, 175, 0.15);
   border-radius: var(--border-radius-sm);
-  padding: 16px;
-  margin: 20px 0;
+  padding: 24px;
+  margin: 24px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.input-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-primary);
 }
 
 .input-label {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   color: var(--primary-color);
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .input-field {
   width: 100%;
-  max-width: 200px;
-  padding: 12px;
+  max-width: 250px;
+  padding: 16px 20px;
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  font-size: 16px;
-  font-family: inherit;
-  transition: var(--transition);
-  background: var(--white);
+  font-size: 18px;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+  transition: var(--transition-bounce);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
 }
 
 .input-field:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+  box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.15);
+  transform: scale(1.02);
+  background: white;
 }
 
-/* Review Section */
+/* Enhanced Review Section */
 .review-section {
-  background: rgba(147, 51, 234, 0.05);
-  border: 2px solid rgba(147, 51, 234, 0.1);
+  background: linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(30, 64, 175, 0.05));
+  border: 2px solid rgba(147, 51, 234, 0.15);
   border-radius: var(--border-radius-sm);
-  padding: 16px;
-  margin: 20px 0;
+  padding: 20px;
+  margin: 24px 0;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.review-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--gradient-accent);
+}
+
+.review-section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
 }
 
 .review-checkbox {
-  width: 20px;
-  height: 20px;
+  width: 24px;
+  height: 24px;
   accent-color: var(--accent-color);
   cursor: pointer;
+  transition: var(--transition);
+}
+
+.review-checkbox:hover {
+  transform: scale(1.1);
 }
 
 .review-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--accent-color);
   cursor: pointer;
   flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Navigation Buttons */
+/* Enhanced Navigation Buttons */
 .nav-buttons {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  padding: 20px;
-  background: var(--light-bg);
-  border-top: 1px solid var(--border-color);
+  gap: 16px;
+  padding: 24px;
+  background: linear-gradient(135deg, var(--light-bg), rgba(255, 255, 255, 0.5));
+  border-top: 1px solid var(--border-light);
 }
 
 .nav-btn {
-  padding: 14px 20px;
+  padding: 18px 24px;
   border: none;
   border-radius: var(--border-radius-sm);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  min-height: 48px;
+  gap: 10px;
+  min-height: 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.nav-btn:hover::before {
+  left: 100%;
 }
 
 .nav-btn.primary {
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
+  box-shadow: var(--shadow-soft);
 }
 
 .nav-btn.secondary {
-  background: var(--white);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--text-color);
   border: 2px solid var(--border-color);
+  backdrop-filter: blur(10px);
 }
 
 .nav-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px var(--card-shadow);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-medium);
 }
 
 .nav-btn.primary:hover {
-  background: var(--secondary-color);
+  box-shadow: var(--shadow-strong);
 }
 
 .nav-btn.secondary:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
+  background: rgba(255, 255, 255, 1);
 }
 
-/* Progress Modal */
+.nav-btn:active {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Enhanced Progress Modal */
 .progress-modal {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: var(--blur-backdrop);
   z-index: 1000;
   display: none;
   padding: 20px;
+  animation: fadeIn 0.3s ease-out;
 }
 
 .progress-content {
-  background: var(--white);
-  border-radius: var(--border-radius);
-  max-width: 400px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: var(--blur-backdrop);
+  border-radius: var(--border-radius-lg);
+  max-width: 500px;
   margin: 0 auto;
-  max-height: 80vh;
+  max-height: 85vh;
   overflow-y: auto;
   position: relative;
-  margin-top: 10vh;
+  margin-top: 5vh;
+  box-shadow: var(--shadow-strong);
+  border: 1px solid var(--border-light);
+  animation: modalSlideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .progress-header {
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
-  padding: 16px 20px;
+  padding: 20px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  animation: shimmer 3s infinite;
 }
 
 .progress-title {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress-title::before {
+  content: '📊';
+  font-size: 20px;
 }
 
 .close-btn {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.2);
   color: white;
   font-size: 20px;
   cursor: pointer;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
+  backdrop-filter: blur(10px);
 }
 
 .close-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.1) rotate(90deg);
 }
 
 .progress-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 8px;
-  padding: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 12px;
+  padding: 24px;
 }
 
 .progress-item {
@@ -528,193 +912,345 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
-  background: var(--white);
-  min-height: 40px;
+  transition: var(--transition-bounce);
+  background: rgba(255, 255, 255, 0.9);
+  min-height: 50px;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+}
+
+.progress-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.3) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.progress-item:hover::before {
+  transform: translateX(100%);
 }
 
 .progress-item:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px var(--card-shadow);
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: var(--shadow-medium);
+  z-index: 1;
 }
 
 .progress-actions {
-  padding: 20px;
-  border-top: 1px solid var(--border-color);
+  padding: 24px;
+  border-top: 1px solid var(--border-light);
+  background: rgba(248, 250, 252, 0.8);
 }
 
 .progress-submit {
   width: 100%;
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
   border: none;
-  padding: 12px;
+  padding: 16px;
   border-radius: var(--border-radius-sm);
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: var(--shadow-soft);
 }
 
 .progress-submit:hover {
-  background: var(--secondary-color);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: var(--shadow-medium);
 }
 
-/* Username Modal */
+/* Enhanced Username Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: var(--blur-backdrop);
   z-index: 1100;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   opacity: 0;
-  animation: fadeIn 0.3s forwards;
+  animation: fadeIn 0.4s forwards;
 }
 
 .modal {
-  background: var(--white);
-  border-radius: var(--border-radius);
-  padding: 32px 24px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: var(--blur-backdrop);
+  border-radius: var(--border-radius-lg);
+  padding: 40px 32px;
   width: 100%;
-  max-width: 400px;
+  max-width: 450px;
   text-align: center;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: modalSlideUp 0.3s ease-out;
+  box-shadow: var(--shadow-strong);
+  animation: modalSlideUp 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  border: 1px solid var(--border-light);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--gradient-primary);
 }
 
 .modal-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--primary-color);
-  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 800;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.modal-title::before {
+  content: '🎓';
+  font-size: 28px;
+  -webkit-text-fill-color: initial;
 }
 
 .modal-input {
   width: 100%;
-  padding: 16px;
+  padding: 18px 24px;
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius-sm);
   font-size: 16px;
   font-family: inherit;
-  margin-bottom: 20px;
-  transition: var(--transition);
+  font-weight: 500;
+  margin-bottom: 24px;
+  transition: var(--transition-bounce);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
 }
 
 .modal-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+  box-shadow: 0 0 0 4px rgba(30, 64, 175, 0.15);
+  transform: scale(1.02);
+  background: white;
 }
 
 .modal-btn {
   width: 100%;
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
   border: none;
-  padding: 16px;
+  padding: 18px;
   border-radius: var(--border-radius-sm);
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s ease;
+}
+
+.modal-btn:hover::before {
+  left: 100%;
 }
 
 .modal-btn:hover {
-  background: var(--secondary-color);
-  transform: translateY(-2px);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: var(--shadow-medium);
 }
 
-/* Dark Mode Toggle */
+/* Enhanced Dark Mode Toggle */
 .theme-toggle {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
+  bottom: 24px;
+  right: 24px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: var(--primary-color);
+  background: var(--gradient-primary);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 12px var(--card-shadow);
+  box-shadow: var(--shadow-medium);
   z-index: 999;
   border: none;
-  transition: var(--transition);
+  transition: var(--transition-bounce);
+  backdrop-filter: blur(10px);
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
 .theme-toggle:hover {
-  transform: scale(1.1);
+  transform: scale(1.15) rotate(180deg);
+  box-shadow: var(--shadow-strong);
 }
 
 .theme-toggle i {
-  font-size: 20px;
+  font-size: 24px;
+  transition: var(--transition);
 }
 
-/* Animations */
+/* Enhanced Animations */
 @keyframes fadeIn {
+  from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@keyframes modalSlideUp {
-  from { transform: translateY(20px) scale(0.95); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+@keyframes fadeInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
 }
 
-/* Status Colors */
-.status-answered { background: var(--success-color) !important; color: white !important; }
-.status-review { background: var(--accent-color) !important; color: white !important; }
-.status-visited { background: var(--warning-color) !important; color: white !important; }
-.status-answered-review { background: var(--text-secondary) !important; color: white !important; }
+@keyframes slideInDown {
+  from { 
+    opacity: 0; 
+    transform: translateY(-30px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
 
-/* Tablet Styles */
+@keyframes modalSlideUp {
+  from { 
+    transform: translateY(50px) scale(0.9); 
+    opacity: 0; 
+  }
+  to { 
+    transform: translateY(0) scale(1); 
+    opacity: 1; 
+  }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes bounce {
+  0%, 20%, 53%, 80%, 100% { transform: translateY(0); }
+  40%, 43% { transform: translateY(-8px); }
+  70% { transform: translateY(-4px); }
+  90% { transform: translateY(-2px); }
+}
+
+/* Enhanced Status Colors */
+.status-answered { 
+  background: var(--gradient-success) !important; 
+  color: white !important; 
+  border-color: var(--success-color) !important;
+  animation: pulse 2s infinite;
+}
+
+.status-review { 
+  background: var(--gradient-accent) !important; 
+  color: white !important; 
+  border-color: var(--accent-color) !important;
+}
+
+.status-visited { 
+  background: linear-gradient(135deg, var(--warning-color), var(--warning-light)) !important; 
+  color: white !important; 
+  border-color: var(--warning-color) !important;
+}
+
+.status-answered-review { 
+  background: linear-gradient(135deg, var(--text-secondary), var(--text-muted)) !important; 
+  color: white !important; 
+  border-color: var(--text-secondary) !important;
+}
+
+/* Enhanced Responsive Design */
 @media (min-width: 768px) {
   body { font-size: 16px; }
   
   .top-header {
-    padding: 16px 24px;
+    padding: 20px 32px;
   }
   
   .header-row {
-    margin-bottom: 12px;
+    margin-bottom: 16px;
   }
   
   .test-info {
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px;
+    gap: 20px;
   }
   
   .main-content {
-    padding: 24px;
-    max-width: 800px;
+    padding: 32px;
+    max-width: 900px;
     margin: 0 auto;
   }
   
   .question-content {
-    padding: 32px;
+    padding: 40px 32px;
   }
   
   .question-text {
-    font-size: 18px;
+    font-size: 20px;
   }
   
   .nav-buttons {
-    padding: 24px 32px;
+    padding: 32px;
+    gap: 24px;
   }
   
   .progress-modal {
@@ -722,26 +1258,30 @@ body {
   }
   
   .progress-content {
-    max-width: 500px;
-    margin-top: 5vh;
+    max-width: 600px;
+    margin-top: 3vh;
   }
   
   .progress-grid {
-    grid-template-columns: repeat(6, 1fr);
-    gap: 12px;
-    padding: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 16px;
+    padding: 32px;
+  }
+  
+  .progress-item {
+    min-height: 60px;
+    font-size: 16px;
   }
 }
 
-/* Desktop Styles */
 @media (min-width: 1024px) {
   .app-container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
   }
   
   .top-header {
-    padding: 20px 32px;
+    padding: 24px 40px;
   }
   
   .test-info {
@@ -749,59 +1289,71 @@ body {
   }
   
   .main-content {
-    padding: 32px;
+    padding: 40px;
+    max-width: 1000px;
   }
   
   .nav-buttons {
     grid-template-columns: 1fr 2fr;
-    gap: 20px;
+    gap: 32px;
   }
   
   .progress-content {
-    max-width: 600px;
+    max-width: 700px;
   }
   
   .progress-grid {
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
   }
 }
 
-/* Touch improvements */
+/* Enhanced Touch Improvements */
 @media (hover: none) and (pointer: coarse) {
   .nav-tab,
   .option-item,
   .nav-btn,
   .progress-item {
-    min-height: 44px;
+    min-height: 48px;
   }
   
-  .menu-btn {
-    width: 44px;
-    height: 44px;
+  .menu-btn,
+  .theme-toggle {
+    width: 48px;
+    height: 48px;
+  }
+  
+  .timer,
+  .submit-btn {
+    padding: 12px 16px;
   }
 }
 
-/* Accessibility */
+/* Enhanced Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  * {
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-/* Focus styles */
-button:focus,
-input:focus,
+/* Enhanced Focus Styles */
+button:focus-visible,
+input:focus-visible,
 .option-item:focus-within {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
+  outline: 3px solid var(--primary-color);
+  outline-offset: 3px;
+  border-radius: var(--border-radius-xs);
 }
 
-/* Loading states */
+/* Enhanced Loading States */
 .loading {
-  opacity: 0.6;
+  opacity: 0.7;
   pointer-events: none;
+  position: relative;
 }
 
 .loading::after {
@@ -809,23 +1361,65 @@ input:focus,
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 20px;
-  height: 20px;
-  margin: -10px 0 0 -10px;
-  border: 2px solid var(--primary-color);
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  border: 3px solid var(--primary-color);
   border-radius: 50%;
   border-top-color: transparent;
   animation: spin 1s linear infinite;
+  z-index: 1000;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* Enhanced Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--light-bg);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+  transition: var(--transition);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* Enhanced Print Styles */
+@media print {
+  .theme-toggle,
+  .nav-buttons,
+  .progress-modal,
+  .modal-overlay {
+    display: none !important;
+  }
+  
+  .question-card {
+    box-shadow: none !important;
+    border: 2px solid var(--border-color) !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+}
   </style>
 </head>
 <body>
   <div class="app-container">
-    <!-- Compact Top Header -->
+    <!-- Enhanced Top Header -->
     <header class="top-header">
       <div class="header-row">
         <div class="user-info">
@@ -859,12 +1453,12 @@ input:focus,
       </div>
     </header>
 
-    <!-- Navigation Tabs -->
+    <!-- Enhanced Navigation Tabs -->
     <nav class="nav-section">
       <div class="nav-tabs" id="subject-buttons"></div>
     </nav>
 
-    <!-- Main Content -->
+    <!-- Enhanced Main Content -->
     <main class="main-content" id="content" style="filter: blur(5px);">
       <div class="question-card" id="question-card">
         <div class="question-header">
@@ -879,13 +1473,13 @@ input:focus,
       </div>
     </main>
 
-    <!-- Dark Mode Toggle Button -->
+    <!-- Enhanced Dark Mode Toggle Button -->
     <button class="theme-toggle" id="theme-toggle">
       <i class="fas fa-moon"></i>
     </button>
   </div>
 
-  <!-- Progress Modal -->
+  <!-- Enhanced Progress Modal -->
   <div class="progress-modal" id="progress-modal">
     <div class="progress-content">
       <div class="progress-header">
@@ -903,7 +1497,7 @@ input:focus,
     </div>
   </div>
 
-  <!-- Username Modal -->
+  <!-- Enhanced Username Modal -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
       <h2 class="modal-title">Welcome to PWians Test</h2>
@@ -913,6 +1507,88 @@ input:focus,
       </button>
     </div>
   </div>
+
+<!-- Enhanced MathJax Configuration -->
+<script>
+window.MathJax = {
+  tex: {
+    inlineMath: [['\$$', '\$$'], ['$', '$']],
+    displayMath: [['\\[', '\\]'], ['$$', '$$']],
+    processEscapes: true,
+    processEnvironments: true,
+    packages: {
+      '[+]': ['ams', 'newcommand', 'configmacros', 'action', 'require', 'autoload', 'color', 'cancel', 'mhchem', 'physics']
+    },
+    macros: {
+      // Common mathematical macros
+      RR: "\\mathbb{R}",
+      NN: "\\mathbb{N}",
+      ZZ: "\\mathbb{Z}",
+      QQ: "\\mathbb{Q}",
+      CC: "\\mathbb{C}",
+      FF: "\\mathbb{F}",
+      // Vectors and matrices
+      vec: ["\\mathbf{#1}", 1],
+      mat: ["\\mathbf{#1}", 1],
+      // Derivatives
+      dd: ["\\frac{d#1}{d#2}", 2],
+      pp: ["\\frac{\\partial#1}{\\partial#2}", 2],
+      // Common functions
+      sin: "\\operatorname{sin}",
+      cos: "\\operatorname{cos}",
+      tan: "\\operatorname{tan}",
+      log: "\\operatorname{log}",
+      ln: "\\operatorname{ln}",
+      exp: "\\operatorname{exp}",
+      // Physics
+      hbar: "\\hslash",
+      ket: ["|#1\\rangle", 1],
+      bra: ["\\langle#1|", 1],
+      braket: ["\\langle#1|#2\\rangle", 2],
+      // Chemistry
+      ce: ["\\require{mhchem}\\ce{#1}", 1]
+    }
+  },
+  svg: {
+    fontCache: 'global',
+    displayAlign: 'center',
+    displayIndent: '0',
+    scale: 1.1,
+    minScale: 0.8,
+    mtextInheritFont: true,
+    merrorInheritFont: true,
+    mathmlSpacing: false,
+    skipAttributes: {},
+    exFactor: 0.5,
+    displayOverflow: 'linebreak',
+    linebreaks: { automatic: true, width: '90%' }
+  },
+  chtml: {
+    scale: 1.1,
+    minScale: 0.8,
+    mtextInheritFont: true,
+    merrorInheritFont: true,
+    mathmlSpacing: false,
+    displayAlign: 'center',
+    displayIndent: '0'
+  },
+  options: {
+    enableMenu: false,
+    menuOptions: {
+      settings: {
+        zoom: 'Click',
+        zscale: '150%'
+      }
+    }
+  },
+  startup: {
+    ready: () => {
+      console.log('Enhanced MathJax loaded with advanced LaTeX support');
+      MathJax.startup.defaultReady();
+    }
+  }
+};
+</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <script>
@@ -937,33 +1613,105 @@ input:focus,
   let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. Inject MathJax Rendering Helper
-  //    - Only wrap “bare” TeX; leave already‐wrapped TeX alone
+  // 3. Enhanced LaTeX Rendering Helper with Advanced Pattern Recognition
   // ─────────────────────────────────────────────────────────────────────────────
   function renderLatex(str) {
     if (!str) return "—";
 
-    // 1) Detect existing TeX delimiters: \(…\), \[…\], $$…$$, or \begin{…}…\end{…}
+    // 1) Detect existing TeX delimiters
     const alreadyHasDelimiters =
-         /\\\(.+?\\\)/.test(str)         // \( … \)
+         /\\$$.+?\\$$/.test(str)         // $$ … $$
       || /\\\[.+?\\\]/.test(str)         // \[ … \]
       || /\$\$[\s\S]+?\$\$/.test(str)    // $$ … $$
+      || /\$[^$\n]+\$/.test(str)         // $ … $ (single dollar)
       || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);  // any \begin{…} … \end{…}
 
     if (alreadyHasDelimiters) {
       return str;
     }
 
-    // 2) If we see a “bare” TeX pattern, wrap once in \( … \)
-    const hasInlineMath =
-         /\\frac\s*{[^}]+}\s*{[^}]+}/.test(str)
-      || /\\hat\{[^}]+\}/.test(str)
-      || /\\pi\b/.test(str)
-      || /\\varepsilon/.test(str)
-      || /[A-Za-z]+_\{.+?\}/.test(str);
+    // 2) Enhanced pattern detection for mathematical expressions
+    const advancedMathPatterns = [
+      // Fractions
+      /\\frac\s*\{[^}]+\}\s*\{[^}]+\}/,
+      /\\dfrac\s*\{[^}]+\}\s*\{[^}]+\}/,
+      /\\tfrac\s*\{[^}]+\}\s*\{[^}]+\}/,
+      /\\cfrac\s*\{[^}]+\}\s*\{[^}]+\}/,
+      
+      // Roots and powers
+      /\\sqrt\s*(\[[^\]]*\])?\s*\{[^}]+\}/,
+      /\\sqrt\[[^\]]+\]\{[^}]+\}/,
+      /[A-Za-z0-9_]\^[\{][^}]+[\}]/,
+      /[A-Za-z0-9_]_[\{][^}]+[\}]/,
+      
+      // Integrals and sums
+      /\\int(_\{[^}]*\})?(\^\{[^}]*\})?/,
+      /\\iint(_\{[^}]*\})?(\^\{[^}]*\})?/,
+      /\\iiint(_\{[^}]*\})?(\^\{[^}]*\})?/,
+      /\\oint(_\{[^}]*\})?(\^\{[^}]*\})?/,
+      /\\sum(_\{[^}]*\})?(\^\{[^}]*\})?/,
+      /\\prod(_\{[^}]*\})?(\^\{[^}]*\})?/,
+      /\\lim(_\{[^}]*\})?/,
+      
+      // Matrices and arrays
+      /\\begin\{(matrix|pmatrix|bmatrix|vmatrix|Vmatrix|array)\}/,
+      /\\begin\{(align|equation|gather|multline)\*?\}/,
+      
+      // Greek letters and special symbols
+      /\\(alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|varpi|rho|varrho|sigma|varsigma|tau|upsilon|phi|varphi|chi|psi|omega)/,
+      /\\(Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega)/,
+      
+      // Mathematical operators
+      /\\(cdot|times|div|pm|mp|ast|star|circ|bullet|cap|cup|sqcap|sqcup|vee|wedge|setminus|wr|diamond|bigtriangleup|bigtriangledown|triangleleft|triangleright|lhd|rhd|unlhd|unrhd|oplus|ominus|otimes|oslash|odot|bigcirc|dagger|ddagger|amalg)/,
+      
+      // Relations
+      /\\(leq|geq|equiv|models|prec|succ|sim|perp|preceq|succeq|simeq|mid|ll|gg|asymp|parallel|subset|supset|approx|bowtie|subseteq|supseteq|cong|Join|sqsubset|sqsupset|neq|smile|sqsubseteq|sqsupseteq|doteq|frown|in|ni|propto|vdash|dashv)/,
+      
+      // Arrows
+      /\\(leftarrow|rightarrow|leftrightarrow|Leftarrow|Rightarrow|Leftrightarrow|mapsto|hookleftarrow|hookrightarrow|leftharpoonup|leftharpoondown|rightharpoonup|rightharpoondown|rightleftharpoons|iff|uparrow|downarrow|updownarrow|Uparrow|Downarrow|Updownarrow|nearrow|searrow|swarrow|nwarrow)/,
+      
+      // Functions
+      /\\(sin|cos|tan|cot|sec|csc|arcsin|arccos|arctan|sinh|cosh|tanh|coth|log|ln|lg|exp|max|min|sup|inf|lim|limsup|liminf|det|ker|dim|hom|arg|deg|gcd)/,
+      
+      // Accents and decorations
+      /\\(hat|check|breve|acute|grave|tilde|bar|vec|dot|ddot|widehat|widetilde|overline|underline)\s*\{[^}]+\}/,
+      
+      // Delimiters
+      /\$$left|right)\s*[\($$\[\]|\{\}\\|]/,
+      /\$$big|Big|bigg|Bigg)[lr]?\s*[\($$\[\]|\{\}\\|]/,
+      
+      // Spacing and formatting
+      /\\(quad|qquad|,|:|;|!|\s)/,
+      /\\(text|mathrm|mathit|mathbf|mathsf|mathtt|mathcal|mathscr|mathfrak|mathbb)\s*\{[^}]+\}/,
+      
+      // Chemistry (mhchem)
+      /\\ce\s*\{[^}]+\}/,
+      
+      // Physics
+      /\\(hbar|ell|wp|Re|Im|partial|nabla|Box|triangle|clubsuit|diamondsuit|heartsuit|spadesuit)/,
+      /\\(ket|bra|braket)\s*\{[^}]+\}/,
+      
+      // Complex expressions
+      /[A-Za-z]+_\{[^}]+\}\^\{[^}]+\}/,
+      /\{[^}]*\\[a-zA-Z]+[^}]*\}/,
+      
+      // Simple patterns
+      /\\[a-zA-Z]+/,
+      /[A-Za-z]+_[A-Za-z0-9]/,
+      /[A-Za-z]+\^[A-Za-z0-9]/,
+      /\{[^}]*[\\][^}]*\}/
+    ];
 
-    if (hasInlineMath) {
-      return `\\(${str}\\)`;
+    // Check if any advanced pattern matches
+    const hasAdvancedMath = advancedMathPatterns.some(pattern => pattern.test(str));
+
+    if (hasAdvancedMath) {
+      // For complex expressions, use display math
+      if (str.length > 50 || /\\(begin|int|sum|prod|frac|sqrt)/.test(str)) {
+        return `\\[${str}\\]`;
+      } else {
+        return `\$$${str}\$$`;
+      }
     }
 
     // 3) Otherwise leave it unchanged
@@ -971,7 +1719,7 @@ input:focus,
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 4. Dark Mode Initialization & Toggle
+  // 4. Enhanced Dark Mode with Smooth Transitions
   // ─────────────────────────────────────────────────────────────────────────────
   if (isDarkMode) {
     document.body.classList.add('dark-mode');
@@ -985,6 +1733,12 @@ input:focus,
       ? '<i class="fas fa-sun"></i>' 
       : '<i class="fas fa-moon"></i>';
     localStorage.setItem('darkMode', isDarkMode);
+    
+    // Add smooth transition effect
+    document.body.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+    setTimeout(() => {
+      document.body.style.transition = '';
+    }, 500);
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1003,8 +1757,18 @@ input:focus,
     }
     username = u;
     document.getElementById("logged-username").textContent = username;
-    document.getElementById("modal-overlay").style.display = "none";
+    
+    // Enhanced modal close animation
+    const modal = document.getElementById("modal-overlay");
+    modal.style.animation = 'fadeOut 0.3s ease-out forwards';
+    setTimeout(() => {
+      modal.style.display = "none";
+      modal.style.animation = '';
+    }, 300);
+    
     document.getElementById("content").style.filter = "none";
+    document.getElementById("content").style.animation = 'fadeInUp 0.6s ease-out';
+    
     await loadTestSeriesData();
   };
 
@@ -1037,15 +1801,17 @@ input:focus,
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 7. Build & Update Subject Tabs
+  // 7. Build & Update Subject Tabs with Enhanced Animations
   // ─────────────────────────────────────────────────────────────────────────────
   function buildSubjectButtons() {
     const container = document.getElementById("subject-buttons");
     container.innerHTML = "";
-    subjectsArr.forEach(sub => {
+    subjectsArr.forEach((sub, index) => {
       const btn = document.createElement("button");
       btn.className = "nav-tab";
       btn.textContent = sub;
+      btn.style.animationDelay = `${index * 0.1}s`;
+      btn.style.animation = 'slideInDown 0.5s ease-out forwards';
       btn.onclick = () => {
         currentSubject = sub;
         updateSubjectButtons();
@@ -1089,7 +1855,7 @@ input:focus,
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 9. Render a Question (+ Options) into the DOM, then Typeset with MathJax
+  // 9. Enhanced Question Rendering with Advanced MathJax Integration
   // ─────────────────────────────────────────────────────────────────────────────
   function displayQuestion() {
     const question = questions[currentQuestionIndex];
@@ -1111,7 +1877,7 @@ input:focus,
     const savedAnswer = getSavedAnswer(question.questionId);
     const isReviewed = getSavedReview(question.questionId);
 
-    // Build question header + text
+    // Build question header + text with enhanced animations
     let questionContent = `
       <div class="question-header">
         <div class="question-number">Question ${currentQuestionIndex + 1}</div>
@@ -1123,7 +1889,7 @@ input:focus,
         <div class="question-text">
           ${
             isImageURL(question.question)
-              ? `<img src="${question.question}" class="question-image" alt="Question image"/>`
+              ? `<img src="${question.question}" class="question-image" alt="Question image" loading="lazy"/>`
               : renderLatex(question.question)
           }
         </div>
@@ -1148,7 +1914,8 @@ input:focus,
 
         questionContent += `
           <div class="option-item ${isSelected ? 'selected' : ''}"
-               onclick="selectOption('${question.questionId}','${optionValue}', this)">
+               onclick="selectOption('${question.questionId}','${optionValue}', this)"
+               style="animation-delay: ${index * 0.1}s">
             <div class="option-content">
               <input type="radio"
                      class="option-radio"
@@ -1159,7 +1926,7 @@ input:focus,
               <div class="option-text">
                 ${
                   isImageURL(option)
-                    ? `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`
+                    ? `<img src="${option}" class="option-image" alt="Option ${optionValue}" loading="lazy"/>`
                     : `${optionValue}. ${renderLatex(option)}`
                 }
               </div>
@@ -1181,7 +1948,8 @@ input:focus,
                  class="input-field"
                  id="answer-input"
                  value="${savedAnswer}"
-                 placeholder="Enter your answer"/>
+                 placeholder="Enter your answer"
+                 step="any"/>
         </div>
       `;
     }
@@ -1197,31 +1965,67 @@ input:focus,
           <button class="nav-btn primary" onclick="saveAndNext()">
             ${
               currentQuestionIndex === questions.length - 1
-                ? 'Save & Finish'
-                : 'Save & Next'
+                ? '<i class="fas fa-flag-checkered"></i> Save & Finish'
+                : '<i class="fas fa-arrow-right"></i> Save & Next'
             }
-            <i class="fas fa-arrow-right"></i>
           </button>
         </div>
       </div>
     `;
 
-    // Inject into DOM
+    // Inject into DOM with fade animation
+    container.style.opacity = '0';
     container.innerHTML = questionContent;
+    
+    // Animate options
+    const options = container.querySelectorAll('.option-item');
+    options.forEach((option, index) => {
+      option.style.animation = `fadeInUp 0.5s ease-out ${index * 0.1}s forwards`;
+    });
 
-    // ── Trigger MathJax typesetting on the newly-inserted content ──
-    if (window.MathJax) {
-      MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
+    // Fade in the container
+    setTimeout(() => {
+      container.style.transition = 'opacity 0.3s ease';
+      container.style.opacity = '1';
+    }, 100);
+
+    // ── Enhanced MathJax typesetting with error handling ──
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      MathJax.typesetPromise([container])
+        .then(() => {
+          console.log('MathJax rendering completed successfully');
+          // Apply enhanced styling to rendered math
+          const mathElements = container.querySelectorAll('mjx-container');
+          mathElements.forEach(el => {
+            el.style.transition = 'all 0.3s ease';
+            el.addEventListener('mouseenter', () => {
+              el.style.transform = 'scale(1.05)';
+            });
+            el.addEventListener('mouseleave', () => {
+              el.style.transform = 'scale(1)';
+            });
+          });
+        })
+        .catch(err => {
+          console.error("Enhanced MathJax rendering error:", err);
+          showToast("Mathematical expressions may not display correctly", "warning");
+        });
     }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 10. Option Selection & Change Handlers
+  // 10. Enhanced Option Selection with Smooth Animations
   // ─────────────────────────────────────────────────────────────────────────────
   function selectOption(questionId, value, element) {
-    // Deselect all, then mark this as selected
-    document.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+    // Deselect all with animation
+    document.querySelectorAll('.option-item').forEach(opt => {
+      opt.classList.remove('selected');
+      opt.style.transform = '';
+    });
+    
+    // Mark this as selected with enhanced animation
     element.classList.add('selected');
+    element.style.transform = 'translateX(8px) translateY(-2px) scale(1.02)';
 
     // Update the corresponding radio input
     const radio = element.querySelector('input[type="radio"]');
@@ -1229,6 +2033,9 @@ input:focus,
 
     // Persist in LocalStorage
     saveAnswer(questionId, value);
+    
+    // Visual feedback
+    showToast(`Option ${value} selected`, "success");
   }
 
   function handleOptionChange(event, questionId) {
@@ -1236,10 +2043,11 @@ input:focus,
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 11. Save & Next / Go To Previous Navigation
+  // 11. Enhanced Navigation with Smooth Transitions
   // ─────────────────────────────────────────────────────────────────────────────
   window.saveAndNext = () => {
     const question = questions[currentQuestionIndex];
+    
     // Save numeric answer if present
     const answerInput = document.getElementById("answer-input");
     if (answerInput) {
@@ -1247,11 +2055,12 @@ input:focus,
       if (value) saveAnswer(question.questionId, value);
       else removeAnswer(question.questionId);
     }
+    
     // Save review checkbox state
     const reviewCheckbox = document.getElementById("review-checkbox");
     if (reviewCheckbox) saveReview(question.questionId, reviewCheckbox.checked);
 
-    // Advance index or switch subject
+    // Advance index or switch subject with animation
     if (currentQuestionIndex < questions.length - 1) {
       currentQuestionIndex++;
       markAsVisited(questions[currentQuestionIndex].questionId);
@@ -1262,9 +2071,10 @@ input:focus,
         currentSubject = subjectsArr[currentIndex + 1];
         updateSubjectButtons();
         loadQuestions();
+        showToast(`Switched to ${currentSubject}`, "info");
         return;
       } else {
-        showToast("You have completed all questions!", "success");
+        showToast("🎉 You have completed all questions!", "success");
         return;
       }
     }
@@ -1284,16 +2094,23 @@ input:focus,
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 12. Update Navigation Info (Subject, Q-No, Total)
+  // 12. Update Navigation Info with Enhanced Styling
   // ─────────────────────────────────────────────────────────────────────────────
   function updateNavInfo() {
     document.getElementById("current-subject").textContent = currentSubject;
     document.getElementById("current-question-index").textContent = currentQuestionIndex + 1;
     document.getElementById("total-questions").textContent = questions.length;
+    
+    // Add progress bar animation
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+    const progressBar = document.querySelector('.question-header::before');
+    if (progressBar) {
+      progressBar.style.width = `${progress}%`;
+    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 13. Progress Modal: Render Question-status Grid
+  // 13. Enhanced Progress Modal with Advanced Animations
   // ─────────────────────────────────────────────────────────────────────────────
   function updateProgress() {
     const container = document.getElementById("question-progress");
@@ -1303,6 +2120,7 @@ input:focus,
       const item = document.createElement("div");
       item.className = "progress-item";
       item.textContent = index + 1;
+      item.style.animationDelay = `${index * 0.05}s`;
 
       const hasAnswer = !!getSavedAnswer(question.questionId);
       const isReviewed = getSavedReview(question.questionId);
@@ -1310,12 +2128,24 @@ input:focus,
 
       if (hasAnswer && isReviewed) {
         item.classList.add("status-answered-review");
+        item.title = "Answered and marked for review";
       } else if (hasAnswer) {
         item.classList.add("status-answered");
+        item.title = "Answered";
       } else if (isReviewed) {
         item.classList.add("status-review");
+        item.title = "Marked for review";
       } else if (isVisited) {
         item.classList.add("status-visited");
+        item.title = "Visited";
+      } else {
+        item.title = "Not visited";
+      }
+
+      // Current question highlight
+      if (index === currentQuestionIndex) {
+        item.style.border = '3px solid var(--accent-color)';
+        item.style.boxShadow = '0 0 15px rgba(147, 51, 234, 0.4)';
       }
 
       item.onclick = () => {
@@ -1325,6 +2155,7 @@ input:focus,
         updateNavInfo();
         updateProgress();
         toggleProgress(); // auto‐close progress on mobile
+        showToast(`Jumped to Question ${index + 1}`, "info");
       };
 
       container.appendChild(item);
@@ -1334,8 +2165,18 @@ input:focus,
   window.toggleProgress = () => {
     const modal = document.getElementById("progress-modal");
     const isVisible = modal.style.display === "block";
-    modal.style.display = isVisible ? "none" : "block";
-    if (!isVisible) updateProgress();
+    
+    if (isVisible) {
+      modal.style.animation = 'fadeOut 0.3s ease-out forwards';
+      setTimeout(() => {
+        modal.style.display = "none";
+        modal.style.animation = '';
+      }, 300);
+    } else {
+      modal.style.display = "block";
+      modal.style.animation = 'fadeIn 0.3s ease-out forwards';
+      updateProgress();
+    }
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1344,12 +2185,14 @@ input:focus,
   function saveAnswer(questionId, answer) {
     const key = `response_${currentSubject}_${questionId}`;
     localStorage.setItem(key, answer);
-    console.log(`Saved answer: ${key} = ${answer}`); // Debug
+    console.log(`Saved answer: ${key} = ${answer}`);
   }
+  
   function getSavedAnswer(questionId) {
     const key = `response_${currentSubject}_${questionId}`;
     return localStorage.getItem(key) || "";
   }
+  
   function removeAnswer(questionId) {
     const key = `response_${currentSubject}_${questionId}`;
     localStorage.removeItem(key);
@@ -1360,6 +2203,7 @@ input:focus,
     if (isReviewed) localStorage.setItem(key, "true");
     else localStorage.removeItem(key);
   }
+  
   function getSavedReview(questionId) {
     const key = `review_${currentSubject}_${questionId}`;
     return localStorage.getItem(key) === "true";
@@ -1369,13 +2213,14 @@ input:focus,
     const key = `visited_${currentSubject}_${questionId}`;
     localStorage.setItem(key, "true");
   }
+  
   function getSavedVisited(questionId) {
     const key = `visited_${currentSubject}_${questionId}`;
     return localStorage.getItem(key) === "true";
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 15. Timer: Display & Auto‐Submit on Zero
+  // 15. Enhanced Timer with Visual Alerts
   // ─────────────────────────────────────────────────────────────────────────────
   function updateTimerDisplay() {
     const hours   = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
@@ -1384,14 +2229,27 @@ input:focus,
     document.getElementById("time-left").textContent = `${hours}:${minutes}:${seconds}`;
 
     const timerEl = document.getElementById("timer");
-    if (timeLeft <= 300) { // last 5 min → red alert
-      timerEl.style.background   = "rgba(239, 68, 68, 0.1)";
-      timerEl.style.color        = "var(--error-color)";
-      timerEl.style.borderColor  = "var(--error-color)";
+    
+    // Enhanced visual alerts
+    if (timeLeft <= 300) { // last 5 min → red alert with pulse
+      timerEl.style.background = "rgba(239, 68, 68, 0.15)";
+      timerEl.style.color = "var(--error-color)";
+      timerEl.style.borderColor = "var(--error-color)";
+      timerEl.style.animation = "pulse 1s infinite";
+      
+      if (timeLeft % 60 === 0) { // Every minute in last 5 minutes
+        showToast(`⚠️ ${Math.floor(timeLeft / 60)} minutes remaining!`, "error");
+      }
     } else if (timeLeft <= 600) { // last 10 min → orange
-      timerEl.style.background   = "rgba(245, 158, 11, 0.1)";
-      timerEl.style.color        = "var(--warning-color)";
-      timerEl.style.borderColor  = "var(--warning-color)";
+      timerEl.style.background = "rgba(245, 158, 11, 0.15)";
+      timerEl.style.color = "var(--warning-color)";
+      timerEl.style.borderColor = "var(--warning-color)";
+      timerEl.style.animation = "none";
+    } else {
+      timerEl.style.background = "rgba(30, 64, 175, 0.08)";
+      timerEl.style.color = "var(--primary-color)";
+      timerEl.style.borderColor = "rgba(30, 64, 175, 0.15)";
+      timerEl.style.animation = "none";
     }
   }
 
@@ -1401,123 +2259,186 @@ input:focus,
       updateTimerDisplay();
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
+        showToast("⏰ Time's up! Auto-submitting test...", "error");
         submitTest(true);
       }
     }, 1000);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 16. Tab‐Switch Detection (Auto‐Submit)
+  // 16. Enhanced Tab‐Switch Detection
   // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       tabSwitchCount++;
+      const remaining = maxTabSwitches - tabSwitchCount;
+      
       if (tabSwitchCount >= maxTabSwitches) {
+        showToast("🚫 Maximum tab switches exceeded. Auto-submitting...", "error");
         submitTest(true);
       } else {
         showToast(
-          `Warning: ${maxTabSwitches - tabSwitchCount} tab switches remaining before auto‐submit.`,
+          `⚠️ Warning: ${remaining} tab switch${remaining !== 1 ? 'es' : ''} remaining before auto‐submit.`,
           "warning"
         );
       }
     }
   });
 
- // ─────────────────────────────────────────────────────────────────────────────
-// 17. Submit Test (Manual/Auto) → Build Payload & POST
-// ─────────────────────────────────────────────────────────────────────────────
-window.submitTest = async (auto = false) => {
-  // ─────── NEW: Pre-save current integer input and review state ───────
-  const currentQ = questions[currentQuestionIndex];
-  const answerInput = document.getElementById("answer-input");
-  if (answerInput) {
-    const val = answerInput.value.trim();
-    if (val) {
-      saveAnswer(currentQ.questionId, val);
-    } else {
-      removeAnswer(currentQ.questionId);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 17. Enhanced Submit Test with Better UX
+  // ─────────────────────────────────────────────────────────────────────────────
+  window.submitTest = async (auto = false) => {
+    // Pre-save current state
+    const currentQ = questions[currentQuestionIndex];
+    if (currentQ) {
+      const answerInput = document.getElementById("answer-input");
+      if (answerInput) {
+        const val = answerInput.value.trim();
+        if (val) {
+          saveAnswer(currentQ.questionId, val);
+        } else {
+          removeAnswer(currentQ.questionId);
+        }
+      }
+      const reviewCheckbox = document.getElementById("review-checkbox");
+      if (reviewCheckbox) {
+        saveReview(currentQ.questionId, reviewCheckbox.checked);
+      }
     }
-  }
-  const reviewCheckbox = document.getElementById("review-checkbox");
-  if (reviewCheckbox) {
-    saveReview(currentQ.questionId, reviewCheckbox.checked);
-  }
-  // ─────────────────────────────────────────────────────────────────────
 
-  // If manual submit, confirm
-  if (!auto && !confirm("Are you sure you want to submit the test?")) {
-    return;
-  }
+    // Enhanced confirmation dialog
+    if (!auto) {
+      const totalAnswered = getTotalAnsweredQuestions();
+      const totalQuestions = getTotalQuestions();
+      const unanswered = totalQuestions - totalAnswered;
+      
+      let confirmMessage = `Are you sure you want to submit the test?\n\n`;
+      confirmMessage += `📊 Progress Summary:\n`;
+      confirmMessage += `✅ Answered: ${totalAnswered}/${totalQuestions}\n`;
+      if (unanswered > 0) {
+        confirmMessage += `❌ Unanswered: ${unanswered}\n`;
+      }
+      confirmMessage += `\nThis action cannot be undone.`;
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
+    }
 
-  try {
-    showLoading(true);
+    try {
+      showLoading(true);
+      showToast(auto ? "Auto-submitting test..." : "Submitting test...", "info");
 
-    // Build payload from LocalStorage for all subjects/questions
-    const payload = {};
+      // Build payload from LocalStorage for all subjects/questions
+      const payload = {};
+      for (const subject of subjectsArr) {
+        payload[subject] = {};
+        const qMap = testData.questions[subject] || {};
+        Object.values(qMap).forEach(q => {
+          const key = `response_${subject}_${q.questionId}`;
+          const stored = localStorage.getItem(key);
+          payload[subject][q.questionId] = {
+            questionId: q.questionId,
+            selectedAnswer: stored || null
+          };
+        });
+      }
+
+      console.log('Submitting enhanced payload:', payload);
+
+      // POST to server
+      const response = await fetch(`/api/tests/${testID}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          batchName,
+          username,
+          responses: payload,
+          submissionType: auto ? 'auto' : 'manual',
+          timeRemaining: timeLeft,
+          tabSwitchCount
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Submission failed: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Enhanced submission result:', result);
+
+      // Cleanup & Redirect with enhanced feedback
+      localStorage.clear();
+      clearInterval(timerInterval);
+      
+      const successMessage = auto 
+        ? "🤖 Test auto-submitted successfully!" 
+        : "🎉 Test submitted successfully!";
+      showToast(successMessage, "success");
+      
+      // Disable all interactions
+      document.body.style.pointerEvents = 'none';
+      document.body.style.opacity = '0.7';
+      
+      setTimeout(() => {
+        window.location.href = auto
+          ? "/Results/"
+          : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+      }, 2000);
+
+    } catch (error) {
+      console.error("Enhanced submission error:", error);
+      showToast("❌ Failed to submit test. Please try again.", "error");
+      showLoading(false);
+    }
+  };
+
+  // Helper functions for submission stats
+  function getTotalAnsweredQuestions() {
+    let count = 0;
     for (const subject of subjectsArr) {
-      payload[subject] = {};
       const qMap = testData.questions[subject] || {};
       Object.values(qMap).forEach(q => {
         const key = `response_${subject}_${q.questionId}`;
-        const stored = localStorage.getItem(key);
-        payload[subject][q.questionId] = {
-          questionId: q.questionId,
-          selectedAnswer: stored || null
-        };
+        if (localStorage.getItem(key)) count++;
       });
     }
-
-    console.log('Submitting payload:', payload);
-
-    // POST to server
-    const response = await fetch(`/api/tests/${testID}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        batchName,
-        username,
-        responses: payload
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Submission failed: ${response.status}`);
-    }
-    const result = await response.json();
-    console.log('Submission result:', result);
-
-    // Cleanup & Redirect
-    localStorage.clear();
-    clearInterval(timerInterval);
-    showToast(
-      auto ? "Test auto-submitted successfully!" : "Test submitted successfully!",
-      "success"
-    );
-    setTimeout(() => {
-      window.location.href = auto
-        ? "/Results/"
-        : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-    }, 2000);
-
-  } catch (error) {
-    console.error("Submission error:", error);
-    showToast("Failed to submit test. Please try again.", "error");
-    showLoading(false);
+    return count;
   }
-};
 
+  function getTotalQuestions() {
+    let count = 0;
+    for (const subject of subjectsArr) {
+      const qMap = testData.questions[subject] || {};
+      count += Object.keys(qMap).length;
+    }
+    return count;
+  }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 18. Utility: Loading Overlay & Toast Notifications
+  // 18. Enhanced Loading & Toast System
   // ─────────────────────────────────────────────────────────────────────────────
   function showLoading(show) {
     const content = document.getElementById("content");
-    if (show) content.classList.add("loading");
-    else       content.classList.remove("loading");
+    if (show) {
+      content.classList.add("loading");
+      content.style.filter = "blur(2px)";
+    } else {
+      content.classList.remove("loading");
+      content.style.filter = "none";
+    }
   }
 
   function showToast(message, type = "info") {
     const toast = document.createElement("div");
+    const icons = {
+      info: "ℹ️",
+      success: "✅",
+      warning: "⚠️",
+      error: "❌"
+    };
+    
     toast.style.cssText = `
       position: fixed;
       top: 20px;
@@ -1528,34 +2449,53 @@ window.submitTest = async (auto = false) => {
         type === "success" ? "var(--success-color)" : "var(--primary-color)"
       };
       color: white;
-      padding: 12px 20px;
+      padding: 16px 24px;
       border-radius: var(--border-radius-sm);
-      font-size: 14px; font-weight: 500;
+      font-size: 14px; 
+      font-weight: 600;
       z-index: 10000;
-      box-shadow: 0 4px 12px var(--card-shadow);
+      box-shadow: var(--shadow-medium);
       transform: translateX(100%);
-      transition: transform 0.3s ease;
-      max-width: 300px;
+      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      max-width: 350px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
     `;
-    toast.textContent = message;
+    
+    toast.innerHTML = `${icons[type] || icons.info} ${message}`;
     document.body.appendChild(toast);
 
-    // Slide in
+    // Slide in with bounce
     setTimeout(() => {
       toast.style.transform = "translateX(0)";
     }, 100);
 
-    // Auto‐remove
+    // Auto‐remove with fade
     setTimeout(() => {
       toast.style.transform = "translateX(100%)";
-      setTimeout(() => document.body.removeChild(toast), 300);
-    }, 3000);
+      toast.style.opacity = "0";
+      setTimeout(() => {
+        if (document.body.contains(toast)) {
+          document.body.removeChild(toast);
+        }
+      }, 400);
+    }, 4000);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 19. Keyboard Navigation & Touch Gestures
+  // 19. Enhanced Keyboard Navigation & Touch Gestures
   // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener('keydown', (e) => {
+    // Prevent default browser shortcuts that might interfere
+    if (e.ctrlKey && (e.key === 'r' || e.key === 'R')) {
+      e.preventDefault();
+      showToast("Page refresh is disabled during test", "warning");
+      return;
+    }
+    
     if (e.key === 'ArrowLeft' && currentQuestionIndex > 0) {
       e.preventDefault();
       goToPrevious();
@@ -1565,28 +2505,50 @@ window.submitTest = async (auto = false) => {
     } else if (e.key === 'Escape') {
       const modal = document.getElementById("progress-modal");
       if (modal.style.display === "block") toggleProgress();
+    } else if (e.key >= '1' && e.key <= '4') {
+      // Quick option selection with number keys
+      const optionIndex = parseInt(e.key) - 1;
+      const options = document.querySelectorAll('.option-item');
+      if (options[optionIndex]) {
+        options[optionIndex].click();
+      }
     }
   });
 
-  let touchStartX = 0, touchEndX = 0;
+  // Enhanced touch gestures
+  let touchStartX = 0, touchEndX = 0, touchStartY = 0, touchEndY = 0;
+  
   document.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
   });
+  
   document.addEventListener('touchend', (e) => {
     touchEndX = e.changedTouches[0].screenX;
+    touchEndY = e.changedTouches[0].screenY;
     handleSwipe();
   });
+  
   function handleSwipe() {
-    const swipeThreshold = 50;
-    const diff = touchStartX - touchEndX;
-    if (Math.abs(diff) > swipeThreshold) {
-      if (diff > 0) saveAndNext(); // Swipe left → Next
-      else goToPrevious();         // Swipe right → Previous
+    const swipeThreshold = 80;
+    const verticalThreshold = 100;
+    const diffX = touchStartX - touchEndX;
+    const diffY = touchStartY - touchEndY;
+    
+    // Only process horizontal swipes (ignore vertical scrolling)
+    if (Math.abs(diffX) > swipeThreshold && Math.abs(diffY) < verticalThreshold) {
+      if (diffX > 0) {
+        saveAndNext(); // Swipe left → Next
+        showToast("Swiped to next question", "info");
+      } else {
+        goToPrevious(); // Swipe right → Previous
+        showToast("Swiped to previous question", "info");
+      }
     }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 20. Initial Setup on DOMContentLoaded
+  // 20. Enhanced Initial Setup & Error Handling
   // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     const usernameInput = document.getElementById("username");
@@ -1595,8 +2557,60 @@ window.submitTest = async (auto = false) => {
       usernameInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') validateCredentials();
       });
+      
+      // Enhanced input validation
+      usernameInput.addEventListener('input', (e) => {
+        const value = e.target.value;
+        const isValid = value.length >= 3 && /^[a-zA-Z0-9_]+$/.test(value);
+        const submitBtn = document.querySelector('.modal-btn');
+        
+        if (isValid) {
+          submitBtn.style.opacity = '1';
+          submitBtn.style.pointerEvents = 'auto';
+          e.target.style.borderColor = 'var(--success-color)';
+        } else {
+          submitBtn.style.opacity = '0.6';
+          submitBtn.style.pointerEvents = 'none';
+          e.target.style.borderColor = 'var(--error-color)';
+        }
+      });
+    }
+    
+    // Add global error handler
+    window.addEventListener('error', (e) => {
+      console.error('Global error:', e.error);
+      showToast("An unexpected error occurred. Please refresh if issues persist.", "error");
+    });
+    
+    // Add unload warning
+    window.addEventListener('beforeunload', (e) => {
+      if (timeLeft > 0) {
+        e.preventDefault();
+        e.returnValue = 'Are you sure you want to leave? Your test progress may be lost.';
+        return e.returnValue;
+      }
+    });
+    
+    // Performance monitoring
+    if ('performance' in window) {
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const perfData = performance.getEntriesByType('navigation')[0];
+          console.log('Enhanced page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+        }, 0);
+      });
     }
   });
+
+  // Add CSS animation for fadeOut
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
 </script>
 
 </body>
