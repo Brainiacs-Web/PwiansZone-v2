@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
 :root {
   --primary-color: #1E40AF;
@@ -1419,7 +1419,7 @@ input:focus-visible,
 </head>
 <body>
   <div class="app-container">
-    <!-- Enhanced Top Header -->
+    <!-- Compact Top Header -->
     <header class="top-header">
       <div class="header-row">
         <div class="user-info">
@@ -1453,12 +1453,12 @@ input:focus-visible,
       </div>
     </header>
 
-    <!-- Enhanced Navigation Tabs -->
+    <!-- Navigation Tabs -->
     <nav class="nav-section">
       <div class="nav-tabs" id="subject-buttons"></div>
     </nav>
 
-    <!-- Enhanced Main Content -->
+    <!-- Main Content -->
     <main class="main-content" id="content" style="filter: blur(5px);">
       <div class="question-card" id="question-card">
         <div class="question-header">
@@ -1473,13 +1473,13 @@ input:focus-visible,
       </div>
     </main>
 
-    <!-- Enhanced Dark Mode Toggle Button -->
+    <!-- Dark Mode Toggle Button -->
     <button class="theme-toggle" id="theme-toggle">
       <i class="fas fa-moon"></i>
     </button>
   </div>
 
-  <!-- Enhanced Progress Modal -->
+  <!-- Progress Modal -->
   <div class="progress-modal" id="progress-modal">
     <div class="progress-content">
       <div class="progress-header">
@@ -1497,7 +1497,7 @@ input:focus-visible,
     </div>
   </div>
 
-  <!-- Enhanced Username Modal -->
+  <!-- Username Modal -->
   <div class="modal-overlay" id="modal-overlay">
     <div class="modal">
       <h2 class="modal-title">Welcome to PWians Test</h2>
@@ -1507,88 +1507,6 @@ input:focus-visible,
       </button>
     </div>
   </div>
-
-<!-- Enhanced MathJax Configuration -->
-<script>
-window.MathJax = {
-  tex: {
-    inlineMath: [['\$$', '\$$'], ['$', '$']],
-    displayMath: [['\\[', '\\]'], ['$$', '$$']],
-    processEscapes: true,
-    processEnvironments: true,
-    packages: {
-      '[+]': ['ams', 'newcommand', 'configmacros', 'action', 'require', 'autoload', 'color', 'cancel', 'mhchem', 'physics']
-    },
-    macros: {
-      // Common mathematical macros
-      RR: "\\mathbb{R}",
-      NN: "\\mathbb{N}",
-      ZZ: "\\mathbb{Z}",
-      QQ: "\\mathbb{Q}",
-      CC: "\\mathbb{C}",
-      FF: "\\mathbb{F}",
-      // Vectors and matrices
-      vec: ["\\mathbf{#1}", 1],
-      mat: ["\\mathbf{#1}", 1],
-      // Derivatives
-      dd: ["\\frac{d#1}{d#2}", 2],
-      pp: ["\\frac{\\partial#1}{\\partial#2}", 2],
-      // Common functions
-      sin: "\\operatorname{sin}",
-      cos: "\\operatorname{cos}",
-      tan: "\\operatorname{tan}",
-      log: "\\operatorname{log}",
-      ln: "\\operatorname{ln}",
-      exp: "\\operatorname{exp}",
-      // Physics
-      hbar: "\\hslash",
-      ket: ["|#1\\rangle", 1],
-      bra: ["\\langle#1|", 1],
-      braket: ["\\langle#1|#2\\rangle", 2],
-      // Chemistry
-      ce: ["\\require{mhchem}\\ce{#1}", 1]
-    }
-  },
-  svg: {
-    fontCache: 'global',
-    displayAlign: 'center',
-    displayIndent: '0',
-    scale: 1.1,
-    minScale: 0.8,
-    mtextInheritFont: true,
-    merrorInheritFont: true,
-    mathmlSpacing: false,
-    skipAttributes: {},
-    exFactor: 0.5,
-    displayOverflow: 'linebreak',
-    linebreaks: { automatic: true, width: '90%' }
-  },
-  chtml: {
-    scale: 1.1,
-    minScale: 0.8,
-    mtextInheritFont: true,
-    merrorInheritFont: true,
-    mathmlSpacing: false,
-    displayAlign: 'center',
-    displayIndent: '0'
-  },
-  options: {
-    enableMenu: false,
-    menuOptions: {
-      settings: {
-        zoom: 'Click',
-        zscale: '150%'
-      }
-    }
-  },
-  startup: {
-    ready: () => {
-      console.log('Enhanced MathJax loaded with advanced LaTeX support');
-      MathJax.startup.defaultReady();
-    }
-  }
-};
-</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <script>
@@ -1613,105 +1531,33 @@ window.MathJax = {
   let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. Enhanced LaTeX Rendering Helper with Advanced Pattern Recognition
+  // 3. Inject MathJax Rendering Helper
+  //    - Only wrap “bare” TeX; leave already‐wrapped TeX alone
   // ─────────────────────────────────────────────────────────────────────────────
   function renderLatex(str) {
     if (!str) return "—";
 
-    // 1) Detect existing TeX delimiters
+    // 1) Detect existing TeX delimiters: \(…\), \[…\], $$…$$, or \begin{…}…\end{…}
     const alreadyHasDelimiters =
-         /\\$$.+?\\$$/.test(str)         // $$ … $$
+         /\\\(.+?\\\)/.test(str)         // \( … \)
       || /\\\[.+?\\\]/.test(str)         // \[ … \]
       || /\$\$[\s\S]+?\$\$/.test(str)    // $$ … $$
-      || /\$[^$\n]+\$/.test(str)         // $ … $ (single dollar)
       || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);  // any \begin{…} … \end{…}
 
     if (alreadyHasDelimiters) {
       return str;
     }
 
-    // 2) Enhanced pattern detection for mathematical expressions
-    const advancedMathPatterns = [
-      // Fractions
-      /\\frac\s*\{[^}]+\}\s*\{[^}]+\}/,
-      /\\dfrac\s*\{[^}]+\}\s*\{[^}]+\}/,
-      /\\tfrac\s*\{[^}]+\}\s*\{[^}]+\}/,
-      /\\cfrac\s*\{[^}]+\}\s*\{[^}]+\}/,
-      
-      // Roots and powers
-      /\\sqrt\s*(\[[^\]]*\])?\s*\{[^}]+\}/,
-      /\\sqrt\[[^\]]+\]\{[^}]+\}/,
-      /[A-Za-z0-9_]\^[\{][^}]+[\}]/,
-      /[A-Za-z0-9_]_[\{][^}]+[\}]/,
-      
-      // Integrals and sums
-      /\\int(_\{[^}]*\})?(\^\{[^}]*\})?/,
-      /\\iint(_\{[^}]*\})?(\^\{[^}]*\})?/,
-      /\\iiint(_\{[^}]*\})?(\^\{[^}]*\})?/,
-      /\\oint(_\{[^}]*\})?(\^\{[^}]*\})?/,
-      /\\sum(_\{[^}]*\})?(\^\{[^}]*\})?/,
-      /\\prod(_\{[^}]*\})?(\^\{[^}]*\})?/,
-      /\\lim(_\{[^}]*\})?/,
-      
-      // Matrices and arrays
-      /\\begin\{(matrix|pmatrix|bmatrix|vmatrix|Vmatrix|array)\}/,
-      /\\begin\{(align|equation|gather|multline)\*?\}/,
-      
-      // Greek letters and special symbols
-      /\\(alpha|beta|gamma|delta|epsilon|varepsilon|zeta|eta|theta|vartheta|iota|kappa|lambda|mu|nu|xi|pi|varpi|rho|varrho|sigma|varsigma|tau|upsilon|phi|varphi|chi|psi|omega)/,
-      /\\(Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega)/,
-      
-      // Mathematical operators
-      /\\(cdot|times|div|pm|mp|ast|star|circ|bullet|cap|cup|sqcap|sqcup|vee|wedge|setminus|wr|diamond|bigtriangleup|bigtriangledown|triangleleft|triangleright|lhd|rhd|unlhd|unrhd|oplus|ominus|otimes|oslash|odot|bigcirc|dagger|ddagger|amalg)/,
-      
-      // Relations
-      /\\(leq|geq|equiv|models|prec|succ|sim|perp|preceq|succeq|simeq|mid|ll|gg|asymp|parallel|subset|supset|approx|bowtie|subseteq|supseteq|cong|Join|sqsubset|sqsupset|neq|smile|sqsubseteq|sqsupseteq|doteq|frown|in|ni|propto|vdash|dashv)/,
-      
-      // Arrows
-      /\\(leftarrow|rightarrow|leftrightarrow|Leftarrow|Rightarrow|Leftrightarrow|mapsto|hookleftarrow|hookrightarrow|leftharpoonup|leftharpoondown|rightharpoonup|rightharpoondown|rightleftharpoons|iff|uparrow|downarrow|updownarrow|Uparrow|Downarrow|Updownarrow|nearrow|searrow|swarrow|nwarrow)/,
-      
-      // Functions
-      /\\(sin|cos|tan|cot|sec|csc|arcsin|arccos|arctan|sinh|cosh|tanh|coth|log|ln|lg|exp|max|min|sup|inf|lim|limsup|liminf|det|ker|dim|hom|arg|deg|gcd)/,
-      
-      // Accents and decorations
-      /\\(hat|check|breve|acute|grave|tilde|bar|vec|dot|ddot|widehat|widetilde|overline|underline)\s*\{[^}]+\}/,
-      
-      // Delimiters
-      /\$$left|right)\s*[\($$\[\]|\{\}\\|]/,
-      /\$$big|Big|bigg|Bigg)[lr]?\s*[\($$\[\]|\{\}\\|]/,
-      
-      // Spacing and formatting
-      /\\(quad|qquad|,|:|;|!|\s)/,
-      /\\(text|mathrm|mathit|mathbf|mathsf|mathtt|mathcal|mathscr|mathfrak|mathbb)\s*\{[^}]+\}/,
-      
-      // Chemistry (mhchem)
-      /\\ce\s*\{[^}]+\}/,
-      
-      // Physics
-      /\\(hbar|ell|wp|Re|Im|partial|nabla|Box|triangle|clubsuit|diamondsuit|heartsuit|spadesuit)/,
-      /\\(ket|bra|braket)\s*\{[^}]+\}/,
-      
-      // Complex expressions
-      /[A-Za-z]+_\{[^}]+\}\^\{[^}]+\}/,
-      /\{[^}]*\\[a-zA-Z]+[^}]*\}/,
-      
-      // Simple patterns
-      /\\[a-zA-Z]+/,
-      /[A-Za-z]+_[A-Za-z0-9]/,
-      /[A-Za-z]+\^[A-Za-z0-9]/,
-      /\{[^}]*[\\][^}]*\}/
-    ];
+    // 2) If we see a “bare” TeX pattern, wrap once in \( … \)
+    const hasInlineMath =
+         /\\frac\s*{[^}]+}\s*{[^}]+}/.test(str)
+      || /\\hat\{[^}]+\}/.test(str)
+      || /\\pi\b/.test(str)
+      || /\\varepsilon/.test(str)
+      || /[A-Za-z]+_\{.+?\}/.test(str);
 
-    // Check if any advanced pattern matches
-    const hasAdvancedMath = advancedMathPatterns.some(pattern => pattern.test(str));
-
-    if (hasAdvancedMath) {
-      // For complex expressions, use display math
-      if (str.length > 50 || /\\(begin|int|sum|prod|frac|sqrt)/.test(str)) {
-        return `\\[${str}\\]`;
-      } else {
-        return `\$$${str}\$$`;
-      }
+    if (hasInlineMath) {
+      return `\\(${str}\\)`;
     }
 
     // 3) Otherwise leave it unchanged
@@ -1719,7 +1565,7 @@ window.MathJax = {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 4. Enhanced Dark Mode with Smooth Transitions
+  // 4. Dark Mode Initialization & Toggle
   // ─────────────────────────────────────────────────────────────────────────────
   if (isDarkMode) {
     document.body.classList.add('dark-mode');
@@ -1733,12 +1579,6 @@ window.MathJax = {
       ? '<i class="fas fa-sun"></i>' 
       : '<i class="fas fa-moon"></i>';
     localStorage.setItem('darkMode', isDarkMode);
-    
-    // Add smooth transition effect
-    document.body.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-    setTimeout(() => {
-      document.body.style.transition = '';
-    }, 500);
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1757,18 +1597,8 @@ window.MathJax = {
     }
     username = u;
     document.getElementById("logged-username").textContent = username;
-    
-    // Enhanced modal close animation
-    const modal = document.getElementById("modal-overlay");
-    modal.style.animation = 'fadeOut 0.3s ease-out forwards';
-    setTimeout(() => {
-      modal.style.display = "none";
-      modal.style.animation = '';
-    }, 300);
-    
+    document.getElementById("modal-overlay").style.display = "none";
     document.getElementById("content").style.filter = "none";
-    document.getElementById("content").style.animation = 'fadeInUp 0.6s ease-out';
-    
     await loadTestSeriesData();
   };
 
@@ -1801,17 +1631,15 @@ window.MathJax = {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 7. Build & Update Subject Tabs with Enhanced Animations
+  // 7. Build & Update Subject Tabs
   // ─────────────────────────────────────────────────────────────────────────────
   function buildSubjectButtons() {
     const container = document.getElementById("subject-buttons");
     container.innerHTML = "";
-    subjectsArr.forEach((sub, index) => {
+    subjectsArr.forEach(sub => {
       const btn = document.createElement("button");
       btn.className = "nav-tab";
       btn.textContent = sub;
-      btn.style.animationDelay = `${index * 0.1}s`;
-      btn.style.animation = 'slideInDown 0.5s ease-out forwards';
       btn.onclick = () => {
         currentSubject = sub;
         updateSubjectButtons();
@@ -1855,7 +1683,7 @@ window.MathJax = {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 9. Enhanced Question Rendering with Advanced MathJax Integration
+  // 9. Render a Question (+ Options) into the DOM, then Typeset with MathJax
   // ─────────────────────────────────────────────────────────────────────────────
   function displayQuestion() {
     const question = questions[currentQuestionIndex];
@@ -1877,7 +1705,7 @@ window.MathJax = {
     const savedAnswer = getSavedAnswer(question.questionId);
     const isReviewed = getSavedReview(question.questionId);
 
-    // Build question header + text with enhanced animations
+    // Build question header + text
     let questionContent = `
       <div class="question-header">
         <div class="question-number">Question ${currentQuestionIndex + 1}</div>
@@ -1889,7 +1717,7 @@ window.MathJax = {
         <div class="question-text">
           ${
             isImageURL(question.question)
-              ? `<img src="${question.question}" class="question-image" alt="Question image" loading="lazy"/>`
+              ? `<img src="${question.question}" class="question-image" alt="Question image"/>`
               : renderLatex(question.question)
           }
         </div>
@@ -1914,8 +1742,7 @@ window.MathJax = {
 
         questionContent += `
           <div class="option-item ${isSelected ? 'selected' : ''}"
-               onclick="selectOption('${question.questionId}','${optionValue}', this)"
-               style="animation-delay: ${index * 0.1}s">
+               onclick="selectOption('${question.questionId}','${optionValue}', this)">
             <div class="option-content">
               <input type="radio"
                      class="option-radio"
@@ -1926,7 +1753,7 @@ window.MathJax = {
               <div class="option-text">
                 ${
                   isImageURL(option)
-                    ? `<img src="${option}" class="option-image" alt="Option ${optionValue}" loading="lazy"/>`
+                    ? `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`
                     : `${optionValue}. ${renderLatex(option)}`
                 }
               </div>
@@ -1948,8 +1775,7 @@ window.MathJax = {
                  class="input-field"
                  id="answer-input"
                  value="${savedAnswer}"
-                 placeholder="Enter your answer"
-                 step="any"/>
+                 placeholder="Enter your answer"/>
         </div>
       `;
     }
@@ -1965,67 +1791,31 @@ window.MathJax = {
           <button class="nav-btn primary" onclick="saveAndNext()">
             ${
               currentQuestionIndex === questions.length - 1
-                ? '<i class="fas fa-flag-checkered"></i> Save & Finish'
-                : '<i class="fas fa-arrow-right"></i> Save & Next'
+                ? 'Save & Finish'
+                : 'Save & Next'
             }
+            <i class="fas fa-arrow-right"></i>
           </button>
         </div>
       </div>
     `;
 
-    // Inject into DOM with fade animation
-    container.style.opacity = '0';
+    // Inject into DOM
     container.innerHTML = questionContent;
-    
-    // Animate options
-    const options = container.querySelectorAll('.option-item');
-    options.forEach((option, index) => {
-      option.style.animation = `fadeInUp 0.5s ease-out ${index * 0.1}s forwards`;
-    });
 
-    // Fade in the container
-    setTimeout(() => {
-      container.style.transition = 'opacity 0.3s ease';
-      container.style.opacity = '1';
-    }, 100);
-
-    // ── Enhanced MathJax typesetting with error handling ──
-    if (window.MathJax && window.MathJax.typesetPromise) {
-      MathJax.typesetPromise([container])
-        .then(() => {
-          console.log('MathJax rendering completed successfully');
-          // Apply enhanced styling to rendered math
-          const mathElements = container.querySelectorAll('mjx-container');
-          mathElements.forEach(el => {
-            el.style.transition = 'all 0.3s ease';
-            el.addEventListener('mouseenter', () => {
-              el.style.transform = 'scale(1.05)';
-            });
-            el.addEventListener('mouseleave', () => {
-              el.style.transform = 'scale(1)';
-            });
-          });
-        })
-        .catch(err => {
-          console.error("Enhanced MathJax rendering error:", err);
-          showToast("Mathematical expressions may not display correctly", "warning");
-        });
+    // ── Trigger MathJax typesetting on the newly-inserted content ──
+    if (window.MathJax) {
+      MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
     }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 10. Enhanced Option Selection with Smooth Animations
+  // 10. Option Selection & Change Handlers
   // ─────────────────────────────────────────────────────────────────────────────
   function selectOption(questionId, value, element) {
-    // Deselect all with animation
-    document.querySelectorAll('.option-item').forEach(opt => {
-      opt.classList.remove('selected');
-      opt.style.transform = '';
-    });
-    
-    // Mark this as selected with enhanced animation
+    // Deselect all, then mark this as selected
+    document.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
     element.classList.add('selected');
-    element.style.transform = 'translateX(8px) translateY(-2px) scale(1.02)';
 
     // Update the corresponding radio input
     const radio = element.querySelector('input[type="radio"]');
@@ -2033,9 +1823,6 @@ window.MathJax = {
 
     // Persist in LocalStorage
     saveAnswer(questionId, value);
-    
-    // Visual feedback
-    showToast(`Option ${value} selected`, "success");
   }
 
   function handleOptionChange(event, questionId) {
@@ -2043,11 +1830,10 @@ window.MathJax = {
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 11. Enhanced Navigation with Smooth Transitions
+  // 11. Save & Next / Go To Previous Navigation
   // ─────────────────────────────────────────────────────────────────────────────
   window.saveAndNext = () => {
     const question = questions[currentQuestionIndex];
-    
     // Save numeric answer if present
     const answerInput = document.getElementById("answer-input");
     if (answerInput) {
@@ -2055,12 +1841,11 @@ window.MathJax = {
       if (value) saveAnswer(question.questionId, value);
       else removeAnswer(question.questionId);
     }
-    
     // Save review checkbox state
     const reviewCheckbox = document.getElementById("review-checkbox");
     if (reviewCheckbox) saveReview(question.questionId, reviewCheckbox.checked);
 
-    // Advance index or switch subject with animation
+    // Advance index or switch subject
     if (currentQuestionIndex < questions.length - 1) {
       currentQuestionIndex++;
       markAsVisited(questions[currentQuestionIndex].questionId);
@@ -2071,10 +1856,9 @@ window.MathJax = {
         currentSubject = subjectsArr[currentIndex + 1];
         updateSubjectButtons();
         loadQuestions();
-        showToast(`Switched to ${currentSubject}`, "info");
         return;
       } else {
-        showToast("🎉 You have completed all questions!", "success");
+        showToast("You have completed all questions!", "success");
         return;
       }
     }
@@ -2094,23 +1878,16 @@ window.MathJax = {
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 12. Update Navigation Info with Enhanced Styling
+  // 12. Update Navigation Info (Subject, Q-No, Total)
   // ─────────────────────────────────────────────────────────────────────────────
   function updateNavInfo() {
     document.getElementById("current-subject").textContent = currentSubject;
     document.getElementById("current-question-index").textContent = currentQuestionIndex + 1;
     document.getElementById("total-questions").textContent = questions.length;
-    
-    // Add progress bar animation
-    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
-    const progressBar = document.querySelector('.question-header::before');
-    if (progressBar) {
-      progressBar.style.width = `${progress}%`;
-    }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 13. Enhanced Progress Modal with Advanced Animations
+  // 13. Progress Modal: Render Question-status Grid
   // ─────────────────────────────────────────────────────────────────────────────
   function updateProgress() {
     const container = document.getElementById("question-progress");
@@ -2120,7 +1897,6 @@ window.MathJax = {
       const item = document.createElement("div");
       item.className = "progress-item";
       item.textContent = index + 1;
-      item.style.animationDelay = `${index * 0.05}s`;
 
       const hasAnswer = !!getSavedAnswer(question.questionId);
       const isReviewed = getSavedReview(question.questionId);
@@ -2128,24 +1904,12 @@ window.MathJax = {
 
       if (hasAnswer && isReviewed) {
         item.classList.add("status-answered-review");
-        item.title = "Answered and marked for review";
       } else if (hasAnswer) {
         item.classList.add("status-answered");
-        item.title = "Answered";
       } else if (isReviewed) {
         item.classList.add("status-review");
-        item.title = "Marked for review";
       } else if (isVisited) {
         item.classList.add("status-visited");
-        item.title = "Visited";
-      } else {
-        item.title = "Not visited";
-      }
-
-      // Current question highlight
-      if (index === currentQuestionIndex) {
-        item.style.border = '3px solid var(--accent-color)';
-        item.style.boxShadow = '0 0 15px rgba(147, 51, 234, 0.4)';
       }
 
       item.onclick = () => {
@@ -2155,7 +1919,6 @@ window.MathJax = {
         updateNavInfo();
         updateProgress();
         toggleProgress(); // auto‐close progress on mobile
-        showToast(`Jumped to Question ${index + 1}`, "info");
       };
 
       container.appendChild(item);
@@ -2165,18 +1928,8 @@ window.MathJax = {
   window.toggleProgress = () => {
     const modal = document.getElementById("progress-modal");
     const isVisible = modal.style.display === "block";
-    
-    if (isVisible) {
-      modal.style.animation = 'fadeOut 0.3s ease-out forwards';
-      setTimeout(() => {
-        modal.style.display = "none";
-        modal.style.animation = '';
-      }, 300);
-    } else {
-      modal.style.display = "block";
-      modal.style.animation = 'fadeIn 0.3s ease-out forwards';
-      updateProgress();
-    }
+    modal.style.display = isVisible ? "none" : "block";
+    if (!isVisible) updateProgress();
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -2185,14 +1938,12 @@ window.MathJax = {
   function saveAnswer(questionId, answer) {
     const key = `response_${currentSubject}_${questionId}`;
     localStorage.setItem(key, answer);
-    console.log(`Saved answer: ${key} = ${answer}`);
+    console.log(`Saved answer: ${key} = ${answer}`); // Debug
   }
-  
   function getSavedAnswer(questionId) {
     const key = `response_${currentSubject}_${questionId}`;
     return localStorage.getItem(key) || "";
   }
-  
   function removeAnswer(questionId) {
     const key = `response_${currentSubject}_${questionId}`;
     localStorage.removeItem(key);
@@ -2203,7 +1954,6 @@ window.MathJax = {
     if (isReviewed) localStorage.setItem(key, "true");
     else localStorage.removeItem(key);
   }
-  
   function getSavedReview(questionId) {
     const key = `review_${currentSubject}_${questionId}`;
     return localStorage.getItem(key) === "true";
@@ -2213,14 +1963,13 @@ window.MathJax = {
     const key = `visited_${currentSubject}_${questionId}`;
     localStorage.setItem(key, "true");
   }
-  
   function getSavedVisited(questionId) {
     const key = `visited_${currentSubject}_${questionId}`;
     return localStorage.getItem(key) === "true";
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 15. Enhanced Timer with Visual Alerts
+  // 15. Timer: Display & Auto‐Submit on Zero
   // ─────────────────────────────────────────────────────────────────────────────
   function updateTimerDisplay() {
     const hours   = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
@@ -2229,27 +1978,14 @@ window.MathJax = {
     document.getElementById("time-left").textContent = `${hours}:${minutes}:${seconds}`;
 
     const timerEl = document.getElementById("timer");
-    
-    // Enhanced visual alerts
-    if (timeLeft <= 300) { // last 5 min → red alert with pulse
-      timerEl.style.background = "rgba(239, 68, 68, 0.15)";
-      timerEl.style.color = "var(--error-color)";
-      timerEl.style.borderColor = "var(--error-color)";
-      timerEl.style.animation = "pulse 1s infinite";
-      
-      if (timeLeft % 60 === 0) { // Every minute in last 5 minutes
-        showToast(`⚠️ ${Math.floor(timeLeft / 60)} minutes remaining!`, "error");
-      }
+    if (timeLeft <= 300) { // last 5 min → red alert
+      timerEl.style.background   = "rgba(239, 68, 68, 0.1)";
+      timerEl.style.color        = "var(--error-color)";
+      timerEl.style.borderColor  = "var(--error-color)";
     } else if (timeLeft <= 600) { // last 10 min → orange
-      timerEl.style.background = "rgba(245, 158, 11, 0.15)";
-      timerEl.style.color = "var(--warning-color)";
-      timerEl.style.borderColor = "var(--warning-color)";
-      timerEl.style.animation = "none";
-    } else {
-      timerEl.style.background = "rgba(30, 64, 175, 0.08)";
-      timerEl.style.color = "var(--primary-color)";
-      timerEl.style.borderColor = "rgba(30, 64, 175, 0.15)";
-      timerEl.style.animation = "none";
+      timerEl.style.background   = "rgba(245, 158, 11, 0.1)";
+      timerEl.style.color        = "var(--warning-color)";
+      timerEl.style.borderColor  = "var(--warning-color)";
     }
   }
 
@@ -2259,186 +1995,123 @@ window.MathJax = {
       updateTimerDisplay();
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        showToast("⏰ Time's up! Auto-submitting test...", "error");
         submitTest(true);
       }
     }, 1000);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 16. Enhanced Tab‐Switch Detection
+  // 16. Tab‐Switch Detection (Auto‐Submit)
   // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) {
       tabSwitchCount++;
-      const remaining = maxTabSwitches - tabSwitchCount;
-      
       if (tabSwitchCount >= maxTabSwitches) {
-        showToast("🚫 Maximum tab switches exceeded. Auto-submitting...", "error");
         submitTest(true);
       } else {
         showToast(
-          `⚠️ Warning: ${remaining} tab switch${remaining !== 1 ? 'es' : ''} remaining before auto‐submit.`,
+          `Warning: ${maxTabSwitches - tabSwitchCount} tab switches remaining before auto‐submit.`,
           "warning"
         );
       }
     }
   });
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 17. Enhanced Submit Test with Better UX
-  // ─────────────────────────────────────────────────────────────────────────────
-  window.submitTest = async (auto = false) => {
-    // Pre-save current state
-    const currentQ = questions[currentQuestionIndex];
-    if (currentQ) {
-      const answerInput = document.getElementById("answer-input");
-      if (answerInput) {
-        const val = answerInput.value.trim();
-        if (val) {
-          saveAnswer(currentQ.questionId, val);
-        } else {
-          removeAnswer(currentQ.questionId);
-        }
-      }
-      const reviewCheckbox = document.getElementById("review-checkbox");
-      if (reviewCheckbox) {
-        saveReview(currentQ.questionId, reviewCheckbox.checked);
-      }
+ // ─────────────────────────────────────────────────────────────────────────────
+// 17. Submit Test (Manual/Auto) → Build Payload & POST
+// ─────────────────────────────────────────────────────────────────────────────
+window.submitTest = async (auto = false) => {
+  // ─────── NEW: Pre-save current integer input and review state ───────
+  const currentQ = questions[currentQuestionIndex];
+  const answerInput = document.getElementById("answer-input");
+  if (answerInput) {
+    const val = answerInput.value.trim();
+    if (val) {
+      saveAnswer(currentQ.questionId, val);
+    } else {
+      removeAnswer(currentQ.questionId);
     }
+  }
+  const reviewCheckbox = document.getElementById("review-checkbox");
+  if (reviewCheckbox) {
+    saveReview(currentQ.questionId, reviewCheckbox.checked);
+  }
+  // ─────────────────────────────────────────────────────────────────────
 
-    // Enhanced confirmation dialog
-    if (!auto) {
-      const totalAnswered = getTotalAnsweredQuestions();
-      const totalQuestions = getTotalQuestions();
-      const unanswered = totalQuestions - totalAnswered;
-      
-      let confirmMessage = `Are you sure you want to submit the test?\n\n`;
-      confirmMessage += `📊 Progress Summary:\n`;
-      confirmMessage += `✅ Answered: ${totalAnswered}/${totalQuestions}\n`;
-      if (unanswered > 0) {
-        confirmMessage += `❌ Unanswered: ${unanswered}\n`;
-      }
-      confirmMessage += `\nThis action cannot be undone.`;
-      
-      if (!confirm(confirmMessage)) {
-        return;
-      }
-    }
+  // If manual submit, confirm
+  if (!auto && !confirm("Are you sure you want to submit the test?")) {
+    return;
+  }
 
-    try {
-      showLoading(true);
-      showToast(auto ? "Auto-submitting test..." : "Submitting test...", "info");
+  try {
+    showLoading(true);
 
-      // Build payload from LocalStorage for all subjects/questions
-      const payload = {};
-      for (const subject of subjectsArr) {
-        payload[subject] = {};
-        const qMap = testData.questions[subject] || {};
-        Object.values(qMap).forEach(q => {
-          const key = `response_${subject}_${q.questionId}`;
-          const stored = localStorage.getItem(key);
-          payload[subject][q.questionId] = {
-            questionId: q.questionId,
-            selectedAnswer: stored || null
-          };
-        });
-      }
-
-      console.log('Submitting enhanced payload:', payload);
-
-      // POST to server
-      const response = await fetch(`/api/tests/${testID}/submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          batchName,
-          username,
-          responses: payload,
-          submissionType: auto ? 'auto' : 'manual',
-          timeRemaining: timeLeft,
-          tabSwitchCount
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Submission failed: ${response.status}`);
-      }
-      
-      const result = await response.json();
-      console.log('Enhanced submission result:', result);
-
-      // Cleanup & Redirect with enhanced feedback
-      localStorage.clear();
-      clearInterval(timerInterval);
-      
-      const successMessage = auto 
-        ? "🤖 Test auto-submitted successfully!" 
-        : "🎉 Test submitted successfully!";
-      showToast(successMessage, "success");
-      
-      // Disable all interactions
-      document.body.style.pointerEvents = 'none';
-      document.body.style.opacity = '0.7';
-      
-      setTimeout(() => {
-        window.location.href = auto
-          ? "/Results/"
-          : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
-      }, 2000);
-
-    } catch (error) {
-      console.error("Enhanced submission error:", error);
-      showToast("❌ Failed to submit test. Please try again.", "error");
-      showLoading(false);
-    }
-  };
-
-  // Helper functions for submission stats
-  function getTotalAnsweredQuestions() {
-    let count = 0;
+    // Build payload from LocalStorage for all subjects/questions
+    const payload = {};
     for (const subject of subjectsArr) {
+      payload[subject] = {};
       const qMap = testData.questions[subject] || {};
       Object.values(qMap).forEach(q => {
         const key = `response_${subject}_${q.questionId}`;
-        if (localStorage.getItem(key)) count++;
+        const stored = localStorage.getItem(key);
+        payload[subject][q.questionId] = {
+          questionId: q.questionId,
+          selectedAnswer: stored || null
+        };
       });
     }
-    return count;
-  }
 
-  function getTotalQuestions() {
-    let count = 0;
-    for (const subject of subjectsArr) {
-      const qMap = testData.questions[subject] || {};
-      count += Object.keys(qMap).length;
+    console.log('Submitting payload:', payload);
+
+    // POST to server
+    const response = await fetch(`/api/tests/${testID}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        batchName,
+        username,
+        responses: payload
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Submission failed: ${response.status}`);
     }
-    return count;
+    const result = await response.json();
+    console.log('Submission result:', result);
+
+    // Cleanup & Redirect
+    localStorage.clear();
+    clearInterval(timerInterval);
+    showToast(
+      auto ? "Test auto-submitted successfully!" : "Test submitted successfully!",
+      "success"
+    );
+    setTimeout(() => {
+      window.location.href = auto
+        ? "/Results/"
+        : `/Results/?test=${testID}&batch=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`;
+    }, 2000);
+
+  } catch (error) {
+    console.error("Submission error:", error);
+    showToast("Failed to submit test. Please try again.", "error");
+    showLoading(false);
   }
+};
+
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 18. Enhanced Loading & Toast System
+  // 18. Utility: Loading Overlay & Toast Notifications
   // ─────────────────────────────────────────────────────────────────────────────
   function showLoading(show) {
     const content = document.getElementById("content");
-    if (show) {
-      content.classList.add("loading");
-      content.style.filter = "blur(2px)";
-    } else {
-      content.classList.remove("loading");
-      content.style.filter = "none";
-    }
+    if (show) content.classList.add("loading");
+    else       content.classList.remove("loading");
   }
 
   function showToast(message, type = "info") {
     const toast = document.createElement("div");
-    const icons = {
-      info: "ℹ️",
-      success: "✅",
-      warning: "⚠️",
-      error: "❌"
-    };
-    
     toast.style.cssText = `
       position: fixed;
       top: 20px;
@@ -2449,53 +2122,34 @@ window.MathJax = {
         type === "success" ? "var(--success-color)" : "var(--primary-color)"
       };
       color: white;
-      padding: 16px 24px;
+      padding: 12px 20px;
       border-radius: var(--border-radius-sm);
-      font-size: 14px; 
-      font-weight: 600;
+      font-size: 14px; font-weight: 500;
       z-index: 10000;
-      box-shadow: var(--shadow-medium);
+      box-shadow: 0 4px 12px var(--card-shadow);
       transform: translateX(100%);
-      transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-      max-width: 350px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      transition: transform 0.3s ease;
+      max-width: 300px;
     `;
-    
-    toast.innerHTML = `${icons[type] || icons.info} ${message}`;
+    toast.textContent = message;
     document.body.appendChild(toast);
 
-    // Slide in with bounce
+    // Slide in
     setTimeout(() => {
       toast.style.transform = "translateX(0)";
     }, 100);
 
-    // Auto‐remove with fade
+    // Auto‐remove
     setTimeout(() => {
       toast.style.transform = "translateX(100%)";
-      toast.style.opacity = "0";
-      setTimeout(() => {
-        if (document.body.contains(toast)) {
-          document.body.removeChild(toast);
-        }
-      }, 400);
-    }, 4000);
+      setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 19. Enhanced Keyboard Navigation & Touch Gestures
+  // 19. Keyboard Navigation & Touch Gestures
   // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener('keydown', (e) => {
-    // Prevent default browser shortcuts that might interfere
-    if (e.ctrlKey && (e.key === 'r' || e.key === 'R')) {
-      e.preventDefault();
-      showToast("Page refresh is disabled during test", "warning");
-      return;
-    }
-    
     if (e.key === 'ArrowLeft' && currentQuestionIndex > 0) {
       e.preventDefault();
       goToPrevious();
@@ -2505,50 +2159,28 @@ window.MathJax = {
     } else if (e.key === 'Escape') {
       const modal = document.getElementById("progress-modal");
       if (modal.style.display === "block") toggleProgress();
-    } else if (e.key >= '1' && e.key <= '4') {
-      // Quick option selection with number keys
-      const optionIndex = parseInt(e.key) - 1;
-      const options = document.querySelectorAll('.option-item');
-      if (options[optionIndex]) {
-        options[optionIndex].click();
-      }
     }
   });
 
-  // Enhanced touch gestures
-  let touchStartX = 0, touchEndX = 0, touchStartY = 0, touchEndY = 0;
-  
+  let touchStartX = 0, touchEndX = 0;
   document.addEventListener('touchstart', (e) => {
     touchStartX = e.changedTouches[0].screenX;
-    touchStartY = e.changedTouches[0].screenY;
   });
-  
   document.addEventListener('touchend', (e) => {
     touchEndX = e.changedTouches[0].screenX;
-    touchEndY = e.changedTouches[0].screenY;
     handleSwipe();
   });
-  
   function handleSwipe() {
-    const swipeThreshold = 80;
-    const verticalThreshold = 100;
-    const diffX = touchStartX - touchEndX;
-    const diffY = touchStartY - touchEndY;
-    
-    // Only process horizontal swipes (ignore vertical scrolling)
-    if (Math.abs(diffX) > swipeThreshold && Math.abs(diffY) < verticalThreshold) {
-      if (diffX > 0) {
-        saveAndNext(); // Swipe left → Next
-        showToast("Swiped to next question", "info");
-      } else {
-        goToPrevious(); // Swipe right → Previous
-        showToast("Swiped to previous question", "info");
-      }
+    const swipeThreshold = 50;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > swipeThreshold) {
+      if (diff > 0) saveAndNext(); // Swipe left → Next
+      else goToPrevious();         // Swipe right → Previous
     }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 20. Enhanced Initial Setup & Error Handling
+  // 20. Initial Setup on DOMContentLoaded
   // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
     const usernameInput = document.getElementById("username");
@@ -2557,60 +2189,8 @@ window.MathJax = {
       usernameInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') validateCredentials();
       });
-      
-      // Enhanced input validation
-      usernameInput.addEventListener('input', (e) => {
-        const value = e.target.value;
-        const isValid = value.length >= 3 && /^[a-zA-Z0-9_]+$/.test(value);
-        const submitBtn = document.querySelector('.modal-btn');
-        
-        if (isValid) {
-          submitBtn.style.opacity = '1';
-          submitBtn.style.pointerEvents = 'auto';
-          e.target.style.borderColor = 'var(--success-color)';
-        } else {
-          submitBtn.style.opacity = '0.6';
-          submitBtn.style.pointerEvents = 'none';
-          e.target.style.borderColor = 'var(--error-color)';
-        }
-      });
-    }
-    
-    // Add global error handler
-    window.addEventListener('error', (e) => {
-      console.error('Global error:', e.error);
-      showToast("An unexpected error occurred. Please refresh if issues persist.", "error");
-    });
-    
-    // Add unload warning
-    window.addEventListener('beforeunload', (e) => {
-      if (timeLeft > 0) {
-        e.preventDefault();
-        e.returnValue = 'Are you sure you want to leave? Your test progress may be lost.';
-        return e.returnValue;
-      }
-    });
-    
-    // Performance monitoring
-    if ('performance' in window) {
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const perfData = performance.getEntriesByType('navigation')[0];
-          console.log('Enhanced page load time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
-        }, 0);
-      });
     }
   });
-
-  // Add CSS animation for fadeOut
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes fadeOut {
-      from { opacity: 1; }
-      to { opacity: 0; }
-    }
-  `;
-  document.head.appendChild(style);
 </script>
 
 </body>
