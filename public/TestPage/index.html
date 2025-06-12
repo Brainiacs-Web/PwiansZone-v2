@@ -960,51 +960,57 @@ window.MathJax = {
   // ─────────────────────────────────────────────────────────────────────────────
   /**
  * renderLatex(str)
- *   • If str already has \(…\), \[…\], $$…$$ or \begin{…}…\end{…}, returns it directly.
- *   • Otherwise, scans for “display” vs “inline” cues and wraps accordingly.
+ *  • Leaves alone any text already wrapped in \(…\), \[…\], $$…$$ or \begin{…}…\end{…}.
+ *  • Otherwise, scans for “display” vs “inline” cues and wraps accordingly:
+ *      – Display (multi-line, big operators, arrows, environments) → $$ … $$
+ *      – Inline  (fractions, subscripts, superscripts, \text, simple macros) → \( … \)
+ *  • Plain text (no math cues) is returned unchanged.
  */
 function renderLatex(str) {
   if (!str) return "—";
 
-  // 1) Detect existing TeX delimiters
-  const hasDelims = (
+  // 1) Already has TeX delimiters?
+  const already = (
        /\\\(.+?\\\)/s.test(str)       // \( … \)
     || /\\\[.+?\\\]/s.test(str)       // \[ … \]
     || /\$\$[\s\S]+?\$\$/.test(str)   // $$ … $$
     || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str)
   );
-  if (hasDelims) return str;
+  if (already) return str;
 
   // 2) DISPLAY math cues
   const displayCues = [
-    /\\begin\{(?:align|gather|multline|cases|equation)\}/,
-    /\\\\\s*$/,                // explicit line break "\\" at end
-    /\\displaystyle\b/,         // explicit display style
-    /\\(?:sum|prod|int|lim)\b/, // big operators
-    /\\x?rightarrow?/,         // reaction arrows
+    /\\begin\{(?:align|gather|multline|cases|equation)\}/, // env
+    /\\\\\s*$/,                // “\\” line break
+    /\\displaystyle\b/,         // explicit displaystyle
+    /\\(?:sum|prod|int|lim|bigg?lbrace|bigg?rbrace)\b/, // big ops/braces
+    /\\x?rightarrow?/,         // chemistry/arrow
     /\n/,                       // any newline
   ];
   const isDisplay = displayCues.some(rx => rx.test(str));
 
   // 3) INLINE math cues
   const inlineCues = [
-    /\\frac\s*{[^}]+}{[^}]+}/,   // fractions
-    /\\pi\b|\\alpha\b|\\beta\b/, // Greek letters
-    /[A-Za-z0-9]+_\{[^}]+\}/,    // subscript
-    /\^[{]?[A-Za-z0-9]/,          // superscript
-    /[A-Za-z]+\s*\(.*\)/,         // function calls, e.g. f(x)
+    /\\frac\s*{[^}]+}{[^}]+}/,     // fraction
+    /\\(?:pi|alpha|beta|gamma|delta|epsilon|mu|nu|rho|sigma)\b/, // Greek
+    /[A-Za-z0-9]+_\{[^}]+\}/,      // subscript
+    /\^[{]?[A-Za-z0-9]/,            // superscript
+    /[A-Za-z]+\s*\(.*\)/,           // f(x)
+    /\\text\{[^}]+\}/,              // \text{…}
+    /\\ce\{[^}]+\}/,                // mhchem \ce{…}
+    /\\(?:bra|ket|braket|ev|grad|div|curl)\b/, // physics macros
   ];
   const isInline = inlineCues.some(rx => rx.test(str));
 
-  // 4) Wrap
+  // 4) Wrap appropriately
   if (isDisplay) {
     return `$$\n${str}\n$$`;
   } else if (isInline) {
     return `\\(${str}\\)`;
+  } else {
+    // No math detected → return as-is
+    return str;
   }
-
-  // 5) No math detected → leave as plain text
-  return str;
 }
 
   // ─────────────────────────────────────────────────────────────────────────────
