@@ -924,19 +924,17 @@ input:focus,
     </div>
   </div>
   <script>
-window.MathJax = {
-  tex: {
-    inlineMath: [['\\(', '\\)']],
-    displayMath: [['$$', '$$'], ['\\[', '\\]']],
-    processEscapes: true,
-    packages: {
-      '[+]': ['base', 'ams', 'amsmath', 'physics', 'mhchem']
-    }
-  },
-  options: {
-    skipHtmlTags: ['script','noscript','style','textarea','pre']
+// ── Trigger MathJax typesetting only if we injected TeX delimiters ──
+if (window.MathJax) {
+  const html = container.innerHTML;
+  // look for any TeX delimiters: \( \[ or $$
+  if (/\$\$|\\\(|\\\[/.test(html)) {
+    MathJax.typesetPromise([container])
+      .catch(err => console.error("MathJax error:", err));
   }
-};
+}
+
+
 </script>
 
 <!-- 2. Load MathJax -->
