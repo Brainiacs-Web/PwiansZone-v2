@@ -1006,7 +1006,8 @@ input:focus,
       // 3. ENHANCED LATEX RENDERING FUNCTIONS WITH PROPER SPACING
       // ─────────────────────────────────────────────────────────────────────────────
 
-    function isMathString(s) {
+    
+function isMathString(s) {
   return /\\(?:frac|sqrt|sum|int|ce|text|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
 }
 
@@ -1020,7 +1021,7 @@ function renderLatex(str) {
   const alreadyLatex =
     /\\\(.+?\\\)/s.test(str) ||       // \( ... \)
     /\\\[.+?\\\]/s.test(str) ||       // \[ ... \]
-    /\$\$[\s\S]+?\$\$/.test(str) ||   // $$ ... $$
+    /\$\$[\s\S]+?\$\$/.test(str) ||   // $ ... $
     /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str); // LaTeX environments
   
   if (alreadyLatex) {
@@ -1028,6 +1029,16 @@ function renderLatex(str) {
     return str.replace(/\n/g, '<br>').replace(/  +/g, (match) => {
       return '&nbsp;'.repeat(match.length);
     });
+  }
+
+  // NEW: Check for HTML formatting tags (sup, sub, strong, em, etc.)
+  const hasHTMLTags = /<(?:sup|sub|strong|b|em|i|u|br|p|div|span)(?:\s[^>]*)?>[\s\S]*?<\/(?:sup|sub|strong|b|em|i|u|p|div|span)>|<br\s*\/?>/i.test(str);
+  
+  if (hasHTMLTags && !alreadyLatex) {
+    // If it has HTML tags but no LaTeX, preserve HTML and handle spacing
+    return str
+      .replace(/\n/g, '<br>')
+      .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
   }
 
   // 2. Display-level math detection (more comprehensive)
@@ -1059,8 +1070,8 @@ function renderLatex(str) {
   ];
   const isInline = inlineCues.some(rx => rx.test(str));
 
-  // 4. Enhanced plain text detection
-  const hasNoMath = !isInline && !isDisplay && !isMathString(str);
+  // 4. Enhanced plain text detection - UPDATED to handle HTML tags
+  const hasNoMath = !isInline && !isDisplay && !isMathString(str) && !hasHTMLTags;
   
   if (hasNoMath) {
     // Preserve formatting for plain text with proper spacing
@@ -1117,6 +1128,36 @@ function renderOptionContent(str) {
   // Trim the string but preserve internal spacing
   str = str.trim();
   
+  // Check for HTML formatting tags first
+  const hasHTMLTags = /<(?:sup|sub|strong|b|em|i|u|br|p|div|span)(?:\s[^>]*)?>[\s\S]*?<\/(?:sup|sub|strong|b|em|i|u|p|div|span)>|<br\s*\/?>/i.test(str);
+  
+  if (hasHTMLTags) {
+    // If it has HTML tags, also check for LaTeX math
+    const hasLatexMath = /\\\(.+?\\\)|\\\[.+?\\\]|\$\$[\s\S]+?\$\$|\\(?:frac|sqrt|sum|int|alpha|beta|pi)/.test(str);
+    
+    if (hasLatexMath) {
+      // Mixed HTML + LaTeX content - handle carefully
+      // Split by LaTeX math delimiters while preserving HTML
+      const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
+      
+      return parts.map(part => {
+        if (!part) return '';
+        
+        // If it's a math expression, return as is
+        if (/^(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})$/.test(part)) {
+          return part;
+        }
+        
+        // For HTML parts, preserve HTML tags and spacing
+        return part.replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+      }).join('&nbsp;');
+    } else {
+      // Pure HTML content - preserve HTML tags and spacing
+      return str.replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+    }
+  }
+  
+  // No HTML tags - proceed with original LaTeX logic
   // Split content by potential math delimiters while preserving them
   const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
   
@@ -1137,6 +1178,35 @@ function renderOptionContent(str) {
 function renderMixedContent(str) {
   if (!str || typeof str !== "string") return "—";
   
+  // Check for HTML formatting tags first
+  const hasHTMLTags = /<(?:sup|sub|strong|b|em|i|u|br|p|div|span)(?:\s[^>]*)?>[\s\S]*?<\/(?:sup|sub|strong|b|em|i|u|p|div|span)>|<br\s*\/?>/i.test(str);
+  
+  if (hasHTMLTags) {
+    // If it has HTML tags, also check for LaTeX math
+    const hasLatexMath = /\\\(.+?\\\)|\\\[.+?\\\]|\$\$[\s\S]+?\$\$|\\(?:frac|sqrt|sum|int|alpha|beta|pi)/.test(str);
+    
+    if (hasLatexMath) {
+      // Mixed HTML + LaTeX content
+      const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
+      
+      return parts.map(part => {
+        if (!part) return '';
+        
+        // If it's a math expression, return as is
+        if (/^(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})$/.test(part)) {
+          return part;
+        }
+        
+        // For HTML parts, preserve HTML tags and handle spacing
+        return part.replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+      }).join(' ');
+    } else {
+      // Pure HTML content - preserve HTML tags
+      return str.replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+    }
+  }
+  
+  // No HTML tags - proceed with original logic
   // Split content by potential math delimiters while preserving them
   const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
   
@@ -1168,6 +1238,7 @@ function escapeAndPreserveSpaces(str) {
       return '&nbsp;'.repeat(match.length);
     });
 }
+
       // ─────────────────────────────────────────────────────────────────────────────
       // 4. Dark Mode Initialization & Toggle
       // ─────────────────────────────────────────────────────────────────────────────
@@ -1289,7 +1360,7 @@ function escapeAndPreserveSpaces(str) {
       // ─────────────────────────────────────────────────────────────────────────────
       // 9. ENHANCED QUESTION DISPLAY WITH PROPER SPACING AND LATEX RENDERING
       // ─────────────────────────────────────────────────────────────────────────────
-     function displayQuestion() {
+      function displayQuestion() {
   const question = questions[currentQuestionIndex];
   const container = document.getElementById("question-card");
 
