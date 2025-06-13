@@ -263,19 +263,19 @@ body {
 .question-text {
   font-size: 16px;
   line-height: 1.6;
+  margin-bottom: 20px;
   color: var(--text-color);
   font-weight: 500;
-  /* preserve your spaces & line-breaks */
-  white-space: pre-wrap;
-  word-break: break-word;
 }
 
-.question-text p {
-  /* spacing between each plain-text paragraph */
-  margin: 0 0 1em;
-}
+  .question-text-content {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
 
-
+        .question-text-content br {
+            margin: 0.5em 0;
+        }
 .question-image,
 .option-image {
   max-width: 100%;
@@ -292,6 +292,11 @@ body {
   gap: 12px;
   margin: 20px 0;
 }
+
+ .option-label {
+            font-weight: 600;
+            margin-right: 0.5em;
+        }
 
 .option-item {
   background: var(--white);
@@ -334,6 +339,11 @@ body {
   gap: 12px;
   width: 100%;
 }
+.option-content-text {
+            display: inline;
+            margin-left: 0.25em;
+        }
+        
 
 .option-radio {
   width: 20px;
@@ -347,7 +357,12 @@ body {
   font-size: 14px;
   line-height: 1.5;
   cursor: pointer;
-}
+
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            
+        }
 
 /* Input Answer */
 .input-section {
@@ -707,6 +722,29 @@ body {
     gap: 16px;
   }
   
+   .MathJax {
+            margin: 0.5em 0.2em !important;
+        }
+
+        /* Better spacing for mixed content */
+        .question-content p {
+            margin-bottom: 1em;
+        }
+
+        .question-content .question-text {
+            margin-bottom: 1.5rem;
+        }
+
+        /* Add padding for better readability */
+        .question-text-content {
+            padding: 0.5rem 0;
+        }
+
+        .option-item {
+            margin-bottom: 0.5rem;
+            padding: 0.75rem;
+        }
+  
   .main-content {
     padding: 24px;
     max-width: 800px;
@@ -722,7 +760,7 @@ body {
     white-space: pre-wrap;
     word-break: break-word;
   }
- 
+  
   .nav-buttons {
     padding: 24px 32px;
   }
@@ -790,6 +828,7 @@ body {
     height: 44px;
   }
 }
+
 
 /* Accessibility */
 @media (prefers-reduced-motion: reduce) {
@@ -923,583 +962,663 @@ input:focus,
       </button>
     </div>
   </div>
-  <script>
-// ── Trigger MathJax typesetting only if we injected TeX delimiters ──
-if (window.MathJax) {
-  const html = container.innerHTML;
-  // look for any TeX delimiters: \( \[ or $$
-  if (/\$\$|\\\(|\\\[/.test(html)) {
-    MathJax.typesetPromise([container])
-      .catch(err => console.error("MathJax error:", err));
-  }
-}
-
-
-</script>
-
-<!-- 2. Load MathJax -->
-
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-
 <script>
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 1. Read URL params → testID, batchName; initialize username as blank
-  // ─────────────────────────────────────────────────────────────────────────────
-  const params = new URLSearchParams(window.location.search);
-  const testID = params.get("test") || "";
-  let batchName = params.get("batchName") || "";
-  let username = "";
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        packages: {
+          '[+]': ['base', 'ams', 'amsmath', 'physics', 'mhchem']
+        }
+      },
+      options: {
+        skipHtmlTags: ['script','noscript','style','textarea','pre']
+      }
+    };
+    </script>
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 2. State Management
-  // ─────────────────────────────────────────────────────────────────────────────
-  let testData = {};
-  let subjectsArr = [];
-  let questions = [];
-  let currentSubject = "";
-  let currentQuestionIndex = 0;
-  let timeLeft = 0, timerInterval = null;
-  let tabSwitchCount = 0, maxTabSwitches = 5;
-  let isDarkMode = localStorage.getItem('darkMode') === 'true';
+    <!-- Load MathJax -->
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-function isMathString(s) {
-  return /\\(?:frac|sqrt|sum|int|ce|text|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
-}
+    <script>
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 1. Read URL params → testID, batchName; initialize username as blank
+      // ─────────────────────────────────────────────────────────────────────────────
+      const params = new URLSearchParams(window.location.search);
+      const testID = params.get("test") || "";
+      let batchName = params.get("batchName") || "";
+      let username = "";
 
-function renderLatex(str) {
-  // Quick guard
-  if (!str || typeof str !== "string") {
-    console.log("renderLatex in:", str);
-    console.log("→ out: —");
-    return "—";
-  }
-  console.log("renderLatex in:", JSON.stringify(str));
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 2. State Management
+      // ─────────────────────────────────────────────────────────────────────────────
+      let testData = {};
+      let subjectsArr = [];
+      let questions = [];
+      let currentSubject = "";
+      let currentQuestionIndex = 0;
+      let timeLeft = 0, timerInterval = null;
+      let tabSwitchCount = 0, maxTabSwitches = 5;
+      let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
-  // --------------------------------------------------
-  // 1) Detect if it already contains LaTeX delimiters
-  // --------------------------------------------------
-  const alreadyLatex =
-    /\\\(.+?\\\)/s.test(str) ||       // \( ... \)
-    /\\\[.+?\\\]/s.test(str) ||       // \[ ... \]
-    /\$\$[\s\S]+?\$\$/.test(str) ||   // $$ ... $$
-    /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str);
-  if (alreadyLatex) {
-    console.log("→ out (already):", str);
-    return str;
-  }
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 3. ENHANCED LATEX RENDERING FUNCTIONS WITH PROPER SPACING
+      // ─────────────────────────────────────────────────────────────────────────────
 
-  // --------------------------------------------------
-  // 2) Detect display‑style math cues
-  // --------------------------------------------------
-  const displayCues = [
-    /\\begin\{(?:align|gather|multline|cases|equation)\}/,
-    /\\\\\s*$/,                 // ends with \\
-    /\\displaystyle\b/,
-    /\\(?:sum|prod|int|lim|to)\b/,
-    /\\x?rightarrow?|\\leftarrow/,
-    /\n/,                       // contains newlines
-  ];
-  const isDisplay = displayCues.some(rx => rx.test(str));
+      function isMathString(s) {
+        return /\\(?:frac|sqrt|sum|int|ce|text|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
+      }
 
-  // --------------------------------------------------
-  // 3) Detect inline‑style math cues
-  // --------------------------------------------------
-  const inlineCues = [
-    /\\frac\s*{[^}]+}{[^}]+}/,
-    /\\(?:pi|alpha|beta|gamma|delta|mu|nu|rho|sigma|theta|phi|epsilon)\b/,
-    /[A-Za-z0-9]+_\{[^}]+\}/,
-    /\^[{]?[A-Za-z0-9]/,
-    /\\text\{[^}]+\}/,
-    /\\ce\{[^}]+\}/,
-    /\\(?:bra|ket|braket|ev|grad|div|curl)\b/,
-  ];
-  const isInline = inlineCues.some(rx => rx.test(str));
-
-  // A helper to catch stray math characters
-  function isMathString(s) {
-    return /\\(?:frac|sqrt|sum|int|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
-  }
-
-  // --------------------------------------------------
-  // 4) Plain text: escape + wrap in <p>
-  // --------------------------------------------------
-  if (!isInline && !isDisplay && !isMathString(str)) {
-    let escaped = str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    // preserve double‑spaces
-    escaped = escaped.replace(/ {2}/g, " &nbsp;");
-    // preserve line breaks
-    escaped = escaped.replace(/\n/g, "<br>");
-const html = `<p class="tex2jax_ignore">${escaped}</p>`;
-    console.log("→ out (plain):", html);
-    return html;
-  }
-
-  // --------------------------------------------------
-  // 5) Wrap detected math in TeX delimiters
-  // --------------------------------------------------
-  const wrapped = isDisplay
-    ? `$$\n${str}\n$$`
-    : `\\(${str}\\)`;
-  console.log("→ out (math):", wrapped);
-  return wrapped;
-}
-
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 4. Dark Mode Initialization & Toggle
-  // ─────────────────────────────────────────────────────────────────────────────
-  if (isDarkMode) {
-    document.body.classList.add('dark-mode');
-    document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
-  }
-
-  document.getElementById('theme-toggle').addEventListener('click', () => {
-    isDarkMode = !isDarkMode;
-    document.body.classList.toggle('dark-mode', isDarkMode);
-    document.getElementById('theme-toggle').innerHTML = isDarkMode 
-      ? '<i class="fas fa-sun"></i>' 
-      : '<i class="fas fa-moon"></i>';
-    localStorage.setItem('darkMode', isDarkMode);
-  });
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 5. Show Batch Code in Header
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.getElementById("logged-batch").textContent = batchName;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 6. Validate Credentials (Username) & Load Test Data
-  // ─────────────────────────────────────────────────────────────────────────────
-  window.validateCredentials = async () => {
-    const u = document.getElementById("username").value.trim();
-    if (!u) {
-      showToast("Please enter your username.", "error");
-      return;
-    }
-    username = u;
-    document.getElementById("logged-username").textContent = username;
-    document.getElementById("modal-overlay").style.display = "none";
-    document.getElementById("content").style.filter = "none";
-    await loadTestSeriesData();
-  };
-
-  async function loadTestSeriesData() {
-    try {
-      showLoading(true);
-      const res = await fetch(`/api/testSeries/${testID}`);
-      if (!res.ok) throw new Error("Fetch failed");
-      testData = await res.json();
-
-      // Populate test name & subjects; set timer
-      document.getElementById("test-name").textContent = testData.testName;
-      subjectsArr = testData.subjects;
-      timeLeft = (testData.testDuration || 90) * 60;
-
-      buildSubjectButtons();
-      currentSubject = subjectsArr[0];
-
-      // Directly load questions (no separate chapter logic in this version)
-      await loadQuestions();
-
-      updateTimerDisplay();
-      startTimer();
-    } catch (e) {
-      console.error(e);
-      showToast("Failed to load test. Please refresh and try again.", "error");
-    } finally {
-      showLoading(false);
-    }
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 7. Build & Update Subject Tabs
-  // ─────────────────────────────────────────────────────────────────────────────
-  function buildSubjectButtons() {
-    const container = document.getElementById("subject-buttons");
-    container.innerHTML = "";
-    subjectsArr.forEach(sub => {
-      const btn = document.createElement("button");
-      btn.className = "nav-tab";
-      btn.textContent = sub;
-      btn.onclick = () => {
-        currentSubject = sub;
-        updateSubjectButtons();
-        loadQuestions();
-      };
-      container.appendChild(btn);
-    });
-    updateSubjectButtons();
-  }
-
-  function updateSubjectButtons() {
-    document.querySelectorAll("#subject-buttons .nav-tab")
-      .forEach(btn => btn.classList.toggle("active", btn.textContent === currentSubject));
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 8. Load Questions for Current Subject → Sort MCQ first, Track Visited
-  // ─────────────────────────────────────────────────────────────────────────────
-  async function loadQuestions() {
-    showLoading(true);
-
-    const questionMap = testData.questions[currentSubject] || {};
-    questions = Object.values(questionMap);
-
-    // Sort: MCQs (with options) first, then numerical-input questions
-    questions.sort((a, b) => {
-      const aIsInput = !Array.isArray(a.options) || !a.options.length;
-      const bIsInput = !Array.isArray(b.options) || !b.options.length;
-      return aIsInput - bIsInput;
-    });
-
-    currentQuestionIndex = 0;
-    if (questions.length) {
-      markAsVisited(questions[0].questionId);
-    }
-
-    displayQuestion();
-    updateNavInfo();
-    updateProgress();
-    showLoading(false);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 9. Render a Question (+ Options) into the DOM, then Typeset with MathJax
-  // ─────────────────────────────────────────────────────────────────────────────
-  function displayQuestion() {
-    const question = questions[currentQuestionIndex];
-    const container = document.getElementById("question-card");
-
-    if (!question) {
-      container.innerHTML = `
-        <div class="question-header">
-          <div class="question-number">No Questions</div>
-        </div>
-        <div class="question-content">
-          <p>No questions available for this section.</p>
-        </div>
-      `;
-      return;
-    }
-
-    const isImageURL = (str) => /https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
-    const savedAnswer = getSavedAnswer(question.questionId);
-    const isReviewed = getSavedReview(question.questionId);
-
-    // Build question header + text
-    let questionContent = `
-      <div class="question-header">
-        <div class="question-number">Question ${currentQuestionIndex + 1}</div>
-        <button class="menu-btn" onclick="toggleProgress()">
-          <i class="fas fa-bars"></i>
-        </button>
-      </div>
-      <div class="question-content">
-        <div class="question-text">
-          ${
-            isImageURL(question.question)
-              ? `<img src="${question.question}" class="question-image" alt="Question image"/>`
-              : renderLatex(question.question)
-          }
-        </div>
+      function renderLatex(str) {
+        if (!str || typeof str !== "string") return "—";
         
-        <div class="review-section">
-          <input type="checkbox" class="review-checkbox"
-                 id="review-checkbox"
-                 ${isReviewed ? "checked" : ""}/>
-          <label for="review-checkbox" class="review-label">
-            <i class="fas fa-bookmark"></i> Mark for Review
-          </label>
-        </div>
-    `;
+        // Handle empty or whitespace-only strings
+        if (str.trim() === "") return "";
 
-    // If MCQ (array of options)
-    if (Array.isArray(question.options) && question.options.length) {
-      questionContent += `<div class="options-container">`;
+        // 1. Check if already properly formatted LaTeX
+        const alreadyLatex =
+          /\\\(.+?\\\)/s.test(str) ||       // \( ... \)
+          /\\\[.+?\\\]/s.test(str) ||       // \[ ... \]
+          /\$\$[\s\S]+?\$\$/.test(str) ||   // $$ ... $$
+          /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str); // LaTeX environments
+        
+        if (alreadyLatex) {
+          // Even if already LaTeX, ensure proper spacing for mixed content
+          return str.replace(/\n/g, '<br>').replace(/  +/g, (match) => {
+            return '&nbsp;'.repeat(match.length);
+          });
+        }
 
-      question.options.forEach((option, index) => {
-        const optionValue = String.fromCharCode(65 + index);
-        const isSelected = savedAnswer === optionValue;
+        // 2. Display-level math detection (more comprehensive)
+        const displayCues = [
+          /\\begin\{(?:align|gather|multline|cases|equation|matrix|pmatrix|bmatrix|vmatrix)\}/,
+          /\\\\\s*$/,                 // ends with \\
+          /\\displaystyle\b/,
+          /\\(?:sum|prod|int|lim|to)\b/,
+          /\\x?rightarrow?|\\leftarrow/,
+          /\n.*\\(?:frac|sum|prod|int)/,  // newline followed by display math
+          /\\(?:underbrace|overbrace)\{/,
+          /\\(?:bigcup|bigcap|bigoplus|bigotimes)\b/
+        ];
+        const isDisplay = displayCues.some(rx => rx.test(str));
 
-        questionContent += `
-          <div class="option-item ${isSelected ? 'selected' : ''}"
-               onclick="selectOption('${question.questionId}','${optionValue}', this)">
-            <div class="option-content">
-              <input type="radio"
-                     class="option-radio"
-                     name="opt_${question.questionId}"
-                     value="${optionValue}"
-                     ${isSelected ? 'checked' : ''}
-                     onchange="handleOptionChange(event,'${question.questionId}')">
-              <div class="option-text">
-                ${
-                  isImageURL(option)
-                    ? `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`
-                    : `${optionValue}. ${renderLatex(option)}`
-                }
-              </div>
-            </div>
-          </div>
-        `;
+        // 3. Inline-level math detection (enhanced)
+        const inlineCues = [
+          /\\frac\s*\{[^}]+\}\s*\{[^}]+\}/,
+          /\\(?:pi|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|rho|sigma|tau|upsilon|phi|chi|psi|omega)\b/,
+          /[A-Za-z0-9]+_\{[^}]+\}/,
+          /[A-Za-z0-9]+\^\{[^}]+\}/,
+          /\^[{]?[A-Za-z0-9]/,
+          /\\text\{[^}]+\}/,
+          /\\ce\{[^}]+\}/,
+          /\\(?:bra|ket|braket|ev|grad|div|curl|nabla)\b/,
+          /\\(?:sin|cos|tan|log|ln|exp|sqrt)\b/,
+          /\\(?:overline|underline|vec|hat|tilde|bar)\{/,
+          /\$[^$]+\$/  // Single dollar signs
+        ];
+        const isInline = inlineCues.some(rx => rx.test(str));
+
+        // 4. Enhanced plain text detection
+        const hasNoMath = !isInline && !isDisplay && !isMathString(str);
+        
+        if (hasNoMath) {
+          // Preserve formatting for plain text with proper spacing
+          return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\n/g, "<br>")
+            .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;") // Convert tabs to spaces
+            .replace(/  +/g, (match) => {
+              // Convert multiple spaces to non-breaking spaces
+              return '&nbsp;'.repeat(match.length);
+            });
+        }
+
+        // 5. Handle mixed content (text + math)
+        if (str.includes('\n') || (isInline && /[.!?]\s+[A-Z]/.test(str))) {
+          // Split by lines and process each part
+          const lines = str.split('\n');
+          const processedLines = lines.map(line => {
+            if (line.trim() === '') return '<br>';
+            
+            // Check if this line contains math
+            const lineHasMath = inlineCues.some(rx => rx.test(line)) || displayCues.some(rx => rx.test(line));
+            
+            if (lineHasMath) {
+              // Determine if display or inline math
+              const lineIsDisplay = displayCues.some(rx => rx.test(line));
+              return lineIsDisplay ? `$$\n${line.trim()}\n$$` : `\\(${line.trim()}\\)`;
+            } else {
+              // Plain text line - preserve spacing
+              return line
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
+            }
+          });
+          
+          return processedLines.join('<br>');
+        }
+
+        // 6. Single line math - wrap appropriately with spacing consideration
+        const wrappedMath = isDisplay ? `$$\n${str.trim()}\n$$` : `\\(${str.trim()}\\)`;
+        
+        // Add spacing around the math if it's part of a larger context
+        return wrappedMath;
+      }
+
+      // Enhanced function to handle mixed content specifically
+      function renderMixedContent(str) {
+        if (!str || typeof str !== "string") return "—";
+        
+        // Split content by potential math delimiters while preserving them
+        const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
+        
+        return parts.map(part => {
+          if (!part) return '';
+          
+          // If it's already a math expression, return as is
+          if (/^(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})$/.test(part)) {
+            return part;
+          }
+          
+          // Otherwise, process as potential mixed content
+          return renderLatex(part);
+        }).join(' '); // Join with space to ensure proper separation
+      }
+
+      // Improved escapeAndPreserveSpaces function
+      function escapeAndPreserveSpaces(str) {
+        if (!str || typeof str !== "string") return "";
+        
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/\n/g, "<br>")
+          .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+          .replace(/  +/g, (match) => {
+            // Preserve multiple spaces as non-breaking spaces
+            return '&nbsp;'.repeat(match.length);
+          });
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 4. Dark Mode Initialization & Toggle
+      // ─────────────────────────────────────────────────────────────────────────────
+      if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+        document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i>';
+      }
+
+      document.getElementById('theme-toggle').addEventListener('click', () => {
+        isDarkMode = !isDarkMode;
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        document.getElementById('theme-toggle').innerHTML = isDarkMode 
+          ? '<i class="fas fa-sun"></i>' 
+          : '<i class="fas fa-moon"></i>';
+        localStorage.setItem('darkMode', isDarkMode);
       });
 
-      questionContent += `</div>`; // Close options-container
-    }
-    // Else: numerical-input question
-    else {
-      questionContent += `
-        <div class="input-section">
-          <label class="input-label">
-            <i class="fas fa-edit"></i> Your Answer:
-          </label>
-          <input type="number"
-                 class="input-field"
-                 id="answer-input"
-                 value="${savedAnswer}"
-                 placeholder="Enter your answer"/>
-        </div>
-      `;
-    }
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 5. Show Batch Code in Header
+      // ─────────────────────────────────────────────────────────────────────────────
+      document.getElementById("logged-batch").textContent = batchName;
 
-    // Navigation buttons (Previous + Save & Next/Finish)
-    questionContent += `
-        <div class="nav-buttons">
-          <button class="nav-btn secondary"
-                  onclick="goToPrevious()"
-                  ${currentQuestionIndex === 0 ? 'disabled' : ''}>
-            <i class="fas fa-arrow-left"></i> Previous
-          </button>
-          <button class="nav-btn primary" onclick="saveAndNext()">
-            ${
-              currentQuestionIndex === questions.length - 1
-                ? 'Save & Finish'
-                : 'Save & Next'
-            }
-            <i class="fas fa-arrow-right"></i>
-          </button>
-        </div>
-      </div>
-    `;
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 6. Validate Credentials (Username) & Load Test Data
+      // ─────────────────────────────────────────────────────────────────────────────
+      window.validateCredentials = async () => {
+        const u = document.getElementById("username").value.trim();
+        if (!u) {
+          showToast("Please enter your username.", "error");
+          return;
+        }
+        username = u;
+        document.getElementById("logged-username").textContent = username;
+        document.getElementById("modal-overlay").style.display = "none";
+        document.getElementById("content").style.filter = "none";
+        await loadTestSeriesData();
+      };
 
-    // Inject into DOM
-    container.innerHTML = questionContent;
+      async function loadTestSeriesData() {
+        try {
+          showLoading(true);
+          const res = await fetch(`/api/testSeries/${testID}`);
+          if (!res.ok) throw new Error("Fetch failed");
+          testData = await res.json();
 
-    // ── Trigger MathJax typesetting on the newly-inserted content ──
-    if (window.MathJax) {
-      MathJax.typesetPromise([container]).catch(err => console.error("MathJax error:", err));
-    }
-  }
+          // Populate test name & subjects; set timer
+          document.getElementById("test-name").textContent = testData.testName;
+          subjectsArr = testData.subjects;
+          timeLeft = (testData.testDuration || 90) * 60;
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 10. Option Selection & Change Handlers
-  // ─────────────────────────────────────────────────────────────────────────────
-  function selectOption(questionId, value, element) {
-    // Deselect all, then mark this as selected
-    document.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
-    element.classList.add('selected');
+          buildSubjectButtons();
+          currentSubject = subjectsArr[0];
 
-    // Update the corresponding radio input
-    const radio = element.querySelector('input[type="radio"]');
-    radio.checked = true;
+          // Directly load questions (no separate chapter logic in this version)
+          await loadQuestions();
 
-    // Persist in LocalStorage
-    saveAnswer(questionId, value);
-  }
+          updateTimerDisplay();
+          startTimer();
+        } catch (e) {
+          console.error(e);
+          showToast("Failed to load test. Please refresh and try again.", "error");
+        } finally {
+          showLoading(false);
+        }
+      }
 
-  function handleOptionChange(event, questionId) {
-    saveAnswer(questionId, event.target.value);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 11. Save & Next / Go To Previous Navigation
-  // ─────────────────────────────────────────────────────────────────────────────
-  window.saveAndNext = () => {
-    const question = questions[currentQuestionIndex];
-    // Save numeric answer if present
-    const answerInput = document.getElementById("answer-input");
-    if (answerInput) {
-      const value = answerInput.value.trim();
-      if (value) saveAnswer(question.questionId, value);
-      else removeAnswer(question.questionId);
-    }
-    // Save review checkbox state
-    const reviewCheckbox = document.getElementById("review-checkbox");
-    if (reviewCheckbox) saveReview(question.questionId, reviewCheckbox.checked);
-
-    // Advance index or switch subject
-    if (currentQuestionIndex < questions.length - 1) {
-      currentQuestionIndex++;
-      markAsVisited(questions[currentQuestionIndex].questionId);
-    } else {
-      // Move to next subject or notify completion
-      const currentIndex = subjectsArr.indexOf(currentSubject);
-      if (currentIndex < subjectsArr.length - 1) {
-        currentSubject = subjectsArr[currentIndex + 1];
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 7. Build & Update Subject Tabs
+      // ─────────────────────────────────────────────────────────────────────────────
+      function buildSubjectButtons() {
+        const container = document.getElementById("subject-buttons");
+        container.innerHTML = "";
+        subjectsArr.forEach(sub => {
+          const btn = document.createElement("button");
+          btn.className = "nav-tab";
+          btn.textContent = sub;
+          btn.onclick = () => {
+            currentSubject = sub;
+            updateSubjectButtons();
+            loadQuestions();
+          };
+          container.appendChild(btn);
+        });
         updateSubjectButtons();
-        loadQuestions();
-        return;
-      } else {
-        showToast("You have completed all questions!", "success");
-        return;
-      }
-    }
-
-    displayQuestion();
-    updateNavInfo();
-    updateProgress();
-  };
-
-  window.goToPrevious = () => {
-    if (currentQuestionIndex > 0) {
-      currentQuestionIndex--;
-      displayQuestion();
-      updateNavInfo();
-      updateProgress();
-    }
-  };
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 12. Update Navigation Info (Subject, Q-No, Total)
-  // ─────────────────────────────────────────────────────────────────────────────
-  function updateNavInfo() {
-    document.getElementById("current-subject").textContent = currentSubject;
-    document.getElementById("current-question-index").textContent = currentQuestionIndex + 1;
-    document.getElementById("total-questions").textContent = questions.length;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 13. Progress Modal: Render Question-status Grid
-  // ─────────────────────────────────────────────────────────────────────────────
-  function updateProgress() {
-    const container = document.getElementById("question-progress");
-    container.innerHTML = "";
-
-    questions.forEach((question, index) => {
-      const item = document.createElement("div");
-      item.className = "progress-item";
-      item.textContent = index + 1;
-
-      const hasAnswer = !!getSavedAnswer(question.questionId);
-      const isReviewed = getSavedReview(question.questionId);
-      const isVisited  = getSavedVisited(question.questionId);
-
-      if (hasAnswer && isReviewed) {
-        item.classList.add("status-answered-review");
-      } else if (hasAnswer) {
-        item.classList.add("status-answered");
-      } else if (isReviewed) {
-        item.classList.add("status-review");
-      } else if (isVisited) {
-        item.classList.add("status-visited");
       }
 
-      item.onclick = () => {
-        currentQuestionIndex = index;
-        markAsVisited(question.questionId);
+      function updateSubjectButtons() {
+        document.querySelectorAll("#subject-buttons .nav-tab")
+          .forEach(btn => btn.classList.toggle("active", btn.textContent === currentSubject));
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 8. Load Questions for Current Subject → Sort MCQ first, Track Visited
+      // ─────────────────────────────────────────────────────────────────────────────
+      async function loadQuestions() {
+        showLoading(true);
+
+        const questionMap = testData.questions[currentSubject] || {};
+        questions = Object.values(questionMap);
+
+        // Sort: MCQs (with options) first, then numerical-input questions
+        questions.sort((a, b) => {
+          const aIsInput = !Array.isArray(a.options) || !a.options.length;
+          const bIsInput = !Array.isArray(b.options) || !b.options.length;
+          return aIsInput - bIsInput;
+        });
+
+        currentQuestionIndex = 0;
+        if (questions.length) {
+          markAsVisited(questions[0].questionId);
+        }
+
         displayQuestion();
         updateNavInfo();
         updateProgress();
-        toggleProgress(); // auto‐close progress on mobile
+        showLoading(false);
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 9. ENHANCED QUESTION DISPLAY WITH PROPER SPACING AND LATEX RENDERING
+      // ─────────────────────────────────────────────────────────────────────────────
+      function displayQuestion() {
+        const question = questions[currentQuestionIndex];
+        const container = document.getElementById("question-card");
+
+        if (!question) {
+          container.innerHTML = `
+            <div class="question-header">
+              <div class="question-number">No Questions</div>
+            </div>
+            <div class="question-content">
+              <p>No questions available for this section.</p>
+            </div>
+          `;
+          return;
+        }
+
+        const isImageURL = (str) => /https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
+        const savedAnswer = getSavedAnswer(question.questionId);
+        const isReviewed = getSavedReview(question.questionId);
+
+        // Enhanced question content processing
+        let questionText;
+        if (isImageURL(question.question)) {
+          questionText = `<img src="${question.question}" class="question-image" alt="Question image"/>`;
+        } else {
+          // Use the enhanced mixed content renderer
+          questionText = `<div class="question-text-content">${renderMixedContent(question.question)}</div>`;
+        }
+
+        // Build question header + text with proper spacing
+        let questionContent = `
+          <div class="question-header">
+            <div class="question-number">Question ${currentQuestionIndex + 1}</div>
+            <button class="menu-btn" onclick="toggleProgress()">
+              <i class="fas fa-bars"></i>
+            </button>
+          </div>
+          <div class="question-content">
+            <div class="question-text">
+              ${questionText}
+            </div>
+            
+            <div class="review-section">
+              <input type="checkbox" class="review-checkbox"
+                     id="review-checkbox"
+                     ${isReviewed ? "checked" : ""}/>
+              <label for="review-checkbox" class="review-label">
+                <i class="fas fa-bookmark"></i> Mark for Review
+              </label>
+            </div>
+        `;
+
+        // Handle options (MCQ) with proper spacing
+        if (Array.isArray(question.options) && question.options.length) {
+          questionContent += `<div class="options-container">`;
+
+          question.options.forEach((option, index) => {
+            const optionValue = String.fromCharCode(65 + index);
+            const isSelected = savedAnswer === optionValue;
+
+            let optionText;
+            if (isImageURL(option)) {
+              optionText = `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`;
+            } else {
+              optionText = `<span class="option-label">${optionValue}.</span> <span class="option-content-text">${renderMixedContent(option)}</span>`;
+            }
+
+            questionContent += `
+              <div class="option-item ${isSelected ? 'selected' : ''}"
+                   onclick="selectOption('${question.questionId}','${optionValue}', this)">
+                <div class="option-content">
+                  <input type="radio"
+                         class="option-radio"
+                         name="opt_${question.questionId}"
+                         value="${optionValue}"
+                         ${isSelected ? 'checked' : ''}
+                         onchange="handleOptionChange(event,'${question.questionId}')">
+                  <div class="option-text">
+                    ${optionText}
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+
+          questionContent += `</div>`; // Close options-container
+        }
+        // Handle numerical input questions
+        else {
+          questionContent += `
+            <div class="input-section">
+              <label class="input-label">
+                <i class="fas fa-edit"></i> Your Answer:
+              </label>
+              <input type="number"
+                     class="input-field"
+                     id="answer-input"
+                     value="${savedAnswer}"
+                     placeholder="Enter your answer"/>
+            </div>
+          `;
+        }
+
+        // Navigation buttons
+        questionContent += `
+            <div class="nav-buttons">
+              <button class="nav-btn secondary"
+                      onclick="goToPrevious()"
+                      ${currentQuestionIndex === 0 ? 'disabled' : ''}>
+                <i class="fas fa-arrow-left"></i> Previous
+              </button>
+              <button class="nav-btn primary" onclick="saveAndNext()">
+                ${
+                  currentQuestionIndex === questions.length - 1
+                    ? 'Save & Finish'
+                    : 'Save & Next'
+                }
+                <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        `;
+
+        // Inject into DOM
+        container.innerHTML = questionContent;
+
+        // Trigger MathJax typesetting with enhanced error handling and spacing
+        if (window.MathJax && window.MathJax.typesetPromise) {
+          MathJax.typesetPromise([container])
+            .then(() => {
+              // Add some padding after MathJax rendering to ensure proper spacing
+              const mathElements = container.querySelectorAll('.MathJax');
+              mathElements.forEach(el => {
+                if (!el.style.margin) {
+                  el.style.margin = '0.5em 0';
+                }
+              });
+            })
+            .catch(err => {
+              console.error("MathJax typesetting error:", err);
+              // Fallback: if MathJax fails, at least show the content
+            });
+        }
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 10. Option Selection & Change Handlers
+      // ─────────────────────────────────────────────────────────────────────────────
+      function selectOption(questionId, value, element) {
+        // Deselect all, then mark this as selected
+        document.querySelectorAll('.option-item').forEach(opt => opt.classList.remove('selected'));
+        element.classList.add('selected');
+
+        // Update the corresponding radio input
+        const radio = element.querySelector('input[type="radio"]');
+        radio.checked = true;
+
+        // Persist in LocalStorage
+        saveAnswer(questionId, value);
+      }
+
+      function handleOptionChange(event, questionId) {
+        saveAnswer(questionId, event.target.value);
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 11. Save & Next / Go To Previous Navigation
+      // ─────────────────────────────────────────────────────────────────────────────
+      window.saveAndNext = () => {
+        const question = questions[currentQuestionIndex];
+        // Save numeric answer if present
+        const answerInput = document.getElementById("answer-input");
+        if (answerInput) {
+          const value = answerInput.value.trim();
+          if (value) saveAnswer(question.questionId, value);
+          else removeAnswer(question.questionId);
+        }
+        // Save review checkbox state
+        const reviewCheckbox = document.getElementById("review-checkbox");
+        if (reviewCheckbox) saveReview(question.questionId, reviewCheckbox.checked);
+
+        // Advance index or switch subject
+        if (currentQuestionIndex < questions.length - 1) {
+          currentQuestionIndex++;
+          markAsVisited(questions[currentQuestionIndex].questionId);
+        } else {
+          // Move to next subject or notify completion
+          const currentIndex = subjectsArr.indexOf(currentSubject);
+          if (currentIndex < subjectsArr.length - 1) {
+            currentSubject = subjectsArr[currentIndex + 1];
+            updateSubjectButtons();
+            loadQuestions();
+            return;
+          } else {
+            showToast("You have completed all questions!", "success");
+            return;
+          }
+        }
+
+        displayQuestion();
+        updateNavInfo();
+        updateProgress();
       };
 
-      container.appendChild(item);
-    });
-  }
+      window.goToPrevious = () => {
+        if (currentQuestionIndex > 0) {
+          currentQuestionIndex--;
+          displayQuestion();
+          updateNavInfo();
+          updateProgress();
+        }
+      };
 
-  window.toggleProgress = () => {
-    const modal = document.getElementById("progress-modal");
-    const isVisible = modal.style.display === "block";
-    modal.style.display = isVisible ? "none" : "block";
-    if (!isVisible) updateProgress();
-  };
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 14. LocalStorage Helpers: Answer, Review, Visited
-  // ─────────────────────────────────────────────────────────────────────────────
-  function saveAnswer(questionId, answer) {
-    const key = `response_${currentSubject}_${questionId}`;
-    localStorage.setItem(key, answer);
-    console.log(`Saved answer: ${key} = ${answer}`); // Debug
-  }
-  function getSavedAnswer(questionId) {
-    const key = `response_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) || "";
-  }
-  function removeAnswer(questionId) {
-    const key = `response_${currentSubject}_${questionId}`;
-    localStorage.removeItem(key);
-  }
-
-  function saveReview(questionId, isReviewed) {
-    const key = `review_${currentSubject}_${questionId}`;
-    if (isReviewed) localStorage.setItem(key, "true");
-    else localStorage.removeItem(key);
-  }
-  function getSavedReview(questionId) {
-    const key = `review_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) === "true";
-  }
-
-  function markAsVisited(questionId) {
-    const key = `visited_${currentSubject}_${questionId}`;
-    localStorage.setItem(key, "true");
-  }
-  function getSavedVisited(questionId) {
-    const key = `visited_${currentSubject}_${questionId}`;
-    return localStorage.getItem(key) === "true";
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 15. Timer: Display & Auto‐Submit on Zero
-  // ─────────────────────────────────────────────────────────────────────────────
-  function updateTimerDisplay() {
-    const hours   = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
-    const minutes = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
-    const seconds = String(timeLeft % 60).padStart(2, '0');
-    document.getElementById("time-left").textContent = `${hours}:${minutes}:${seconds}`;
-
-    const timerEl = document.getElementById("timer");
-    if (timeLeft <= 300) { // last 5 min → red alert
-      timerEl.style.background   = "rgba(239, 68, 68, 0.1)";
-      timerEl.style.color        = "var(--error-color)";
-      timerEl.style.borderColor  = "var(--error-color)";
-    } else if (timeLeft <= 600) { // last 10 min → orange
-      timerEl.style.background   = "rgba(245, 158, 11, 0.1)";
-      timerEl.style.color        = "var(--warning-color)";
-      timerEl.style.borderColor  = "var(--warning-color)";
-    }
-  }
-
-  function startTimer() {
-    timerInterval = setInterval(() => {
-      timeLeft--;
-      updateTimerDisplay();
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        submitTest(true);
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 12. Update Navigation Info (Subject, Q-No, Total)
+      // ─────────────────────────────────────────────────────────────────────────────
+      function updateNavInfo() {
+        document.getElementById("current-subject").textContent = currentSubject;
+        document.getElementById("current-question-index").textContent = currentQuestionIndex + 1;
+        document.getElementById("total-questions").textContent = questions.length;
       }
-    }, 1000);
-  }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 16. Tab‐Switch Detection (Auto‐Submit)
-  // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) {
-      tabSwitchCount++;
-      if (tabSwitchCount >= maxTabSwitches) {
-        submitTest(true);
-      } else {
-        showToast(
-          `Warning: ${maxTabSwitches - tabSwitchCount} tab switches remaining before auto‐submit.`,
-          "warning"
-        );
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 13. Progress Modal: Render Question-status Grid
+      // ─────────────────────────────────────────────────────────────────────────────
+      function updateProgress() {
+        const container = document.getElementById("question-progress");
+        container.innerHTML = "";
+
+        questions.forEach((question, index) => {
+          const item = document.createElement("div");
+          item.className = "progress-item";
+          item.textContent = index + 1;
+
+          const hasAnswer = !!getSavedAnswer(question.questionId);
+          const isReviewed = getSavedReview(question.questionId);
+          const isVisited  = getSavedVisited(question.questionId);
+
+          if (hasAnswer && isReviewed) {
+            item.classList.add("status-answered-review");
+          } else if (hasAnswer) {
+            item.classList.add("status-answered");
+          } else if (isReviewed) {
+            item.classList.add("status-review");
+          } else if (isVisited) {
+            item.classList.add("status-visited");
+          }
+
+          item.onclick = () => {
+            currentQuestionIndex = index;
+            markAsVisited(question.questionId);
+            displayQuestion();
+            updateNavInfo();
+            updateProgress();
+            toggleProgress(); // auto‐close progress on mobile
+          };
+
+          container.appendChild(item);
+        });
       }
-    }
-  });
+
+      window.toggleProgress = () => {
+        const modal = document.getElementById("progress-modal");
+        const isVisible = modal.style.display === "block";
+        modal.style.display = isVisible ? "none" : "block";
+        if (!isVisible) updateProgress();
+      };
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 14. LocalStorage Helpers: Answer, Review, Visited
+      // ─────────────────────────────────────────────────────────────────────────────
+      function saveAnswer(questionId, answer) {
+        const key = `response_${currentSubject}_${questionId}`;
+        localStorage.setItem(key, answer);
+        console.log(`Saved answer: ${key} = ${answer}`); // Debug
+      }
+      function getSavedAnswer(questionId) {
+        const key = `response_${currentSubject}_${questionId}`;
+        return localStorage.getItem(key) || "";
+      }
+      function removeAnswer(questionId) {
+        const key = `response_${currentSubject}_${questionId}`;
+        localStorage.removeItem(key);
+      }
+
+      function saveReview(questionId, isReviewed) {
+        const key = `review_${currentSubject}_${questionId}`;
+        if (isReviewed) localStorage.setItem(key, "true");
+        else localStorage.removeItem(key);
+      }
+      function getSavedReview(questionId) {
+        const key = `review_${currentSubject}_${questionId}`;
+        return localStorage.getItem(key) === "true";
+      }
+
+      function markAsVisited(questionId) {
+        const key = `visited_${currentSubject}_${questionId}`;
+        localStorage.setItem(key, "true");
+      }
+      function getSavedVisited(questionId) {
+        const key = `visited_${currentSubject}_${questionId}`;
+        return localStorage.getItem(key) === "true";
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 15. Timer: Display & Auto‐Submit on Zero
+      // ─────────────────────────────────────────────────────────────────────────────
+      function updateTimerDisplay() {
+        const hours   = String(Math.floor(timeLeft / 3600)).padStart(2, '0');
+        const minutes = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, '0');
+        const seconds = String(timeLeft % 60).padStart(2, '0');
+        document.getElementById("time-left").textContent = `${hours}:${minutes}:${seconds}`;
+
+        const timerEl = document.getElementById("timer");
+        if (timeLeft <= 300) { // last 5 min → red alert
+          timerEl.style.background   = "rgba(239, 68, 68, 0.1)";
+          timerEl.style.color        = "var(--error-color)";
+          timerEl.style.borderColor  = "var(--error-color)";
+        } else if (timeLeft <= 600) { // last 10 min → orange
+          timerEl.style.background   = "rgba(245, 158, 11, 0.1)";
+          timerEl.style.color        = "var(--warning-color)";
+          timerEl.style.borderColor  = "var(--warning-color)";
+        }
+      }
+
+      function startTimer() {
+        timerInterval = setInterval(() => {
+          timeLeft--;
+          updateTimerDisplay();
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            submitTest(true);
+          }
+        }, 1000);
+      }
+
+      // ─────────────────────────────────────────────────────────────────────────────
+      // 16. Tab‐Switch Detection (Auto‐Submit)
+      // ─────────────────────────────────────────────────────────────────────────────
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          tabSwitchCount++;
+          if (tabSwitchCount >= maxTabSwitches) {
+            submitTest(true);
+          } else {
+            showToast(
+              `Warning: ${maxTabSwitches - tabSwitchCount} tab switches remaining before auto‐submit.`,
+              "warning"
+            );
+          }
+        }
+      });
 
  // ─────────────────────────────────────────────────────────────────────────────
 // 17. Submit Test (Manual/Auto) → Build Payload & POST
