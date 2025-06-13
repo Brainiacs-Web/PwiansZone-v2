@@ -1032,7 +1032,7 @@ function renderLatex(str) {
     escaped = escaped.replace(/ {2}/g, " &nbsp;");
     // preserve line breaks
     escaped = escaped.replace(/\n/g, "<br>");
-    const html = `<p>${escaped}</p>`;
+const html = `<p class="tex2jax_ignore">${escaped}</p>`;
     console.log("→ out (plain):", html);
     return html;
   }
