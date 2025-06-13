@@ -266,6 +266,11 @@ body {
   margin-bottom: 20px;
   color: var(--text-color);
   font-weight: 500;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.question-text p {
+  margin: 0 0 1em;
 }
 
 .question-image,
@@ -714,7 +719,7 @@ body {
     white-space: pre-wrap;
     word-break: break-word;
   }
-  
+ 
   .nav-buttons {
     padding: 24px 32px;
   }
@@ -995,14 +1000,23 @@ function renderLatex(str) {
   const isInline = inlineCues.some(rx => rx.test(str));
 
   // 4. Plain text (no math detected at all)
-  if (!isInline && !isDisplay && !isMathString(str)) {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/ {2}/g, " &nbsp;")
-      .replace(/\n/g, "<br>");
-  }
+if (!isInline && !isDisplay && !isMathString(str)) {
+  // 1) escape HTML entities
+  let escaped = str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  
+  // 2) preserve multiple spaces
+  escaped = escaped.replace(/ {2}/g, " &nbsp;");
+  
+  // 3) preserve line breaks
+  escaped = escaped.replace(/\n/g, "<br>");
+  
+  // 4) wrap in a paragraph to force block spacing
+  return `<p>${escaped}</p>`;
+}
+
 
   // 5. Wrap appropriately
   return isDisplay ? `$$\n${str}\n$$` : `\\(${str}\\)`;
