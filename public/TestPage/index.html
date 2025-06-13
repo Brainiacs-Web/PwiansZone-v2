@@ -263,15 +263,18 @@ body {
 .question-text {
   font-size: 16px;
   line-height: 1.6;
-  margin-bottom: 20px;
   color: var(--text-color);
   font-weight: 500;
+  /* preserve your spaces & line-breaks */
   white-space: pre-wrap;
   word-break: break-word;
 }
+
 .question-text p {
+  /* spacing between each plain-text paragraph */
   margin: 0 0 1em;
 }
+
 
 .question-image,
 .option-image {
@@ -966,28 +969,43 @@ function isMathString(s) {
 }
 
 function renderLatex(str) {
-  if (!str || typeof str !== "string") return "—";
+  // Quick guard
+  if (!str || typeof str !== "string") {
+    console.log("renderLatex in:", str);
+    console.log("→ out: —");
+    return "—";
+  }
+  console.log("renderLatex in:", JSON.stringify(str));
 
-  // 1. Already LaTeX?
+  // --------------------------------------------------
+  // 1) Detect if it already contains LaTeX delimiters
+  // --------------------------------------------------
   const alreadyLatex =
     /\\\(.+?\\\)/s.test(str) ||       // \( ... \)
     /\\\[.+?\\\]/s.test(str) ||       // \[ ... \]
     /\$\$[\s\S]+?\$\$/.test(str) ||   // $$ ... $$
-    /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str); // LaTeX environments
-  if (alreadyLatex) return str;
+    /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str);
+  if (alreadyLatex) {
+    console.log("→ out (already):", str);
+    return str;
+  }
 
-  // 2. Display-level math cues
+  // --------------------------------------------------
+  // 2) Detect display‑style math cues
+  // --------------------------------------------------
   const displayCues = [
     /\\begin\{(?:align|gather|multline|cases|equation)\}/,
     /\\\\\s*$/,                 // ends with \\
     /\\displaystyle\b/,
     /\\(?:sum|prod|int|lim|to)\b/,
     /\\x?rightarrow?|\\leftarrow/,
-    /\n/,
+    /\n/,                       // contains newlines
   ];
   const isDisplay = displayCues.some(rx => rx.test(str));
 
-  // 3. Inline-level math cues
+  // --------------------------------------------------
+  // 3) Detect inline‑style math cues
+  // --------------------------------------------------
   const inlineCues = [
     /\\frac\s*{[^}]+}{[^}]+}/,
     /\\(?:pi|alpha|beta|gamma|delta|mu|nu|rho|sigma|theta|phi|epsilon)\b/,
@@ -999,28 +1017,38 @@ function renderLatex(str) {
   ];
   const isInline = inlineCues.some(rx => rx.test(str));
 
-  // 4. Plain text (no math detected at all)
-if (!isInline && !isDisplay && !isMathString(str)) {
-  // 1) escape HTML entities
-  let escaped = str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-  
-  // 2) preserve multiple spaces
-  escaped = escaped.replace(/ {2}/g, " &nbsp;");
-  
-  // 3) preserve line breaks
-  escaped = escaped.replace(/\n/g, "<br>");
-  
-  // 4) wrap in a paragraph to force block spacing
-  return `<p>${escaped}</p>`;
+  // A helper to catch stray math characters
+  function isMathString(s) {
+    return /\\(?:frac|sqrt|sum|int|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
+  }
+
+  // --------------------------------------------------
+  // 4) Plain text: escape + wrap in <p>
+  // --------------------------------------------------
+  if (!isInline && !isDisplay && !isMathString(str)) {
+    let escaped = str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    // preserve double‑spaces
+    escaped = escaped.replace(/ {2}/g, " &nbsp;");
+    // preserve line breaks
+    escaped = escaped.replace(/\n/g, "<br>");
+    const html = `<p>${escaped}</p>`;
+    console.log("→ out (plain):", html);
+    return html;
+  }
+
+  // --------------------------------------------------
+  // 5) Wrap detected math in TeX delimiters
+  // --------------------------------------------------
+  const wrapped = isDisplay
+    ? `$$\n${str}\n$$`
+    : `\\(${str}\\)`;
+  console.log("→ out (math):", wrapped);
+  return wrapped;
 }
 
-
-  // 5. Wrap appropriately
-  return isDisplay ? `$$\n${str}\n$$` : `\\(${str}\\)`;
-}
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 4. Dark Mode Initialization & Toggle
