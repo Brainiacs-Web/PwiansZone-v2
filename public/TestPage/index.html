@@ -1006,146 +1006,168 @@ input:focus,
       // 3. ENHANCED LATEX RENDERING FUNCTIONS WITH PROPER SPACING
       // ─────────────────────────────────────────────────────────────────────────────
 
-      function isMathString(s) {
-        return /\\(?:frac|sqrt|sum|int|ce|text|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
-      }
+    function isMathString(s) {
+  return /\\(?:frac|sqrt|sum|int|ce|text|alpha|beta|mu|rightarrow|leftarrow|pi|_|\^)|[_^{}]|[=<>+\-*/]/.test(s);
+}
 
-      function renderLatex(str) {
-        if (!str || typeof str !== "string") return "—";
-        
-        // Handle empty or whitespace-only strings
-        if (str.trim() === "") return "";
+function renderLatex(str) {
+  if (!str || typeof str !== "string") return "—";
+  
+  // Handle empty or whitespace-only strings
+  if (str.trim() === "") return "";
 
-        // 1. Check if already properly formatted LaTeX
-        const alreadyLatex =
-          /\\\(.+?\\\)/s.test(str) ||       // \( ... \)
-          /\\\[.+?\\\]/s.test(str) ||       // \[ ... \]
-          /\$\$[\s\S]+?\$\$/.test(str) ||   // $$ ... $$
-          /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str); // LaTeX environments
-        
-        if (alreadyLatex) {
-          // Even if already LaTeX, ensure proper spacing for mixed content
-          return str.replace(/\n/g, '<br>').replace(/  +/g, (match) => {
-            return '&nbsp;'.repeat(match.length);
-          });
-        }
+  // 1. Check if already properly formatted LaTeX
+  const alreadyLatex =
+    /\\\(.+?\\\)/s.test(str) ||       // \( ... \)
+    /\\\[.+?\\\]/s.test(str) ||       // \[ ... \]
+    /\$\$[\s\S]+?\$\$/.test(str) ||   // $$ ... $$
+    /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/s.test(str); // LaTeX environments
+  
+  if (alreadyLatex) {
+    // Even if already LaTeX, ensure proper spacing for mixed content
+    return str.replace(/\n/g, '<br>').replace(/  +/g, (match) => {
+      return '&nbsp;'.repeat(match.length);
+    });
+  }
 
-        // 2. Display-level math detection (more comprehensive)
-        const displayCues = [
-          /\\begin\{(?:align|gather|multline|cases|equation|matrix|pmatrix|bmatrix|vmatrix)\}/,
-          /\\\\\s*$/,                 // ends with \\
-          /\\displaystyle\b/,
-          /\\(?:sum|prod|int|lim|to)\b/,
-          /\\x?rightarrow?|\\leftarrow/,
-          /\n.*\\(?:frac|sum|prod|int)/,  // newline followed by display math
-          /\\(?:underbrace|overbrace)\{/,
-          /\\(?:bigcup|bigcap|bigoplus|bigotimes)\b/
-        ];
-        const isDisplay = displayCues.some(rx => rx.test(str));
+  // 2. Display-level math detection (more comprehensive)
+  const displayCues = [
+    /\\begin\{(?:align|gather|multline|cases|equation|matrix|pmatrix|bmatrix|vmatrix)\}/,
+    /\\\\\s*$/,                 // ends with \\
+    /\\displaystyle\b/,
+    /\\(?:sum|prod|int|lim|to)\b/,
+    /\\x?rightarrow?|\\leftarrow/,
+    /\n.*\\(?:frac|sum|prod|int)/,  // newline followed by display math
+    /\\(?:underbrace|overbrace)\{/,
+    /\\(?:bigcup|bigcap|bigoplus|bigotimes)\b/
+  ];
+  const isDisplay = displayCues.some(rx => rx.test(str));
 
-        // 3. Inline-level math detection (enhanced)
-        const inlineCues = [
-          /\\frac\s*\{[^}]+\}\s*\{[^}]+\}/,
-          /\\(?:pi|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|rho|sigma|tau|upsilon|phi|chi|psi|omega)\b/,
-          /[A-Za-z0-9]+_\{[^}]+\}/,
-          /[A-Za-z0-9]+\^\{[^}]+\}/,
-          /\^[{]?[A-Za-z0-9]/,
-          /\\text\{[^}]+\}/,
-          /\\ce\{[^}]+\}/,
-          /\\(?:bra|ket|braket|ev|grad|div|curl|nabla)\b/,
-          /\\(?:sin|cos|tan|log|ln|exp|sqrt)\b/,
-          /\\(?:overline|underline|vec|hat|tilde|bar)\{/,
-          /\$[^$]+\$/  // Single dollar signs
-        ];
-        const isInline = inlineCues.some(rx => rx.test(str));
+  // 3. Inline-level math detection (enhanced)
+  const inlineCues = [
+    /\\frac\s*\{[^}]+\}\s*\{[^}]+\}/,
+    /\\(?:pi|alpha|beta|gamma|delta|epsilon|zeta|eta|theta|iota|kappa|lambda|mu|nu|xi|omicron|rho|sigma|tau|upsilon|phi|chi|psi|omega)\b/,
+    /[A-Za-z0-9]+_\{[^}]+\}/,
+    /[A-Za-z0-9]+\^\{[^}]+\}/,
+    /\^[{]?[A-Za-z0-9]/,
+    /\\text\{[^}]+\}/,
+    /\\ce\{[^}]+\}/,
+    /\\(?:bra|ket|braket|ev|grad|div|curl|nabla)\b/,
+    /\\(?:sin|cos|tan|log|ln|exp|sqrt)\b/,
+    /\\(?:overline|underline|vec|hat|tilde|bar)\{/,
+    /\$[^$]+\$/  // Single dollar signs
+  ];
+  const isInline = inlineCues.some(rx => rx.test(str));
 
-        // 4. Enhanced plain text detection
-        const hasNoMath = !isInline && !isDisplay && !isMathString(str);
-        
-        if (hasNoMath) {
-          // Preserve formatting for plain text with proper spacing
-          return str
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/\n/g, "<br>")
-            .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;") // Convert tabs to spaces
-            .replace(/  +/g, (match) => {
-              // Convert multiple spaces to non-breaking spaces
-              return '&nbsp;'.repeat(match.length);
-            });
-        }
+  // 4. Enhanced plain text detection
+  const hasNoMath = !isInline && !isDisplay && !isMathString(str);
+  
+  if (hasNoMath) {
+    // Preserve formatting for plain text with proper spacing
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br>")
+      .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;") // Convert tabs to spaces
+      .replace(/  +/g, (match) => {
+        // Convert multiple spaces to non-breaking spaces
+        return '&nbsp;'.repeat(match.length);
+      });
+  }
 
-        // 5. Handle mixed content (text + math)
-        if (str.includes('\n') || (isInline && /[.!?]\s+[A-Z]/.test(str))) {
-          // Split by lines and process each part
-          const lines = str.split('\n');
-          const processedLines = lines.map(line => {
-            if (line.trim() === '') return '<br>';
-            
-            // Check if this line contains math
-            const lineHasMath = inlineCues.some(rx => rx.test(line)) || displayCues.some(rx => rx.test(line));
-            
-            if (lineHasMath) {
-              // Determine if display or inline math
-              const lineIsDisplay = displayCues.some(rx => rx.test(line));
-              return lineIsDisplay ? `$$\n${line.trim()}\n$$` : `\\(${line.trim()}\\)`;
-            } else {
-              // Plain text line - preserve spacing
-              return line
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
-            }
-          });
-          
-          return processedLines.join('<br>');
-        }
-
-        // 6. Single line math - wrap appropriately with spacing consideration
-        const wrappedMath = isDisplay ? `$$\n${str.trim()}\n$$` : `\\(${str.trim()}\\)`;
-        
-        // Add spacing around the math if it's part of a larger context
-        return wrappedMath;
-      }
-
-      // Enhanced function to handle mixed content specifically
-      function renderMixedContent(str) {
-        if (!str || typeof str !== "string") return "—";
-        
-        // Split content by potential math delimiters while preserving them
-        const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
-        
-        return parts.map(part => {
-          if (!part) return '';
-          
-          // If it's already a math expression, return as is
-          if (/^(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})$/.test(part)) {
-            return part;
-          }
-          
-          // Otherwise, process as potential mixed content
-          return renderLatex(part);
-        }).join(' '); // Join with space to ensure proper separation
-      }
-
-      // Improved escapeAndPreserveSpaces function
-      function escapeAndPreserveSpaces(str) {
-        if (!str || typeof str !== "string") return "";
-        
-        return str
+  // 5. Handle mixed content (text + math)
+  if (str.includes('\n') || (isInline && /[.!?]\s+[A-Z]/.test(str))) {
+    // Split by lines and process each part
+    const lines = str.split('\n');
+    const processedLines = lines.map(line => {
+      if (line.trim() === '') return '<br>';
+      
+      // Check if this line contains math
+      const lineHasMath = inlineCues.some(rx => rx.test(line)) || displayCues.some(rx => rx.test(line));
+      
+      if (lineHasMath) {
+        // Determine if display or inline math
+        const lineIsDisplay = displayCues.some(rx => rx.test(line));
+        return lineIsDisplay ? `$$\n${line.trim()}\n$$` : `\\(${line.trim()}\\)`;
+      } else {
+        // Plain text line - preserve spacing
+        return line
           .replace(/&/g, "&amp;")
           .replace(/</g, "&lt;")
           .replace(/>/g, "&gt;")
-          .replace(/\n/g, "<br>")
-          .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
-          .replace(/  +/g, (match) => {
-            // Preserve multiple spaces as non-breaking spaces
-            return '&nbsp;'.repeat(match.length);
-          });
+          .replace(/  +/g, (match) => '&nbsp;'.repeat(match.length));
       }
+    });
+    
+    return processedLines.join('<br>');
+  }
 
+  // 6. Single line math - wrap appropriately with spacing consideration
+  const wrappedMath = isDisplay ? `$$\n${str.trim()}\n$$` : `\\(${str.trim()}\\)`;
+  
+  // Add spacing around the math if it's part of a larger context
+  return wrappedMath;
+}
+
+// Enhanced function to handle mixed content specifically for options
+function renderOptionContent(str) {
+  if (!str || typeof str !== "string") return "—";
+  
+  // Trim the string but preserve internal spacing
+  str = str.trim();
+  
+  // Split content by potential math delimiters while preserving them
+  const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
+  
+  return parts.map(part => {
+    if (!part) return '';
+    
+    // If it's already a math expression, return with proper spacing
+    if (/^(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})$/.test(part)) {
+      return part;
+    }
+    
+    // For text parts, ensure proper spacing preservation
+    return renderLatex(part);
+  }).join('&nbsp;'); // Use non-breaking space to ensure separation between math and text
+}
+
+// Enhanced function to handle mixed content specifically
+function renderMixedContent(str) {
+  if (!str || typeof str !== "string") return "—";
+  
+  // Split content by potential math delimiters while preserving them
+  const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
+  
+  return parts.map(part => {
+    if (!part) return '';
+    
+    // If it's already a math expression, return as is
+    if (/^(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})$/.test(part)) {
+      return part;
+    }
+    
+    // Otherwise, process as potential mixed content
+    return renderLatex(part);
+  }).join(' '); // Join with space to ensure proper separation
+}
+
+// Improved escapeAndPreserveSpaces function
+function escapeAndPreserveSpaces(str) {
+  if (!str || typeof str !== "string") return "";
+  
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\n/g, "<br>")
+    .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+    .replace(/  +/g, (match) => {
+      // Preserve multiple spaces as non-breaking spaces
+      return '&nbsp;'.repeat(match.length);
+    });
+}
       // ─────────────────────────────────────────────────────────────────────────────
       // 4. Dark Mode Initialization & Toggle
       // ─────────────────────────────────────────────────────────────────────────────
@@ -1267,151 +1289,160 @@ input:focus,
       // ─────────────────────────────────────────────────────────────────────────────
       // 9. ENHANCED QUESTION DISPLAY WITH PROPER SPACING AND LATEX RENDERING
       // ─────────────────────────────────────────────────────────────────────────────
-      function displayQuestion() {
-        const question = questions[currentQuestionIndex];
-        const container = document.getElementById("question-card");
+     function displayQuestion() {
+  const question = questions[currentQuestionIndex];
+  const container = document.getElementById("question-card");
 
-        if (!question) {
-          container.innerHTML = `
-            <div class="question-header">
-              <div class="question-number">No Questions</div>
-            </div>
-            <div class="question-content">
-              <p>No questions available for this section.</p>
-            </div>
-          `;
-          return;
-        }
+  if (!question) {
+    container.innerHTML = `
+      <div class="question-header">
+        <div class="question-number">No Questions</div>
+      </div>
+      <div class="question-content">
+        <p>No questions available for this section.</p>
+      </div>
+    `;
+    return;
+  }
 
-        const isImageURL = (str) => /https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
-        const savedAnswer = getSavedAnswer(question.questionId);
-        const isReviewed = getSavedReview(question.questionId);
+  const isImageURL = (str) => /https?:\/\/.*\.(png|jpe?g|gif|svg)$/i.test(str);
+  const savedAnswer = getSavedAnswer(question.questionId);
+  const isReviewed = getSavedReview(question.questionId);
 
-        // Enhanced question content processing
-        let questionText;
-        if (isImageURL(question.question)) {
-          questionText = `<img src="${question.question}" class="question-image" alt="Question image"/>`;
-        } else {
-          // Use the enhanced mixed content renderer
-          questionText = `<div class="question-text-content">${renderMixedContent(question.question)}</div>`;
-        }
+  // Enhanced question content processing
+  let questionText;
+  if (isImageURL(question.question)) {
+    questionText = `<img src="${question.question}" class="question-image" alt="Question image"/>`;
+  } else {
+    // Use the enhanced mixed content renderer
+    questionText = `<div class="question-text-content">${renderMixedContent(question.question)}</div>`;
+  }
 
-        // Build question header + text with proper spacing
-        let questionContent = `
-          <div class="question-header">
-            <div class="question-number">Question ${currentQuestionIndex + 1}</div>
-            <button class="menu-btn" onclick="toggleProgress()">
-              <i class="fas fa-bars"></i>
-            </button>
-          </div>
-          <div class="question-content">
-            <div class="question-text">
-              ${questionText}
-            </div>
-            
-            <div class="review-section">
-              <input type="checkbox" class="review-checkbox"
-                     id="review-checkbox"
-                     ${isReviewed ? "checked" : ""}/>
-              <label for="review-checkbox" class="review-label">
-                <i class="fas fa-bookmark"></i> Mark for Review
-              </label>
-            </div>
-        `;
+  // Build question header + text with proper spacing
+  let questionContent = `
+    <div class="question-header">
+      <div class="question-number">Question ${currentQuestionIndex + 1}</div>
+      <button class="menu-btn" onclick="toggleProgress()">
+        <i class="fas fa-bars"></i>
+      </button>
+    </div>
+    <div class="question-content">
+      <div class="question-text">
+        ${questionText}
+      </div>
+      
+      <div class="review-section">
+        <input type="checkbox" class="review-checkbox"
+               id="review-checkbox"
+               ${isReviewed ? "checked" : ""}/>
+        <label for="review-checkbox" class="review-label">
+          <i class="fas fa-bookmark"></i> Mark for Review
+        </label>
+      </div>
+  `;
 
-        // Handle options (MCQ) with proper spacing
-        if (Array.isArray(question.options) && question.options.length) {
-          questionContent += `<div class="options-container">`;
+  // Handle options (MCQ) with proper spacing - THIS IS THE KEY FIX
+  if (Array.isArray(question.options) && question.options.length) {
+    questionContent += `<div class="options-container">`;
 
-          question.options.forEach((option, index) => {
-            const optionValue = String.fromCharCode(65 + index);
-            const isSelected = savedAnswer === optionValue;
+    question.options.forEach((option, index) => {
+      const optionValue = String.fromCharCode(65 + index);
+      const isSelected = savedAnswer === optionValue;
 
-            let optionText;
-            if (isImageURL(option)) {
-              optionText = `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`;
-            } else {
-              optionText = `<span class="option-label">${optionValue}.</span> <span class="option-content-text">${renderMixedContent(option)}</span>`;
-            }
-
-            questionContent += `
-              <div class="option-item ${isSelected ? 'selected' : ''}"
-                   onclick="selectOption('${question.questionId}','${optionValue}', this)">
-                <div class="option-content">
-                  <input type="radio"
-                         class="option-radio"
-                         name="opt_${question.questionId}"
-                         value="${optionValue}"
-                         ${isSelected ? 'checked' : ''}
-                         onchange="handleOptionChange(event,'${question.questionId}')">
-                  <div class="option-text">
-                    ${optionText}
-                  </div>
-                </div>
-              </div>
-            `;
-          });
-
-          questionContent += `</div>`; // Close options-container
-        }
-        // Handle numerical input questions
-        else {
-          questionContent += `
-            <div class="input-section">
-              <label class="input-label">
-                <i class="fas fa-edit"></i> Your Answer:
-              </label>
-              <input type="number"
-                     class="input-field"
-                     id="answer-input"
-                     value="${savedAnswer}"
-                     placeholder="Enter your answer"/>
-            </div>
-          `;
-        }
-
-        // Navigation buttons
-        questionContent += `
-            <div class="nav-buttons">
-              <button class="nav-btn secondary"
-                      onclick="goToPrevious()"
-                      ${currentQuestionIndex === 0 ? 'disabled' : ''}>
-                <i class="fas fa-arrow-left"></i> Previous
-              </button>
-              <button class="nav-btn primary" onclick="saveAndNext()">
-                ${
-                  currentQuestionIndex === questions.length - 1
-                    ? 'Save & Finish'
-                    : 'Save & Next'
-                }
-                <i class="fas fa-arrow-right"></i>
-              </button>
-            </div>
-          </div>
-        `;
-
-        // Inject into DOM
-        container.innerHTML = questionContent;
-
-        // Trigger MathJax typesetting with enhanced error handling and spacing
-        if (window.MathJax && window.MathJax.typesetPromise) {
-          MathJax.typesetPromise([container])
-            .then(() => {
-              // Add some padding after MathJax rendering to ensure proper spacing
-              const mathElements = container.querySelectorAll('.MathJax');
-              mathElements.forEach(el => {
-                if (!el.style.margin) {
-                  el.style.margin = '0.5em 0';
-                }
-              });
-            })
-            .catch(err => {
-              console.error("MathJax typesetting error:", err);
-              // Fallback: if MathJax fails, at least show the content
-            });
-        }
+      let optionText;
+      if (isImageURL(option)) {
+        optionText = `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`;
+      } else {
+        // FIXED: Use renderOptionContent for better spacing in options
+        const processedOptionText = renderOptionContent(option);
+        optionText = `<span class="option-label">${optionValue}.</span> <span class="option-content-text">${processedOptionText}</span>`;
       }
 
+      questionContent += `
+        <div class="option-item ${isSelected ? 'selected' : ''}"
+             onclick="selectOption('${question.questionId}','${optionValue}', this)">
+          <div class="option-content">
+            <input type="radio"
+                   class="option-radio"
+                   name="opt_${question.questionId}"
+                   value="${optionValue}"
+                   ${isSelected ? 'checked' : ''}
+                   onchange="handleOptionChange(event,'${question.questionId}')">
+            <div class="option-text">
+              ${optionText}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    questionContent += `</div>`; // Close options-container
+  }
+  // Handle numerical input questions
+  else {
+    questionContent += `
+      <div class="input-section">
+        <label class="input-label">
+          <i class="fas fa-edit"></i> Your Answer:
+        </label>
+        <input type="number"
+               class="input-field"
+               id="answer-input"
+               value="${savedAnswer}"
+               placeholder="Enter your answer"/>
+      </div>
+    `;
+  }
+
+  // Navigation buttons
+  questionContent += `
+      <div class="nav-buttons">
+        <button class="nav-btn secondary"
+                onclick="goToPrevious()"
+                ${currentQuestionIndex === 0 ? 'disabled' : ''}>
+          <i class="fas fa-arrow-left"></i> Previous
+        </button>
+        <button class="nav-btn primary" onclick="saveAndNext()">
+          ${
+            currentQuestionIndex === questions.length - 1
+              ? 'Save & Finish'
+              : 'Save & Next'
+          }
+          <i class="fas fa-arrow-right"></i>
+        </button>
+      </div>
+    </div>
+  `;
+
+  // Inject into DOM
+  container.innerHTML = questionContent;
+
+  // Trigger MathJax typesetting with enhanced error handling and spacing
+  if (window.MathJax && window.MathJax.typesetPromise) {
+    MathJax.typesetPromise([container])
+      .then(() => {
+        // Add some padding after MathJax rendering to ensure proper spacing
+        const mathElements = container.querySelectorAll('.MathJax');
+        mathElements.forEach(el => {
+          if (!el.style.margin) {
+            el.style.margin = '0.25em 0.1em'; // Reduced margin for options
+          }
+        });
+        
+        // Ensure proper spacing between option elements
+        const optionTexts = container.querySelectorAll('.option-content-text');
+        optionTexts.forEach(el => {
+          // Add word spacing for better readability
+          el.style.wordSpacing = '0.1em';
+          el.style.letterSpacing = '0.02em';
+        });
+      })
+      .catch(err => {
+        console.error("MathJax typesetting error:", err);
+        // Fallback: if MathJax fails, at least show the content
+      });
+  }
+}
       // ─────────────────────────────────────────────────────────────────────────────
       // 10. Option Selection & Change Handlers
       // ─────────────────────────────────────────────────────────────────────────────
@@ -1619,7 +1650,7 @@ input:focus,
           }
         }
       });
-
+e
  // ─────────────────────────────────────────────────────────────────────────────
 // 17. Submit Test (Manual/Auto) → Build Payload & POST
 // ─────────────────────────────────────────────────────────────────────────────
