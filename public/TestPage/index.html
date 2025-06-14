@@ -1003,7 +1003,7 @@ input:focus,
   let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. COMPLETELY REWRITTEN LATEX RENDERING SYSTEM
+  // 3. ENHANCED LATEX AND HTML RENDERING SYSTEM
   // ─────────────────────────────────────────────────────────────────────────────
 
   // Enhanced LaTeX pattern detection
@@ -1039,6 +1039,22 @@ input:focus,
     DISPLAY_INDICATORS: /\\\\\s*$|\\displaystyle\b|\\begin\{(?:align|gather|multline|cases|equation)\}/
   };
 
+  // HTML tag patterns
+  const HTML_PATTERNS = {
+    // Complete HTML tags (opening + content + closing)
+    COMPLETE_TAGS: /<(sup|sub|strong|b|em|i|u|span|div|p)(?:\s[^>]*)?>(.*?)<\/\1>/gi,
+    
+    // Self-closing tags
+    SELF_CLOSING: /<(br|img|hr)(?:\s[^>]*)?\/?>|<br\s*\/?>/gi,
+    
+    // Superscript and subscript specifically
+    SUPERSCRIPT: /<sup(?:\s[^>]*)?>(.*?)<\/sup>/gi,
+    SUBSCRIPT: /<sub(?:\s[^>]*)?>(.*?)<\/sub>/gi,
+    
+    // Any HTML tag
+    ANY_HTML: /<\/?[^>]+>/
+  };
+
   // Check if string is already properly formatted LaTeX
   function isAlreadyFormatted(str) {
     return LATEX_PATTERNS.ALREADY_FORMATTED.test(str);
@@ -1049,12 +1065,44 @@ input:focus,
     return Object.values(LATEX_PATTERNS).some(pattern => pattern.test(str));
   }
 
+  // Check if string contains HTML tags
+  function containsHTML(str) {
+    return HTML_PATTERNS.ANY_HTML.test(str);
+  }
+
   // Check if should be display math
   function shouldBeDisplayMath(str) {
     return LATEX_PATTERNS.DISPLAY_INDICATORS.test(str) ||
            LATEX_PATTERNS.MATRICES.test(str) ||
            str.includes('\\\\') ||
            str.includes('\n') && containsLaTeX(str);
+  }
+
+  // Convert HTML superscripts and subscripts to LaTeX equivalents
+  function convertHTMLToLaTeX(str) {
+    let result = str;
+    
+    // Convert <sup> tags to LaTeX superscripts
+    result = result.replace(HTML_PATTERNS.SUPERSCRIPT, (match, content) => {
+      // If content is simple (alphanumeric), use simple syntax
+      if (/^[A-Za-z0-9]+$/.test(content.trim())) {
+        return `^{${content.trim()}}`;
+      }
+      // For complex content, preserve as HTML
+      return match;
+    });
+    
+    // Convert <sub> tags to LaTeX subscripts
+    result = result.replace(HTML_PATTERNS.SUBSCRIPT, (match, content) => {
+      // If content is simple (alphanumeric), use simple syntax
+      if (/^[A-Za-z0-9]+$/.test(content.trim())) {
+        return `_{${content.trim()}}`;
+      }
+      // For complex content, preserve as HTML
+      return match;
+    });
+    
+    return result;
   }
 
   // Preserve HTML entities and spacing
@@ -1068,7 +1116,59 @@ input:focus,
       .replace(/  +/g, match => '&nbsp;'.repeat(match.length));
   }
 
-  // Main LaTeX rendering function
+  // Enhanced mixed content processor
+  function processMixedContent(str) {
+    // First, try to convert simple HTML sup/sub to LaTeX
+    let processed = convertHTMLToLaTeX(str);
+    
+    // Split content into segments, preserving both LaTeX and HTML boundaries
+    const segments = processed.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}|<[^>]+>[\s\S]*?<\/[^>]+>|<[^>]+\/?>)/);
+    
+    let result = '';
+    
+    for (let i = 0; i < segments.length; i++) {
+      const segment = segments[i];
+      if (!segment) continue;
+
+      // Check if this segment is already formatted LaTeX
+      if (isAlreadyFormatted(segment)) {
+        result += segment;
+        continue;
+      }
+
+      // Check if this segment is HTML
+      if (containsHTML(segment) && !containsLaTeX(segment)) {
+        // Pure HTML - preserve as is
+        result += segment;
+        continue;
+      }
+
+      // Check if this segment contains strong LaTeX indicators
+      if (containsLaTeX(segment)) {
+        // This is LaTeX content that needs formatting
+        const cleanLatex = segment.trim();
+        
+        if (shouldBeDisplayMath(cleanLatex)) {
+          result += `$$${cleanLatex}$$`;
+        } else {
+          result += `\\(${cleanLatex}\\)`;
+        }
+      } else {
+        // This is plain text - preserve spacing but escape HTML if needed
+        if (containsHTML(segment)) {
+          // Contains HTML tags - preserve them
+          result += segment.replace(/  +/g, match => '&nbsp;'.repeat(match.length));
+        } else {
+          // Pure text - escape and preserve spacing
+          result += preserveSpacing(segment);
+        }
+      }
+    }
+
+    return result;
+  }
+
+  // Main LaTeX and HTML rendering function
   function renderLatex(str) {
     if (!str || typeof str !== "string") return "—";
     
@@ -1081,62 +1181,25 @@ input:focus,
       return str.replace(/\n/g, '<br>').replace(/  +/g, match => '&nbsp;'.repeat(match.length));
     }
 
-    // Step 2: Check for HTML tags - preserve them
-    const hasHTML = /<(?:sup|sub|strong|b|em|i|u|br|p|div|span|img)[^>]*?>[\s\S]*?<\/(?:sup|sub|strong|b|em|i|u|p|div|span)>|<(?:br|img)[^>]*?\/?>/i.test(str);
-    
-    if (hasHTML && !containsLaTeX(str)) {
+    // Step 2: Check for pure HTML content (no LaTeX)
+    if (containsHTML(str) && !containsLaTeX(str)) {
       // Pure HTML content - preserve spacing and tags
       return str.replace(/  +/g, match => '&nbsp;'.repeat(match.length));
     }
 
-    // Step 3: Check if it contains LaTeX
-    if (!containsLaTeX(str)) {
+    // Step 3: Check if it contains LaTeX or convertible HTML
+    const hasConvertibleHTML = HTML_PATTERNS.SUPERSCRIPT.test(str) || HTML_PATTERNS.SUBSCRIPT.test(str);
+    
+    if (!containsLaTeX(str) && !hasConvertibleHTML) {
       // Pure text - preserve spacing but escape HTML
       return preserveSpacing(str);
     }
 
-    // Step 4: Handle mixed content (text + LaTeX)
+    // Step 4: Handle mixed content (text + LaTeX + HTML)
     return processMixedContent(str);
   }
 
-  // Process mixed content (text and LaTeX)
-  function processMixedContent(str) {
-    // Split by potential LaTeX boundaries while preserving delimiters
-    const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
-    
-    let result = '';
-    let inMathMode = false;
-
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (!part) continue;
-
-      // Check if this part is already formatted LaTeX
-      if (isAlreadyFormatted(part)) {
-        result += part;
-        continue;
-      }
-
-      // Check if this part contains strong LaTeX indicators
-      if (containsLaTeX(part)) {
-        // This is LaTeX content that needs formatting
-        const cleanLatex = part.trim();
-        
-        if (shouldBeDisplayMath(cleanLatex)) {
-          result += `$$${cleanLatex}$$`;
-        } else {
-          result += `\\(${cleanLatex}\\)`;
-        }
-      } else {
-        // This is plain text - preserve spacing
-        result += preserveSpacing(part);
-      }
-    }
-
-    return result;
-  }
-
-  // Special handling for options (more conservative)
+  // Special handling for options (more conservative but includes HTML support)
   function renderOptionContent(str) {
     if (!str || typeof str !== "string") return "—";
     
@@ -1148,25 +1211,32 @@ input:focus,
       return str;
     }
 
-    // Check for HTML first
-    const hasHTML = /<(?:sup|sub|strong|b|em|i|u|br|p|div|span|img)[^>]*?>[\s\S]*?<\/(?:sup|sub|strong|b|em|i|u|p|div|span)>|<(?:br|img)[^>]*?\/?>/i.test(str);
+    // Check for HTML first - preserve simple HTML tags
+    const hasHTML = containsHTML(str);
+    const hasConvertibleHTML = HTML_PATTERNS.SUPERSCRIPT.test(str) || HTML_PATTERNS.SUBSCRIPT.test(str);
     
-    if (hasHTML && !containsLaTeX(str)) {
+    if (hasHTML && !containsLaTeX(str) && !hasConvertibleHTML) {
+      // Pure HTML without LaTeX - preserve as is
       return str.replace(/  +/g, match => '&nbsp;'.repeat(match.length));
     }
 
-    // For options, be more conservative with LaTeX detection
+    // For options, be more conservative with LaTeX detection but include HTML conversion
     const hasStrongMath = LATEX_PATTERNS.STRONG_MATH.test(str) || 
                          LATEX_PATTERNS.FRACTIONS.test(str) ||
                          LATEX_PATTERNS.CHEMISTRY.test(str) ||
-                         LATEX_PATTERNS.SUB_SUP_BRACES.test(str);
+                         LATEX_PATTERNS.SUB_SUP_BRACES.test(str) ||
+                         hasConvertibleHTML;
 
     if (!hasStrongMath) {
-      // Treat as plain text
-      return preserveSpacing(str);
+      // Treat as plain text but preserve HTML
+      if (hasHTML) {
+        return str.replace(/  +/g, match => '&nbsp;'.repeat(match.length));
+      } else {
+        return preserveSpacing(str);
+      }
     }
 
-    // Process as LaTeX
+    // Process as mixed content
     return processMixedContent(str);
   }
 
@@ -1304,7 +1374,7 @@ input:focus,
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 9. IMPROVED QUESTION DISPLAY WITH BETTER LATEX HANDLING
+  // 9. IMPROVED QUESTION DISPLAY WITH ENHANCED LATEX AND HTML HANDLING
   // ─────────────────────────────────────────────────────────────────────────────
   function displayQuestion() {
     const question = questions[currentQuestionIndex];
@@ -1326,7 +1396,7 @@ input:focus,
     const savedAnswer = getSavedAnswer(question.questionId);
     const isReviewed = getSavedReview(question.questionId);
 
-    // Process question content
+    // Process question content with enhanced rendering
     let questionText;
     if (isImageURL(question.question)) {
       questionText = `<img src="${question.question}" class="question-image" alt="Question image"/>`;
@@ -1357,7 +1427,7 @@ input:focus,
         </div>
     `;
 
-    // Handle options (MCQ) with improved rendering
+    // Handle options (MCQ) with enhanced rendering
     if (Array.isArray(question.options) && question.options.length) {
       questionContent += `<div class="options-container">`;
 
@@ -1369,7 +1439,7 @@ input:focus,
         if (isImageURL(option)) {
           optionText = `<img src="${option}" class="option-image" alt="Option ${optionValue}"/>`;
         } else {
-          // Use improved option content rendering
+          // Use enhanced option content rendering that handles both HTML and LaTeX
           const processedOptionText = renderOptionContent(option);
           optionText = `<span class="option-label">${optionValue}.</span> <span class="option-content-text">${processedOptionText}</span>`;
         }
@@ -1433,7 +1503,7 @@ input:focus,
     // Inject into DOM
     container.innerHTML = questionContent;
 
-    // Enhanced MathJax typesetting
+    // Enhanced MathJax typesetting with better error handling
     if (window.MathJax && window.MathJax.typesetPromise) {
       MathJax.typesetPromise([container])
         .then(() => {
@@ -1458,10 +1528,32 @@ input:focus,
             el.style.lineHeight = '1.4';
             el.style.wordSpacing = 'normal';
           });
+
+          // Handle remaining HTML elements that weren't converted to LaTeX
+          const htmlSupSub = container.querySelectorAll('sup, sub');
+          htmlSupSub.forEach(el => {
+            el.style.fontSize = '0.8em';
+            el.style.lineHeight = '1';
+          });
         })
         .catch(err => {
           console.error("MathJax typesetting error:", err);
+          // Fallback: ensure HTML sup/sub tags are styled properly
+          const htmlSupSub = container.querySelectorAll('sup, sub');
+          htmlSupSub.forEach(el => {
+            el.style.fontSize = '0.8em';
+            el.style.lineHeight = '1';
+          });
         });
+    } else {
+      // If MathJax is not available, ensure HTML tags are styled
+      setTimeout(() => {
+        const htmlSupSub = container.querySelectorAll('sup, sub');
+        htmlSupSub.forEach(el => {
+          el.style.fontSize = '0.8em';
+          el.style.lineHeight = '1';
+        });
+      }, 100);
     }
   }
 
