@@ -1133,40 +1133,26 @@
     </footer>
   </div>
 
-  <!-- Load MathJax -->
+<!-- Load MathJax -->
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <script>
   // ─────────────────────────────────────────────────────────────────────────────
-  // 0. Decode HTML entities back into tags (e.g. "&lt;sub&gt;2&lt;/sub&gt;" → "<sub>2</sub>")
-  // ─────────────────────────────────────────────────────────────────────────────
-  function decodeHTMLEntities(str) {
-    const txt = document.createElement('textarea');
-    txt.innerHTML = str;
-    return txt.value;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 1. Sanitize HTML to prevent XSS (escape everything)
-// ─────────────────────────────────────────────────────────────────────────────
-  function sanitizeHTML(html) {
-    const temp = document.createElement('div');
-    temp.textContent = html;
-    return temp.innerHTML;
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 2. Enhanced LaTeX & HTML rendering utils
+  // Enhanced LaTeX & HTML rendering (FIXED VERSION)
   // ─────────────────────────────────────────────────────────────────────────────
   const LATEX_PATTERNS = {
-    ALREADY_FORMATTED:   /\\[\(\[\$][\s\S]*?\\[\)\]\$]|\$\$[\s\S]*?\$\$|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/,
-    STRONG_MATH:         /\\(?:frac|sqrt|sum|prod|int|lim|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|omega|nabla|infty|partial|rightarrow|leftarrow|Rightarrow|Leftarrow)\b/,
-    SUB_SUP_BRACES:      /[A-Za-z0-9]+[\^_]\{[^}]+\}/,
-    MATH_OPS:            /\\(?:cdot|times|div|pm|mp|leq|geq|neq|equiv|approx|propto|in|notin|subset|supset|cup|cap|wedge|vee|oplus|otimes)\b/,
-    FRACTIONS:           /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/,
-    MATRICES:            /\\begin\{(?:matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}/,
-    DISPLAY_INDICATORS:  /\\\\\s*$|\\displaystyle\b|\\begin\{(?:align|gather|multiline|cases|equation)\}/
+    ALREADY_FORMATTED: /\\[\(\[\$][\s\S]*?\\[\)\]\$]|\$\$[\s\S]*?\$\$|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/,
+    STRONG_MATH: /\\(?:frac|sqrt|sum|prod|int|lim|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|omega|nabla|infty|partial|rightarrow|leftarrow|Rightarrow|Leftarrow)\b/,
+    CHEMISTRY: /\\ce\{[^}]+\}/,
+    SUB_SUP_BRACES: /[A-Za-z0-9]+[\^_]\{[^}]+\}/,
+    MATH_OPS: /\\(?:cdot|times|div|pm|mp|leq|geq|neq|equiv|approx|propto|in|notin|subset|supset|cup|cap|wedge|vee|oplus|otimes)\b/,
+    FUNCTIONS: /\\(?:sin|cos|tan|sec|csc|cot|ln|log|exp|sinh|cosh|tanh)\b/,
+    DECORATIONS: /\\(?:overline|underline|vec|hat|tilde|bar|dot|ddot)\{[^}]*\}/,
+    FRACTIONS: /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/,
+    MATRICES: /\\begin\{(?:matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}/,
+    DISPLAY_INDICATORS: /\\\\\s*$|\\displaystyle\b|\\begin\{(?:align|gather|multiline|cases|equation)\}/
   };
+
   const HTML_PATTERNS = {
     SUPERSCRIPT: /<sup(?:\s[^>]*)?>(.*?)<\/sup>/gi,
     SUBSCRIPT:  /<sub(?:\s[^>]*)?>(.*?)<\/sub>/gi,
@@ -1176,18 +1162,22 @@
   function isAlreadyFormatted(str) {
     return LATEX_PATTERNS.ALREADY_FORMATTED.test(str);
   }
+  
   function containsLaTeX(str) {
     return Object.values(LATEX_PATTERNS).some(rx => rx.test(str));
   }
+  
   function containsHTML(str) {
     return HTML_PATTERNS.ANY_HTML.test(str);
   }
+  
   function shouldBeDisplayMath(s) {
     return LATEX_PATTERNS.DISPLAY_INDICATORS.test(s)
         || LATEX_PATTERNS.MATRICES.test(s)
         || s.includes('\\\\')
         || (s.includes('\n') && containsLaTeX(s));
   }
+  
   function preserveSpacing(str) {
     return str
       .replace(/&/g, "&amp;")
@@ -1197,33 +1187,49 @@
       .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
       .replace(/  +/g, m => '&nbsp;'.repeat(m.length));
   }
+  
   function convertHTMLToLaTeX(str) {
     return str
-      .replace(HTML_PATTERNS.SUPERSCRIPT, (_, c) =>
-        /^[A-Za-z0-9]+$/.test(c.trim()) ? `^{${c.trim()}}` : _
-      )
-      .replace(HTML_PATTERNS.SUBSCRIPT, (_, c) =>
-        /^[A-Za-z0-9]+$/.test(c.trim()) ? `_{${c.trim()}}` : _
-      );
+      .replace(HTML_PATTERNS.SUPERSCRIPT, (match, content) => {
+        const cleanContent = content.trim();
+        return /^[A-Za-z0-9\+\-\*\/\(\)\[\]]+$/.test(cleanContent) ? `^{${cleanContent}}` : match;
+      })
+      .replace(HTML_PATTERNS.SUBSCRIPT, (match, content) => {
+        const cleanContent = content.trim();
+        return /^[A-Za-z0-9\+\-\*\/\(\)\[\]]+$/.test(cleanContent) ? `_{${cleanContent}}` : match;
+      });
   }
+  
   function processMixedContent(str) {
-    const converted = convertHTMLToLaTeX(str);
-    const parts = converted.split(
-      /(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}|<[^>]+>[\s\S]*?<\/[^>]+>|<[^>]+\/?>)/
-    );
-    return parts.map(seg => {
-      if (!seg) return '';
-      if (isAlreadyFormatted(seg)) return seg;
-      if (containsHTML(seg) && !containsLaTeX(seg)) return seg;
-      if (containsLaTeX(seg)) {
-        const txt = seg.trim();
-        return shouldBeDisplayMath(txt) ? `$$${txt}$$` : `\\(${txt}\\)`;
+    // First convert HTML sub/sup to LaTeX before any other processing
+    let converted = convertHTMLToLaTeX(str);
+    
+    // Split on already formatted math expressions to preserve them
+    const parts = converted.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
+    
+    return parts.map(segment => {
+      if (!segment) return '';
+      
+      // If already formatted, return as-is
+      if (isAlreadyFormatted(segment)) return segment;
+      
+      // If contains HTML but no LaTeX, preserve HTML
+      if (containsHTML(segment) && !containsLaTeX(segment)) return segment;
+      
+      // If contains LaTeX, wrap appropriately
+      if (containsLaTeX(segment)) {
+        const trimmed = segment.trim();
+        return shouldBeDisplayMath(trimmed) ? `$$${trimmed}$$` : `\\(${trimmed}\\)`;
       }
-      return preserveSpacing(seg);
+      
+      // For plain text, preserve spacing
+      return preserveSpacing(segment);
     }).join('');
   }
+  
   function renderMixedContent(str) {
     if (typeof str !== 'string' || !str.trim()) return '';
+    
     return str.split('\n').map(line => {
       if (!line.trim()) return '<br>';
       return processMixedContent(line);
@@ -1231,23 +1237,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. Format text: decode → sanitize → render → linkify/embed
-  // ─────────────────────────────────────────────────────────────────────────────
-  function formatTextWithImagesAndLinks(text) {
-    if (!text) return '';
-    const decoded = decodeHTMLEntities(text);
-    const safe    = sanitizeHTML(decoded);
-    let html      = renderMixedContent(safe);
-    return html.replace(
-      /(https?:\/\/[^\s]+)/gi,
-      url => /\.(png|jpe?g|gif|svg)(\?[^ ]*)?$/i.test(url)
-        ? `<img src="${url}" class="question-image" loading="lazy" alt="Embedded image">`
-        : `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
-    );
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 4. Dark mode functionality
+  // 1. Dark mode functionality
   // ─────────────────────────────────────────────────────────────────────────────
   let isDarkMode = localStorage.getItem('darkMode') === 'true';
   const themeToggle = document.getElementById('themeToggle');
@@ -1262,38 +1252,81 @@
       themeToggle.querySelector('i').className = 'fas fa-moon';
     }
   }
+
   function toggleDarkMode() {
     isDarkMode = !isDarkMode;
     body.classList.toggle('dark-mode', isDarkMode);
     localStorage.setItem('darkMode', isDarkMode);
+    
     const icon = themeToggle.querySelector('i');
     icon.style.transform = 'rotate(180deg) scale(0.8)';
+    
     setTimeout(() => {
       icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
       icon.style.transform = 'rotate(0deg) scale(1)';
     }, 150);
-    if (window.overviewChart) updateChartColors();
+
+    if (window.overviewChart) {
+      updateChartColors();
+    }
   }
+
   themeToggle.addEventListener('click', toggleDarkMode);
   initializeDarkMode();
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 5. Utility & error/result UI
+  // 2. Utility functions for text formatting & others (FIXED)
   // ─────────────────────────────────────────────────────────────────────────────
   function getParam(name) {
     return new URLSearchParams(window.location.search).get(name) || '';
   }
-  function formatDate(ds) {
-    if (!ds) return '';
-    const d = new Date(ds);
-    return d.toLocaleDateString(undefined, {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+
+  // FIXED: Don't escape HTML here if we want to process sub/sup tags
+  function sanitizeHTML(html) {
+    // Create a temporary div to safely parse HTML
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Remove potentially dangerous elements but keep sub/sup
+    const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button'];
+    dangerousTags.forEach(tag => {
+      const elements = temp.querySelectorAll(tag);
+      elements.forEach(el => el.remove());
+    });
+    
+    // Remove dangerous attributes
+    const allElements = temp.querySelectorAll('*');
+    allElements.forEach(el => {
+      const attributes = [...el.attributes];
+      attributes.forEach(attr => {
+        if (attr.name.startsWith('on') || attr.name === 'javascript:') {
+          el.removeAttribute(attr.name);
+        }
+      });
+    });
+    
+    return temp.innerHTML;
   }
-  function showError(msg) {
+
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  function showError(message) {
     document.getElementById('loading-state').style.display = 'none';
     document.getElementById('results-content').style.display = 'none';
     document.getElementById('error-state').style.display = 'block';
-    document.getElementById('error-message').textContent = msg;
+    document.getElementById('error-message').textContent = message;
   }
+
   function showResults() {
     document.getElementById('loading-state').style.display = 'none';
     document.getElementById('error-state').style.display = 'none';
@@ -1301,108 +1334,211 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 6. Fetch & API helpers
+  // 2b. Convert any URL into <img> if it's an image, or <a> if not (FIXED)
   // ─────────────────────────────────────────────────────────────────────────────
-  const testID   = getParam('test');
-  const batchName= getParam('batch');
+  function formatTextWithImagesAndLinks(text) {
+    if (!text) return '';
+    
+    // First sanitize the HTML properly
+    const safe = sanitizeHTML(text);
+    
+    // Then render mixed content (this will handle sub/sup conversion)
+    let html = renderMixedContent(safe);
+    
+    // Finally handle URLs
+    return html.replace(
+      /(https?:\/\/[^\s<]+)/gi,
+      url => /\.(png|jpe?g|gif|svg)(\?[^ ]*)?$/i.test(url)
+        ? `<img src="${url}" class="question-image" loading="lazy" alt="Embedded image">`
+        : `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 3. Get URL parameters
+  // ─────────────────────────────────────────────────────────────────────────────
+  const testID = getParam('test');
+  const batchName = getParam('batch');
   const username = getParam('username');
+
   if (!testID || !batchName || !username) {
-    showError('Missing URL parameters.');
+    showError('Missing required parameters. Please check the URL and try again.');
     throw new Error('Missing URL parameters');
   }
 
-  async function fetchResults() {
-    const res = await fetch(`/api/tests/${encodeURIComponent(testID)}/results?batchName=${encodeURIComponent(batchName)}&username=${encodeURIComponent(username)}`);
-    if (!res.ok) {
-      const err = await res.json().catch(()=>({}));
-      throw new Error(err.error||'Failed to load results');
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. Global state for results
+  // ─────────────────────────────────────────────────────────────────────────────
+  let resultsData = null;
+  let currentSubject = '';
+  let currentQuestionIndex = 0;
+  let currentSubjectQuestions = [];
+  let overviewChart = null;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 5. API helper
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function api(path, opts = {}) {
+    try {
+      const response = await fetch('/api/' + path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...opts
+      });
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.error || `API Error: ${response.status}`);
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
     }
-    return res.json();
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 7. Chart & stats
+  // 6. Fetch results from backend
   // ─────────────────────────────────────────────────────────────────────────────
-  let overviewChart = null;
-  function createDoughnutChart(ctx,data) {
+  async function fetchResults() {
+    try {
+      const response = await fetch(
+        `/api/tests/${encodeURIComponent(testID)}/results` +
+        `?batchName=${encodeURIComponent(batchName)}` +
+        `&username=${encodeURIComponent(username)}`
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to load results');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Fetch error:', error);
+      throw error;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. Create doughnut chart
+  // ─────────────────────────────────────────────────────────────────────────────
+  function createDoughnutChart(ctx, data) {
     if (overviewChart) overviewChart.destroy();
     overviewChart = new Chart(ctx, {
-      type:'doughnut',
-      data:{labels:['Correct','Wrong','Unanswered'],datasets:[{data,backgroundColor:['#10B981','#EF4444','#F59E0B'],borderWidth:0,cutout:'70%'}]},
-      options:{
-        responsive:true,maintainAspectRatio:true,
-        plugins:{
-          legend:{display:false},
-          tooltip:{
-            backgroundColor:'rgba(0,0,0,0.8)',titleColor:'white',bodyColor:'white',
-            borderColor:'rgba(255,255,255,0.1)',borderWidth:1,cornerRadius:8,
-            callbacks:{label(ctx){const v=ctx.raw||0,tot=ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);return`${ctx.label}: ${v} (${Math.round(v/tot*100)}%)`}}
+      type: 'doughnut',
+      data: {
+        labels: ['Correct', 'Wrong', 'Unanswered'],
+        datasets: [{ data, backgroundColor: ['#10B981','#EF4444','#F59E0B'], borderWidth: 0, cutout: '70%' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: 'white', bodyColor: 'white',
+            borderColor: 'rgba(255,255,255,0.1)', borderWidth:1, cornerRadius:8,
+            callbacks: {
+              label(ctx) {
+                const v = ctx.raw||0;
+                const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+                return `${ctx.label}: ${v} (${Math.round(v/total*100)}%)`;
+              }
+            }
           }
         },
-        animation:{animateRotate:true,animateScale:true}
+        animation: { animateRotate: true, animateScale: true }
       }
     });
+    return overviewChart;
   }
-  function updateChartColors(){ if(overviewChart) overviewChart.update();}
 
-  function renderStats(c,w,u,s) {
-    document.getElementById('stats-grid').innerHTML = `
-      <div class="stat-card correct fade-in"><i class="fas fa-check-circle"></i><div>${c}</div><div>Correct</div></div>
-      <div class="stat-card wrong fade-in" style="animation-delay:0.1s"><i class="fas fa-times-circle"></i><div>${w}</div><div>Wrong</div></div>
-      <div class="stat-card unanswered fade-in" style="animation-delay:0.2s"><i class="fas fa-question-circle"></i><div>${u}</div><div>Unanswered</div></div>
-      <div class="stat-card score fade-in" style="animation-delay:0.3s"><i class="fas fa-trophy"></i><div>${s}</div><div>Total Score</div></div>`;
+  function updateChartColors() {
+    if (!overviewChart) return;
+    overviewChart.update();
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 8. Subjects & navigation
+  // 8. Render statistics cards
   // ─────────────────────────────────────────────────────────────────────────────
-  let resultsData, currentSubject, currentQuestionIndex=0, currentSubjectQuestions=[];
+  function renderStats(c, w, u, s) {
+    const g = document.getElementById('stats-grid');
+    g.innerHTML = `
+      <div class="stat-card correct fade-in"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-number">${c}</div><div class="stat-label">Correct</div></div>
+      <div class="stat-card wrong fade-in" style="animation-delay:0.1s"><div class="stat-icon"><i class="fas fa-times-circle"></i></div><div class="stat-number">${w}</div><div class="stat-label">Wrong</div></div>
+      <div class="stat-card unanswered fade-in" style="animation-delay:0.2s"><div class="stat-icon"><i class="fas fa-question-circle"></i></div><div class="stat-number">${u}</div><div class="stat-label">Unanswered</div></div>
+      <div class="stat-card score fade-in" style="animation-delay:0.3s"><div class="stat-icon"><i class="fas fa-trophy"></i></div><div class="stat-number">${s}</div><div class="stat-label">Total Score</div></div>
+    `;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 9. Render subject tabs
+  // ─────────────────────────────────────────────────────────────────────────────
   function renderSubjectTabs(subjects) {
     const tabs = document.getElementById('subject-tabs');
-    tabs.innerHTML = subjects.map((sub,i)=>`
-      <button class="subject-tab ${i===0?'active':''}" onclick="selectSubject('${sub}',${i})">${sub}</button>
+    tabs.innerHTML = subjects.map((sub,i) => `
+      <button class="subject-tab ${i===0?'active':''} fade-in" style="animation-delay:${i*0.05}s" onclick="selectSubject('${sub}',${i})" aria-selected="${i===0}">
+        <i class="fas fa-book"></i> ${sub}
+      </button>
     `).join('');
     initializeScrollButtons();
   }
+
   function initializeScrollButtons() {
-    const left = document.getElementById('scroll-left'), right = document.getElementById('scroll-right'), cont = document.getElementById('subject-tabs');
-    function chk(){const sc=cont.scrollWidth>cont.clientWidth;left.style.display=right.style.display=sc?'flex':'none';left.disabled=cont.scrollLeft<=0;right.disabled=cont.scrollLeft+cont.clientWidth>=cont.scrollWidth;}
-    left.onclick=()=>cont.scrollBy({left:-200,behavior:'smooth'}); right.onclick=()=>cont.scrollBy({left:200,behavior:'smooth'});
-    chk(); window.addEventListener('resize',chk); cont.addEventListener('scroll',chk);
+    const left = document.getElementById('scroll-left'),
+          right= document.getElementById('scroll-right'),
+          container = document.getElementById('subject-tabs');
+    function check() {
+      const scrollable = container.scrollWidth>container.clientWidth;
+      left.style.display = right.style.display = scrollable?'flex':'none';
+      left.disabled = container.scrollLeft<=0;
+      right.disabled= container.scrollLeft+container.clientWidth>=container.scrollWidth;
+    }
+    left.onclick=()=>container.scrollBy({left:-200,behavior:'smooth'});
+    right.onclick=()=>container.scrollBy({left:200,behavior:'smooth'});
+    check(); window.addEventListener('resize',check); container.addEventListener('scroll',check);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 10. Select subject & questions
+  // ─────────────────────────────────────────────────────────────────────────────
   function selectSubject(sub,i) {
     currentSubject = sub;
     currentSubjectQuestions = resultsData.results[sub]||[];
-    currentQuestionIndex = 0;
-    document.querySelectorAll('.subject-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+    currentQuestionIndex=0;
+    document.querySelectorAll('.subject-tab').forEach((t,j)=>{
+      t.classList.toggle('active',j===i);
+      t.setAttribute('aria-selected',j===i);
+    });
     renderQuestion();
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 9. Render a question
+  // 11. Render current question
   // ─────────────────────────────────────────────────────────────────────────────
   function renderQuestion() {
     const container = document.getElementById('questions-content');
-    const counter   = document.getElementById('question-counter');
+    const counter = document.getElementById('question-counter');
     if (!currentSubjectQuestions.length) {
-      container.innerHTML = `<div class="empty-state"><i class="fas fa-inbox"></i><h3>No Questions Found</h3></div>`;
+      container.innerHTML = `
+        <div class="empty-state fade-in">
+          <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+          <h3 class="empty-title">No Questions Found</h3>
+          <p class="empty-text">No questions available for this subject</p>
+        </div>`;
       return;
     }
     const q = currentSubjectQuestions[currentQuestionIndex];
     const selRaw = q.selectedAnswer, corRaw = q.correctAnswer;
-    const sel = selRaw!=null ? String(selRaw).trim() : '';
-    const cor = corRaw!=null ? String(corRaw).trim() : '';
+    const sel = selRaw!=null?String(selRaw).trim():'';
+    const cor = corRaw!=null?String(corRaw).trim():'';
     const isMCQ = Array.isArray(q.options)&&q.options.length>0;
     const answered = sel!=='';
-    const correctHit = answered && (isMCQ ? sel.toUpperCase()===cor.toUpperCase() : sel===cor);
-    const status = !answered ? 'unanswered' : correctHit ? 'correct' : 'wrong';
+    const correctHit = answered && (isMCQ?sel.toUpperCase()===cor.toUpperCase():sel===cor);
+    const status = !answered?'unanswered':correctHit?'correct':'wrong';
     counter.textContent = `Question ${currentQuestionIndex+1} of ${currentSubjectQuestions.length}`;
     const progress = ((currentQuestionIndex+1)/currentSubjectQuestions.length)*100;
 
     let optsHTML = '';
     if (isMCQ) {
-      optsHTML = '<ul class="options-list">' + q.options.map((opt,idx)=>{
+      optsHTML = `<ul class="options-list">` + q.options.map((opt,idx)=>{
         const letter = String.fromCharCode(65+idx);
         const isRight = opt.trim().toUpperCase()===cor.toUpperCase();
         const isSelWrong = opt.trim().toUpperCase()===sel.toUpperCase()&&!correctHit;
@@ -1410,48 +1546,74 @@
         if(isRight) cls+=' correct';
         if(isSelWrong) cls+=' selected';
         return `<li class="${cls}"><strong>${letter}.</strong> ${formatTextWithImagesAndLinks(opt)}</li>`;
-      }).join('') + '</ul>';
+      }).join('') + `</ul>`;
     }
 
     let ansHTML = '';
     if (answered) {
       ansHTML = `
         <div class="answer-summary">
-          <div class="your-answer ${correctHit?'correct':''}"><span>Your Answer</span><span>${sel}</span></div>
-          ${!correctHit?`<div class="correct-answer"><span>Correct Answer</span><span>${cor}</span></div>`:''}
+          <div class="answer-item your-answer ${correctHit?'correct':''}">
+            <div class="answer-label">Your Answer</div>
+            <div class="answer-value">${sel}</div>
+          </div>
+          ${!correctHit?`
+            <div class="answer-item correct-answer">
+              <div class="answer-label">Correct Answer</div>
+              <div class="answer-value">${cor}</div>
+            </div>`:''}
         </div>`;
     } else {
       ansHTML = `
         <div class="answer-summary">
-          <div class="your-answer"><span>Your Answer</span><span>Not answered</span></div>
-          <div class="correct-answer"><span>Correct Answer</span><span>${cor}</span></div>
+          <div class="answer-item your-answer">
+            <div class="answer-label">Your Answer</div>
+            <div class="answer-value">Not answered</div>
+          </div>
+          <div class="answer-item correct-answer">
+            <div class="answer-label">Correct Answer</div>
+            <div class="answer-value">${cor}</div>
+          </div>
         </div>`;
     }
 
     container.innerHTML = `
-      <div class="progress-bar" style="width:${progress}%"></div>
-      <div class="question-card">
-        <div class="header">
-          <span>Question ${currentQuestionIndex+1}</span>
-          <span class="${status}">${status}</span>
+      <div class="progress-container"><div class="progress-bar" style="width:${progress}%"></div></div>
+      <div class="question-card fade-in">
+        <div class="question-header">
+          <div class="question-number">Question ${currentQuestionIndex+1}</div>
+          <div class="question-status ${status}">
+            <i class="fas fa-${status==='correct'?'check':status==='wrong'?'times':'question'}"></i>
+            ${status.charAt(0).toUpperCase()+status.slice(1)}
+          </div>
         </div>
-        <div class="body">
-          <div class="text">${formatTextWithImagesAndLinks(q.question)}</div>
+        <div class="question-body">
+          <div class="question-text">${formatTextWithImagesAndLinks(q.question)}</div>
           ${optsHTML}
           ${ansHTML}
-          <div class="solution"><strong>Solution:</strong> ${formatTextWithImagesAndLinks(q.solution||'No solution provided.')}</div>
-          <div class="nav">
-            <button onclick="previousQuestion()" ${currentQuestionIndex===0?'disabled':''}>Prev</button>
-            <button onclick="nextQuestion()" ${currentQuestionIndex===currentSubjectQuestions.length-1?'disabled':''}>Next</button>
+          <div class="solution-section">
+            <div class="solution-title"><i class="fas fa-lightbulb"></i> Solution</div>
+            <div class="solution-text">${formatTextWithImagesAndLinks(q.solution||'No solution provided.')}</div>
+          </div>
+          <div class="question-nav">
+            <button class="nav-btn secondary" onclick="previousQuestion()" ${currentQuestionIndex===0?'disabled':''} aria-label="Previous question">
+              <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            <button class="nav-btn primary" onclick="nextQuestion()" ${currentQuestionIndex===currentSubjectQuestions.length-1?'disabled':''} aria-label="Next question">
+              Next <i class="fas fa-arrow-right"></i>
+            </button>
           </div>
         </div>
       </div>`;
     
     if (window.MathJax) {
-      MathJax.typesetPromise([container]).catch(e=>console.error('MathJax error',e));
+      MathJax.typesetPromise([container]).catch(err=>console.error("MathJax error:",err));
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 12. Navigation functions
+  // ─────────────────────────────────────────────────────────────────────────────
   function previousQuestion() {
     if (currentQuestionIndex>0) {
       currentQuestionIndex--;
@@ -1466,43 +1628,80 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 10. Main: fetch + render all results
+  // 13. Main function to display results
   // ─────────────────────────────────────────────────────────────────────────────
   async function displayResults() {
     try {
       resultsData = await fetchResults();
       const { testName, subjects, results } = resultsData;
-      if (testName) document.title = `${testName} - Test Results`;
-      let totalC=0, totalW=0, totalU=0, totalS=0;
-      Object.values(results).flat().forEach(q=>{
-        const sel = q.selectedAnswer!=null?String(q.selectedAnswer).trim():'';
-        const cor = q.correctAnswer!=null?String(q.correctAnswer).trim():'';
-        const mcq=Array.isArray(q.options)&&q.options.length>0;
-        const ans=sel!=='';
-        const hit=ans && (mcq?sel.toUpperCase()===cor.toUpperCase():sel===cor);
-        if(!ans) totalU++;
-        else if(hit){ totalC++; totalS+=4; }
-        else { totalW++; totalS-=1; }
+
+      if (testName) {
+        document.title = `${testName} - PWians Test Results`;
+      }
+
+      let totalCorrect = 0, totalWrong = 0, totalUnanswered = 0, totalScore = 0;
+
+      Object.values(results).forEach(subQs => {
+        subQs.forEach(q => {
+          const selRaw = q.selectedAnswer, corRaw = q.correctAnswer;
+          const sel = selRaw!=null?String(selRaw).trim():'';
+          const cor = corRaw!=null?String(corRaw).trim():'';
+          const isMCQ = Array.isArray(q.options)&&q.options.length>0;
+          const answered = sel!=='';
+          const correctHit = answered && (isMCQ?sel.toUpperCase()===cor.toUpperCase():sel===cor);
+          if (!answered) {
+            totalUnanswered++;
+          } else if (correctHit) {
+            totalCorrect++;
+            totalScore += 4;
+          } else {
+            totalWrong++;
+            totalScore -= 1;
+          }
+        });
       });
-      renderStats(totalC,totalW,totalU,totalS);
-      createDoughnutChart(document.getElementById('overview-chart').getContext('2d'), [totalC,totalW,totalU]);
+
+      renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
+      const ctx = document.getElementById('overview-chart').getContext('2d');
+      createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
+
       renderSubjectTabs(subjects);
-      if (subjects.length) selectSubject(subjects[0],0);
+      if (subjects.length) selectSubject(subjects[0], 0);
+
       showResults();
-    } catch (e) {
-      console.error(e);
-      showError(e.message||'Failed to load results');
+    } catch (error) {
+      console.error('Error displaying results:', error);
+      showError(error.message || 'Failed to load results. Please try again.');
     }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 11. Keyboard nav & init
+  // 14. Keyboard navigation
   // ─────────────────────────────────────────────────────────────────────────────
-  document.addEventListener('keydown', e=>{
-    if(e.key==='ArrowLeft'){ e.preventDefault(); previousQuestion(); }
-    if(e.key==='ArrowRight'){ e.preventDefault(); nextQuestion(); }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      previousQuestion();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      nextQuestion();
+    }
   });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 15. Privacy policy modal
+  // ─────────────────────────────────────────────────────────────────────────────
+  document.getElementById('privacy-link').addEventListener('click', e => {
+    e.preventDefault();
+    alert('Privacy Policy: This application collects and displays test results for educational purposes only. Your data is securely stored and not shared with third parties.');
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 16. Initialize on window load
+  // ─────────────────────────────────────────────────────────────────────────────
   window.addEventListener('load', displayResults);
+
+  // Expose navigation globally
   window.previousQuestion = previousQuestion;
   window.nextQuestion     = nextQuestion;
   window.selectSubject    = selectSubject;
