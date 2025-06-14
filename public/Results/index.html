@@ -1135,167 +1135,146 @@
 
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script>
-  // Configure MathJax for better LaTeX handling
-  window.MathJax = {
-    tex: {
-      inlineMath: [['$', '$'], ['\\(', '\\)']],
-      displayMath: [['$$', '$$'], ['\\[', '\\]']],
-      processEscapes: true,
-      processEnvironments: true,
-      autoload: {
-        color: [],
-        colorv2: ['color']
-      },
-      packages: {'[+]': ['noerrors']}
-    },
-    options: {
-      ignoreHtmlClass: 'tex2jax_ignore',
-      processHtmlClass: 'tex2jax_process'
-    },
-    loader: {load: ['[tex]/noerrors']}
-  };
-
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. Dark mode functionality
   // ─────────────────────────────────────────────────────────────────────────────
-  let isDarkMode = false; // Remove localStorage dependency
+  let isDarkMode = false; // Changed from localStorage to prevent artifact failure
   const themeToggle = document.getElementById('themeToggle');
   const body = document.body;
 
+  // Initialize dark mode
   function initializeDarkMode() {
     if (isDarkMode) {
       body.classList.add('dark-mode');
-      themeToggle.querySelector('i').className = 'fas fa-sun';
+      if (themeToggle) themeToggle.querySelector('i').className = 'fas fa-sun';
     } else {
       body.classList.remove('dark-mode');
-      themeToggle.querySelector('i').className = 'fas fa-moon';
+      if (themeToggle) themeToggle.querySelector('i').className = 'fas fa-moon';
     }
   }
 
+  // Toggle dark mode
   function toggleDarkMode() {
     isDarkMode = !isDarkMode;
     body.classList.toggle('dark-mode', isDarkMode);
     
-    const icon = themeToggle.querySelector('i');
-    icon.style.transform = 'rotate(180deg) scale(0.8)';
-    
-    setTimeout(() => {
-      icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
-      icon.style.transform = 'rotate(0deg) scale(1)';
-    }, 150);
+    // Update icon with animation
+    if (themeToggle) {
+      const icon = themeToggle.querySelector('i');
+      icon.style.transform = 'rotate(180deg) scale(0.8)';
+      
+      setTimeout(() => {
+        icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+        icon.style.transform = 'rotate(0deg) scale(1)';
+      }, 150);
+    }
 
+    // Update chart colors if chart exists
     if (window.overviewChart) {
       updateChartColors();
     }
   }
 
-  themeToggle.addEventListener('click', toggleDarkMode);
+  if (themeToggle) {
+    themeToggle.addEventListener('click', toggleDarkMode);
+  }
   initializeDarkMode();
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 2. Enhanced LaTeX and text formatting
+  // 2. Utility functions for text formatting
   // ─────────────────────────────────────────────────────────────────────────────
   function getParam(name) {
     return new URLSearchParams(window.location.search).get(name) || '';
   }
 
-  // Enhanced LaTeX detection and processing
-  function processLatexContent(text) {
-    if (!text || typeof text !== 'string') return "—";
+  // 2a. FIXED LaTeX Rendering Helper
+  function renderLatex(str) {
+    if (!str) return "—";
 
-    // Patterns for LaTeX detection
+    // Convert to string if not already
+    str = String(str);
+
+    // Check if already has proper delimiters
+    const hasDisplayMath = /\$\$[\s\S]*?\$\$/.test(str) || /\\\[[\s\S]*?\\\]/.test(str);
+    const hasInlineMath = /\$[^$\n]*\$/.test(str) && !/\$\$/.test(str);
+    const hasEnvironments = /\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/.test(str);
+
+    // If already properly delimited, return as is
+    if (hasDisplayMath || hasInlineMath || hasEnvironments) {
+      return str;
+    }
+
+    // Patterns that indicate LaTeX content
     const latexPatterns = [
-      /\\\w+\{[^}]*\}/g,                    // \command{content}
-      /\\\w+\[[^\]]*\]\{[^}]*\}/g,         // \command[opt]{content}
-      /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/g,   // \frac{a}{b}
-      /\\sqrt\s*\{[^}]*\}/g,               // \sqrt{x}
-      /\\sqrt\s*\[[^\]]*\]\s*\{[^}]*\}/g,  // \sqrt[n]{x}
-      /\w+_\{[^}]*\}/g,                    // subscripts x_{sub}
-      /\w+\^\{[^}]*\}/g,                   // superscripts x^{sup}
-      /\w+_\w+/g,                          // simple subscripts x_i
-      /\w+\^\w+/g,                         // simple superscripts x^2
-      /\\[a-zA-Z]+/g,                      // \command
-      /\\begin\{[^}]+\}.*?\\end\{[^}]+\}/gs, // environments
-      /\$\$.*?\$\$/gs,                     // display math $$...$$
-      /\$.*?\$/g,                          // inline math $...$
-      /\\\[.*?\\\]/gs,                     // display math \[...\]
-      /\\\(.*?\\\)/g                       // inline math \(...\)
+      /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/,           // \frac{}{} 
+      /\\sqrt\s*\{[^}]*\}/,                        // \sqrt{}
+      /\\[a-zA-Z]+\s*\{[^}]*\}/,                   // \command{}
+      /[a-zA-Z]+_\{[^}]*\}/,                       // subscript with braces
+      /[a-zA-Z]+\^\{[^}]*\}/,                      // superscript with braces
+      /[a-zA-Z]+_[a-zA-Z0-9]/,                     // simple subscript
+      /[a-zA-Z]+\^[a-zA-Z0-9]/,                    // simple superscript
+      /\\[a-zA-Z]+/,                               // LaTeX commands like \pi, \alpha
+      /\{[^}]*\}_\{[^}]*\}/,                       // complex subscripts
+      /\{[^}]*\}\^\{[^}]*\}/,                      // complex superscripts
+      /\\left[(\[\|]|\\right[)\]\|]/,              // \left( \right) etc.
+      /\\[lr]?(?:angle|ceil|floor|vert)/,          // bracket commands
+      /\\\w*matrix/,                               // matrix environments
+      /\\(?:sum|prod|int|oint|iint|iiint)/,        // big operators
+      /\\(?:lim|sup|inf|max|min)/,                 // limit operators
+      /\\(?:sin|cos|tan|log|ln|exp)/,              // functions
+      /\\(?:partial|nabla|infty|pm|mp)/,           // special symbols
+      /(?:\^|_)\s*\{[^}]+\}/,                      // sub/superscripts with braces
+      /(?:\^|_)[a-zA-Z0-9]/                        // simple sub/superscripts
     ];
 
-    // Check if text contains LaTeX
-    const hasLatex = latexPatterns.some(pattern => pattern.test(text));
-    
-    if (!hasLatex) {
-      // No LaTeX detected, process URLs only
-      return formatTextWithImagesAndLinks(text);
+    // Check if the string contains LaTeX patterns
+    const hasLatex = latexPatterns.some(pattern => pattern.test(str));
+
+    if (hasLatex) {
+      // Wrap in display math delimiters for complex expressions
+      if (str.includes('\\frac') || str.includes('\\sum') || str.includes('\\int') || 
+          str.includes('\\matrix') || str.includes('\\begin') || str.includes('\\end')) {
+        return `$$${str}$$`;
+      } else {
+        // Use inline math for simpler expressions
+        return `$${str}$`;
+      }
     }
 
-    // Process text with LaTeX
-    let processed = text;
-
-    // Handle already delimited LaTeX (leave as is)
-    if (/\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\$[^$]*?\$|\\\([^)]*?\\\)/.test(processed)) {
-      return formatTextWithImagesAndLinks(processed);
-    }
-
-    // Auto-wrap detected LaTeX patterns
-    // First handle display math candidates (complex expressions)
-    const displayMathPatterns = [
-      /\\begin\{[^}]+\}.*?\\end\{[^}]+\}/gs,
-      /\\frac\s*\{[^}]*\}\s*\{[^}]*\}(?:\s*[+\-*/=]\s*\\frac\s*\{[^}]*\}\s*\{[^}]*\})*/g,
-      /[^$\s]+\s*[+\-*/=]\s*[^$\s]*\\[a-zA-Z]+[^$\s]*/g
-    ];
-
-    displayMathPatterns.forEach(pattern => {
-      processed = processed.replace(pattern, match => {
-        if (!match.includes('$') && !match.includes('\\[') && !match.includes('\\(')) {
-          return `$$${match}$$`;
-        }
-        return match;
-      });
-    });
-
-    // Handle inline math patterns
-    const inlineMathPatterns = [
-      /\\[a-zA-Z]+\{[^}]*\}/g,
-      /\w+_\{[^}]*\}/g,
-      /\w+\^\{[^}]*\}/g,
-      /\w+_\w+(?!\w)/g,
-      /\w+\^\w+(?!\w)/g,
-      /\\[a-zA-Z]+(?!\{)(?!\[)/g
-    ];
-
-    inlineMathPatterns.forEach(pattern => {
-      processed = processed.replace(pattern, match => {
-        if (!match.includes('$') && !match.includes('\\[') && !match.includes('\\(')) {
-          return `$${match}$`;
-        }
-        return match;
-      });
-    });
-
-    return formatTextWithImagesAndLinks(processed);
+    // Return unchanged if no LaTeX detected
+    return str;
   }
 
+  // 2b. Convert any URL into <img> if it's an image, or <a> if not
   function formatTextWithImagesAndLinks(text) {
     if (!text) return '';
 
-    const urlRegex = /(https?:\/\/[^\s$]+)/gi;
-    return text.replace(urlRegex, url => {
-      if (/\.(png|jpe?g|gif|svg)(\?[^ ]*)?$/i.test(url)) {
+    // First apply LaTeX wrapping if needed
+    let processed = renderLatex(text);
+
+    // Then replace any URL with either an <img> or <a> tag
+    const urlRegex = /(https?:\/\/[^\s]+)/gi;
+    processed = processed.replace(urlRegex, url => {
+      // Check if URL ends with a common image extension
+      if (/\.(png|jpe?g|gif|svg|webp|bmp)(\?[^ ]*)?$/i.test(url)) {
         return `<img src="${url}" class="question-image" alt="Image from URL" loading="lazy">`;
       } else {
+        // Non-image URL: render as clickable link
         return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
       }
     });
+
+    return processed;
   }
 
+  // 2c. Sanitize HTML to prevent XSS
   function sanitizeHTML(html) {
     const temp = document.createElement('div');
     temp.textContent = html;
     return temp.innerHTML;
   }
 
+  // 2d. Format date
   function formatDate(dateString) {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -1309,20 +1288,29 @@
   }
 
   function showError(message) {
-    document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('results-content').style.display = 'none';
-    document.getElementById('error-state').style.display = 'block';
-    document.getElementById('error-message').textContent = message;
+    const loading = document.getElementById('loading-state');
+    const results = document.getElementById('results-content');
+    const error = document.getElementById('error-state');
+    const errorMsg = document.getElementById('error-message');
+    
+    if (loading) loading.style.display = 'none';
+    if (results) results.style.display = 'none';
+    if (error) error.style.display = 'block';
+    if (errorMsg) errorMsg.textContent = message;
   }
 
   function showResults() {
-    document.getElementById('loading-state').style.display = 'none';
-    document.getElementById('error-state').style.display = 'none';
-    document.getElementById('results-content').style.display = 'block';
+    const loading = document.getElementById('loading-state');
+    const error = document.getElementById('error-state');
+    const results = document.getElementById('results-content');
+    
+    if (loading) loading.style.display = 'none';
+    if (error) error.style.display = 'none';
+    if (results) results.style.display = 'block';
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. URL parameters and global state
+  // 3. Get URL parameters
   // ─────────────────────────────────────────────────────────────────────────────
   const testID = getParam('test');
   const batchName = getParam('batch');
@@ -1333,6 +1321,9 @@
     throw new Error('Missing URL parameters');
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. Global state for results
+  // ─────────────────────────────────────────────────────────────────────────────
   let resultsData = null;
   let currentSubject = '';
   let currentQuestionIndex = 0;
@@ -1340,7 +1331,7 @@
   let overviewChart = null;
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 4. API and chart functions
+  // 5. API helper
   // ─────────────────────────────────────────────────────────────────────────────
   async function api(path, opts = {}) {
     try {
@@ -1359,6 +1350,9 @@
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 6. Fetch results from backend
+  // ─────────────────────────────────────────────────────────────────────────────
   async function fetchResults() {
     try {
       const response = await fetch(
@@ -1379,9 +1373,19 @@
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. Create doughnut chart
+  // ─────────────────────────────────────────────────────────────────────────────
   function createDoughnutChart(ctx, data) {
+    // Destroy existing chart if it exists
     if (overviewChart) {
       overviewChart.destroy();
+    }
+
+    // Check if Chart.js is available
+    if (typeof Chart === 'undefined') {
+      console.warn('Chart.js not loaded, skipping chart creation');
+      return null;
     }
 
     overviewChart = new Chart(ctx, {
@@ -1429,16 +1433,21 @@
     return overviewChart;
   }
 
+  // Update chart colors based on theme
   function updateChartColors() {
     if (!overviewChart) return;
+    
+    // Keep the same colors regardless of theme for consistency
     overviewChart.update();
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 5. Render functions
+  // 8. Render statistics cards with new marking scheme
   // ─────────────────────────────────────────────────────────────────────────────
   function renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore) {
     const statsGrid = document.getElementById('stats-grid');
+    if (!statsGrid) return;
+    
     statsGrid.innerHTML = `
       <div class="stat-card correct fade-in">
         <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
@@ -1463,8 +1472,13 @@
     `;
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 9. Render subject tabs
+  // ─────────────────────────────────────────────────────────────────────────────
   function renderSubjectTabs(subjects) {
     const subjectTabs = document.getElementById('subject-tabs');
+    if (!subjectTabs) return;
+    
     subjectTabs.innerHTML = subjects.map((subject, index) => `
       <button 
         class="subject-tab ${index === 0 ? 'active' : ''} fade-in" 
@@ -1477,41 +1491,56 @@
       </button>
     `).join('');
 
+    // Initialize scroll buttons
     initializeScrollButtons();
   }
 
+  // Initialize horizontal scroll buttons for subject tabs
   function initializeScrollButtons() {
     const scrollLeftBtn = document.getElementById('scroll-left');
     const scrollRightBtn = document.getElementById('scroll-right');
     const tabsContainer = document.getElementById('subject-tabs');
     
+    if (!scrollLeftBtn || !scrollRightBtn || !tabsContainer) return;
+    
+    // Check if scrolling is needed
     function checkScroll() {
       const isScrollable = tabsContainer.scrollWidth > tabsContainer.clientWidth;
       scrollLeftBtn.style.display = isScrollable ? 'flex' : 'none';
       scrollRightBtn.style.display = isScrollable ? 'flex' : 'none';
       
+      // Check if at the beginning or end
       scrollLeftBtn.disabled = tabsContainer.scrollLeft <= 0;
       scrollRightBtn.disabled = tabsContainer.scrollLeft + tabsContainer.clientWidth >= tabsContainer.scrollWidth;
     }
     
+    // Scroll left
     scrollLeftBtn.addEventListener('click', () => {
       tabsContainer.scrollBy({ left: -200, behavior: 'smooth' });
     });
     
+    // Scroll right
     scrollRightBtn.addEventListener('click', () => {
       tabsContainer.scrollBy({ left: 200, behavior: 'smooth' });
     });
     
+    // Check on load and resize
     checkScroll();
     window.addEventListener('resize', checkScroll);
+    
+    // Check when scrolling
     tabsContainer.addEventListener('scroll', checkScroll);
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 10. Select subject and show questions
+  // ─────────────────────────────────────────────────────────────────────────────
   function selectSubject(subject, index) {
     currentSubject = subject;
     currentSubjectQuestions = resultsData.results[subject] || [];
     currentQuestionIndex = 0;
 
+    // Update active tab
     document.querySelectorAll('.subject-tab').forEach((tab, i) => {
       tab.classList.toggle('active', i === index);
       tab.setAttribute('aria-selected', i === index ? 'true' : 'false');
@@ -1520,9 +1549,14 @@
     renderQuestion();
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 11. Render current question with improved LaTeX handling
+  // ─────────────────────────────────────────────────────────────────────────────
   function renderQuestion() {
     const questionsContent = document.getElementById('questions-content');
     const questionCounter = document.getElementById('question-counter');
+
+    if (!questionsContent) return;
 
     if (!currentSubjectQuestions.length) {
       questionsContent.innerHTML = `
@@ -1537,6 +1571,7 @@
 
     const question = currentSubjectQuestions[currentQuestionIndex];
     
+    // Normalize answers safely
     const rawSel = question.selectedAnswer;
     const rawCor = question.correctAnswer;
 
@@ -1547,6 +1582,7 @@
       ? String(rawCor).trim()
       : '';
 
+    // Determine if MCQ or integer, and compare appropriately
     const isMCQ = Array.isArray(question.options) && question.options.length > 0;
     const isAnswered = selectedAnswer !== '';
     const isCorrect = isAnswered && (
@@ -1555,22 +1591,28 @@
         : selectedAnswer === correctAnswer
     );
 
-    questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${currentSubjectQuestions.length}`;
+    // Update counter
+    if (questionCounter) {
+      questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${currentSubjectQuestions.length}`;
+    }
 
+    // Calculate progress
     const progress = ((currentQuestionIndex + 1) / currentSubjectQuestions.length) * 100;
 
+    // Determine status
     let status = 'unanswered';
     if (isAnswered) {
       status = isCorrect ? 'correct' : 'wrong';
     }
 
+    // Render options
     let optionsHTML = '';
     if (question.options && question.options.length) {
       optionsHTML = `
         <ul class="options-list">
           ${question.options.map((option, idx) => {
             const optionUpper = option.trim().toUpperCase();
-            const optionLetter = String.fromCharCode(65 + idx);
+            const optionLetter = String.fromCharCode(65 + idx); // A, B, C, D...
             let classes = 'option-item';
             
             if (optionUpper === correctAnswer.toUpperCase()) {
@@ -1581,25 +1623,26 @@
             }
             
             return `<li class="${classes}">
-              <strong>${optionLetter}.</strong> ${processLatexContent(option)}
+              <strong>${optionLetter}.</strong> ${formatTextWithImagesAndLinks(option)}
             </li>`;
           }).join('')}
         </ul>
       `;
     }
 
+    // Render answer summary
     let answerSummaryHTML = '';
     if (isAnswered) {
       answerSummaryHTML = `
         <div class="answer-summary">
           <div class="answer-item your-answer ${isCorrect ? 'correct' : ''}">
             <div class="answer-label">Your Answer</div>
-            <div class="answer-value">${selectedAnswer}</div>
+            <div class="answer-value">${formatTextWithImagesAndLinks(selectedAnswer)}</div>
           </div>
           ${!isCorrect ? `
             <div class="answer-item correct-answer">
               <div class="answer-label">Correct Answer</div>
-              <div class="answer-value">${correctAnswer}</div>
+              <div class="answer-value">${formatTextWithImagesAndLinks(correctAnswer)}</div>
             </div>
           ` : ''}
         </div>
@@ -1613,7 +1656,7 @@
           </div>
           <div class="answer-item correct-answer">
             <div class="answer-label">Correct Answer</div>
-            <div class="answer-value">${correctAnswer}</div>
+            <div class="answer-value">${formatTextWithImagesAndLinks(correctAnswer)}</div>
           </div>
         </div>
       `;
@@ -1634,7 +1677,7 @@
         </div>
         <div class="question-body">
           <div class="question-text">
-            ${processLatexContent(question.question)}
+            ${formatTextWithImagesAndLinks(question.question)}
           </div>
           
           ${optionsHTML}
@@ -1647,7 +1690,7 @@
               Solution
             </div>
             <div class="solution-text">
-              ${processLatexContent(question.solution || 'No solution provided.')}
+              ${formatTextWithImagesAndLinks(question.solution || 'No solution provided.')}
             </div>
           </div>
           
@@ -1665,24 +1708,32 @@
       </div>
     `;
 
-    // Enhanced MathJax rendering
+    // Enhanced MathJax typesetting with better error handling
     if (window.MathJax && window.MathJax.typesetPromise) {
-      window.MathJax.typesetPromise([questionsContent]).catch(err => {
-        console.warn("MathJax rendering error:", err);
-        // Fallback: try again after a short delay
-        setTimeout(() => {
-          if (window.MathJax && window.MathJax.typesetPromise) {
-            window.MathJax.typesetPromise([questionsContent]).catch(e => 
-              console.error("MathJax fallback failed:", e)
-            );
-          }
-        }, 100);
-      });
+      // Clear any previous MathJax processing
+      MathJax.startup.document.clear();
+      
+      // Process the new content
+      MathJax.typesetPromise([questionsContent])
+        .then(() => {
+          console.log('MathJax rendering completed successfully');
+        })
+        .catch(err => {
+          console.error("MathJax rendering error:", err);
+          // Fallback: try to process again after a short delay
+          setTimeout(() => {
+            if (window.MathJax && window.MathJax.typesetPromise) {
+              MathJax.typesetPromise([questionsContent]).catch(e => 
+                console.error("MathJax fallback failed:", e)
+              );
+            }
+          }, 100);
+        });
     }
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 6. Navigation and main functions
+  // 12. Navigation functions
   // ─────────────────────────────────────────────────────────────────────────────
   function previousQuestion() {
     if (currentQuestionIndex > 0) {
@@ -1698,30 +1749,41 @@
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 13. Main function to display results with new marking scheme
+  // ─────────────────────────────────────────────────────────────────────────────
   async function displayResults() {
     try {
       resultsData = await fetchResults();
       const { testName, subjects, results } = resultsData;
 
+      // Update page title
       if (testName) {
         document.title = `${testName} - PWians Test Results`;
       }
 
-      let totalCorrect = 0;
-      let totalWrong = 0;
-      let totalUnanswered = 0;
-      let totalScore = 0;
+      // Totals
+      let totalCorrect     = 0;
+      let totalWrong       = 0;
+      let totalUnanswered  = 0;
+      let totalScore       = 0;
 
+      // ─── Normalize and tally ────────────────────────────────────────────────
       Object.values(results).forEach(subQuestions => {
         subQuestions.forEach(question => {
+          // Always coerce to string first:
           const rawSel = question.selectedAnswer;
           const rawCor = question.correctAnswer;
 
-          const selected = rawSel != null ? String(rawSel).trim() : '';
-          const correct = rawCor != null ? String(rawCor).trim() : '';
+          const selected = rawSel != null
+            ? String(rawSel).trim()
+            : '';
+          const correct  = rawCor != null
+            ? String(rawCor).trim()
+            : '';
 
-          const isMCQ = Array.isArray(question.options) && question.options.length > 0;
-          const answered = selected !== '';
+          const isMCQ     = Array.isArray(question.options) && question.options.length > 0;
+          const answered  = selected !== '';
           const correctHit = answered && (
             isMCQ
               ? selected.toUpperCase() === correct.toUpperCase()
@@ -1739,11 +1801,18 @@
           }
         });
       });
+      // ─────────────────────────────────────────────────────────────────────────
 
+      // Render stats & chart
       renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
-      const ctx = document.getElementById('overview-chart').getContext('2d');
-      createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
+      
+      const chartCanvas = document.getElementById('overview-chart');
+      if (chartCanvas) {
+        const ctx = chartCanvas.getContext('2d');
+        createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
+      }
 
+      // Subjects & first question
       renderSubjectTabs(subjects);
       if (subjects.length) selectSubject(subjects[0], 0);
 
@@ -1755,7 +1824,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 7. Event listeners and initialization
+  // 14. Keyboard navigation
   // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') {
@@ -1767,14 +1836,23 @@
     }
   });
 
-  document.getElementById('privacy-link').addEventListener('click', function(e) {
-    e.preventDefault();
-    alert('Privacy Policy: This application collects and displays test results for educational purposes only. Your data is securely stored and not shared with third parties.');
-  });
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 15. Privacy policy modal
+  // ─────────────────────────────────────────────────────────────────────────────
+  const privacyLink = document.getElementById('privacy-link');
+  if (privacyLink) {
+    privacyLink.addEventListener('click', function(e) {
+      e.preventDefault();
+      alert('Privacy Policy: This application collects and displays test results for educational purposes only. Your data is securely stored and not shared with third parties.');
+    });
+  }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 16. Initialize on window load
+  // ─────────────────────────────────────────────────────────────────────────────
   window.addEventListener('load', displayResults);
 
-  // Expose functions to global scope
+  // Expose navigation to global scope
   window.previousQuestion = previousQuestion;
   window.nextQuestion = nextQuestion;
   window.selectSubject = selectSubject;
