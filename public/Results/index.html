@@ -1142,16 +1142,23 @@
       displayMath: [['$$', '$$'], ['\\[', '\\]']],
       processEscapes: true,
       processEnvironments: true,
-      tags: 'none'
+      autoload: {
+        color: [],
+        colorv2: ['color']
+      },
+      packages: {'[+]': ['noerrors']}
     },
     options: {
       ignoreHtmlClass: 'tex2jax_ignore',
       processHtmlClass: 'tex2jax_process'
-    }
+    },
+    loader: {load: ['[tex]/noerrors']}
   };
 
-  // Dark mode functionality
-  let isDarkMode = false; // Changed from localStorage to memory
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 1. Dark mode functionality
+  // ─────────────────────────────────────────────────────────────────────────────
+  let isDarkMode = false; // Remove localStorage dependency
   const themeToggle = document.getElementById('themeToggle');
   const body = document.body;
 
@@ -1177,69 +1184,110 @@
       icon.style.transform = 'rotate(0deg) scale(1)';
     }, 150);
 
-    if (window.overviewChart) updateChartColors();
+    if (window.overviewChart) {
+      updateChartColors();
+    }
   }
 
   themeToggle.addEventListener('click', toggleDarkMode);
   initializeDarkMode();
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2. Enhanced LaTeX and text formatting
+  // ─────────────────────────────────────────────────────────────────────────────
   function getParam(name) {
     return new URLSearchParams(window.location.search).get(name) || '';
   }
 
-  // Enhanced LaTeX rendering
-  function renderLatex(str) {
-    if (!str) return "—";
-    
-    str = String(str);
-    
-    // Check if already has MathJax delimiters
-    if (/\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\$[^$]*\$/.test(str)) {
-      return str;
-    }
-    
-    // Comprehensive LaTeX pattern detection
+  // Enhanced LaTeX detection and processing
+  function processLatexContent(text) {
+    if (!text || typeof text !== 'string') return "—";
+
+    // Patterns for LaTeX detection
     const latexPatterns = [
-      /\\[a-zA-Z]+\s*\{[^}]*\}/g,           // Commands with braces
-      /\\[a-zA-Z]+/g,                       // Simple commands
-      /[a-zA-Z]\s*_\s*\{[^}]+\}/g,         // Subscripts
-      /[a-zA-Z]\s*\^\s*\{[^}]+\}/g,        // Superscripts
-      /[a-zA-Z]\s*_\s*[a-zA-Z0-9]/g,       // Simple subscripts
-      /[a-zA-Z]\s*\^\s*[a-zA-Z0-9]/g,      // Simple superscripts
-      /\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/g, // Environments
-      /\{[^}]*\\[a-zA-Z]+[^}]*\}/g,        // Braced expressions with commands
-      /\\[a-zA-Z]*\s*[\[\(][^\]\)]*[\]\)]/g // Commands with brackets/parentheses
+      /\\\w+\{[^}]*\}/g,                    // \command{content}
+      /\\\w+\[[^\]]*\]\{[^}]*\}/g,         // \command[opt]{content}
+      /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/g,   // \frac{a}{b}
+      /\\sqrt\s*\{[^}]*\}/g,               // \sqrt{x}
+      /\\sqrt\s*\[[^\]]*\]\s*\{[^}]*\}/g,  // \sqrt[n]{x}
+      /\w+_\{[^}]*\}/g,                    // subscripts x_{sub}
+      /\w+\^\{[^}]*\}/g,                   // superscripts x^{sup}
+      /\w+_\w+/g,                          // simple subscripts x_i
+      /\w+\^\w+/g,                         // simple superscripts x^2
+      /\\[a-zA-Z]+/g,                      // \command
+      /\\begin\{[^}]+\}.*?\\end\{[^}]+\}/gs, // environments
+      /\$\$.*?\$\$/gs,                     // display math $$...$$
+      /\$.*?\$/g,                          // inline math $...$
+      /\\\[.*?\\\]/gs,                     // display math \[...\]
+      /\\\(.*?\\\)/g                       // inline math \(...\)
     ];
+
+    // Check if text contains LaTeX
+    const hasLatex = latexPatterns.some(pattern => pattern.test(text));
     
-    const hasLatex = latexPatterns.some(pattern => pattern.test(str));
-    
-    if (hasLatex) {
-      // Wrap in display math for complex expressions
-      if (str.length > 50 || /\\begin|\\end|\\frac|\\int|\\sum|\\prod/.test(str)) {
-        return `$$${str}$$`;
-      } else {
-        return `$${str}$`;
-      }
+    if (!hasLatex) {
+      // No LaTeX detected, process URLs only
+      return formatTextWithImagesAndLinks(text);
     }
-    
-    return str;
+
+    // Process text with LaTeX
+    let processed = text;
+
+    // Handle already delimited LaTeX (leave as is)
+    if (/\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\$[^$]*?\$|\\\([^)]*?\\\)/.test(processed)) {
+      return formatTextWithImagesAndLinks(processed);
+    }
+
+    // Auto-wrap detected LaTeX patterns
+    // First handle display math candidates (complex expressions)
+    const displayMathPatterns = [
+      /\\begin\{[^}]+\}.*?\\end\{[^}]+\}/gs,
+      /\\frac\s*\{[^}]*\}\s*\{[^}]*\}(?:\s*[+\-*/=]\s*\\frac\s*\{[^}]*\}\s*\{[^}]*\})*/g,
+      /[^$\s]+\s*[+\-*/=]\s*[^$\s]*\\[a-zA-Z]+[^$\s]*/g
+    ];
+
+    displayMathPatterns.forEach(pattern => {
+      processed = processed.replace(pattern, match => {
+        if (!match.includes('$') && !match.includes('\\[') && !match.includes('\\(')) {
+          return `$$${match}$$`;
+        }
+        return match;
+      });
+    });
+
+    // Handle inline math patterns
+    const inlineMathPatterns = [
+      /\\[a-zA-Z]+\{[^}]*\}/g,
+      /\w+_\{[^}]*\}/g,
+      /\w+\^\{[^}]*\}/g,
+      /\w+_\w+(?!\w)/g,
+      /\w+\^\w+(?!\w)/g,
+      /\\[a-zA-Z]+(?!\{)(?!\[)/g
+    ];
+
+    inlineMathPatterns.forEach(pattern => {
+      processed = processed.replace(pattern, match => {
+        if (!match.includes('$') && !match.includes('\\[') && !match.includes('\\(')) {
+          return `$${match}$`;
+        }
+        return match;
+      });
+    });
+
+    return formatTextWithImagesAndLinks(processed);
   }
 
   function formatTextWithImagesAndLinks(text) {
     if (!text) return '';
-    
-    let processed = renderLatex(text);
-    
-    const urlRegex = /(https?:\/\/[^\s]+)/gi;
-    processed = processed.replace(urlRegex, url => {
+
+    const urlRegex = /(https?:\/\/[^\s$]+)/gi;
+    return text.replace(urlRegex, url => {
       if (/\.(png|jpe?g|gif|svg)(\?[^ ]*)?$/i.test(url)) {
         return `<img src="${url}" class="question-image" alt="Image from URL" loading="lazy">`;
       } else {
         return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
       }
     });
-
-    return processed;
   }
 
   function sanitizeHTML(html) {
@@ -1252,8 +1300,11 @@
     if (!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString(undefined, { 
-      year: 'numeric', month: 'short', day: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 
@@ -1270,6 +1321,9 @@
     document.getElementById('results-content').style.display = 'block';
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 3. URL parameters and global state
+  // ─────────────────────────────────────────────────────────────────────────────
   const testID = getParam('test');
   const batchName = getParam('batch');
   const username = getParam('username');
@@ -1285,6 +1339,9 @@
   let currentSubjectQuestions = [];
   let overviewChart = null;
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. API and chart functions
+  // ─────────────────────────────────────────────────────────────────────────────
   async function api(path, opts = {}) {
     try {
       const response = await fetch('/api/' + path, {
@@ -1323,7 +1380,9 @@
   }
 
   function createDoughnutChart(ctx, data) {
-    if (overviewChart) overviewChart.destroy();
+    if (overviewChart) {
+      overviewChart.destroy();
+    }
 
     overviewChart = new Chart(ctx, {
       type: 'doughnut',
@@ -1360,7 +1419,10 @@
             }
           }
         },
-        animation: { animateRotate: true, animateScale: true }
+        animation: {
+          animateRotate: true,
+          animateScale: true
+        }
       }
     });
 
@@ -1372,6 +1434,9 @@
     overviewChart.update();
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 5. Render functions
+  // ─────────────────────────────────────────────────────────────────────────────
   function renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore) {
     const statsGrid = document.getElementById('stats-grid');
     statsGrid.innerHTML = `
@@ -1475,8 +1540,12 @@
     const rawSel = question.selectedAnswer;
     const rawCor = question.correctAnswer;
 
-    const selectedAnswer = rawSel !== null && rawSel !== undefined ? String(rawSel).trim() : '';
-    const correctAnswer = rawCor !== null && rawCor !== undefined ? String(rawCor).trim() : '';
+    const selectedAnswer = rawSel !== null && rawSel !== undefined
+      ? String(rawSel).trim()
+      : '';
+    const correctAnswer = rawCor !== null && rawCor !== undefined
+      ? String(rawCor).trim()
+      : '';
 
     const isMCQ = Array.isArray(question.options) && question.options.length > 0;
     const isAnswered = selectedAnswer !== '';
@@ -1512,7 +1581,7 @@
             }
             
             return `<li class="${classes}">
-              <strong>${optionLetter}.</strong> ${formatTextWithImagesAndLinks(option)}
+              <strong>${optionLetter}.</strong> ${processLatexContent(option)}
             </li>`;
           }).join('')}
         </ul>
@@ -1565,7 +1634,7 @@
         </div>
         <div class="question-body">
           <div class="question-text">
-            ${formatTextWithImagesAndLinks(question.question)}
+            ${processLatexContent(question.question)}
           </div>
           
           ${optionsHTML}
@@ -1578,7 +1647,7 @@
               Solution
             </div>
             <div class="solution-text">
-              ${formatTextWithImagesAndLinks(question.solution || 'No solution provided.')}
+              ${processLatexContent(question.solution || 'No solution provided.')}
             </div>
           </div>
           
@@ -1599,17 +1668,22 @@
     // Enhanced MathJax rendering
     if (window.MathJax && window.MathJax.typesetPromise) {
       window.MathJax.typesetPromise([questionsContent]).catch(err => {
-        console.error("MathJax error:", err);
+        console.warn("MathJax rendering error:", err);
         // Fallback: try again after a short delay
         setTimeout(() => {
           if (window.MathJax && window.MathJax.typesetPromise) {
-            window.MathJax.typesetPromise([questionsContent]).catch(console.error);
+            window.MathJax.typesetPromise([questionsContent]).catch(e => 
+              console.error("MathJax fallback failed:", e)
+            );
           }
         }, 100);
       });
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 6. Navigation and main functions
+  // ─────────────────────────────────────────────────────────────────────────────
   function previousQuestion() {
     if (currentQuestionIndex > 0) {
       currentQuestionIndex--;
@@ -1633,7 +1707,10 @@
         document.title = `${testName} - PWians Test Results`;
       }
 
-      let totalCorrect = 0, totalWrong = 0, totalUnanswered = 0, totalScore = 0;
+      let totalCorrect = 0;
+      let totalWrong = 0;
+      let totalUnanswered = 0;
+      let totalScore = 0;
 
       Object.values(results).forEach(subQuestions => {
         subQuestions.forEach(question => {
@@ -1677,6 +1754,9 @@
     }
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. Event listeners and initialization
+  // ─────────────────────────────────────────────────────────────────────────────
   document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') {
       e.preventDefault();
@@ -1694,6 +1774,7 @@
 
   window.addEventListener('load', displayResults);
 
+  // Expose functions to global scope
   window.previousQuestion = previousQuestion;
   window.nextQuestion = nextQuestion;
   window.selectSubject = selectSubject;
