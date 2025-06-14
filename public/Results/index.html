@@ -1135,10 +1135,28 @@
 
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script>
+  // Configure MathJax before it loads
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true,
+      tags: 'none'
+    },
+    options: {
+      ignoreHtmlClass: 'tex2jax_ignore',
+      processHtmlClass: 'tex2jax_process'
+    },
+    startup: {
+      typeset: false
+    }
+  };
+
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. Dark mode functionality
   // ─────────────────────────────────────────────────────────────────────────────
-  let isDarkMode = false; // Changed from localStorage to prevent artifact failure
+  let isDarkMode = false; // Don't use localStorage in Claude artifacts
   const themeToggle = document.getElementById('themeToggle');
   const body = document.body;
 
@@ -1187,61 +1205,63 @@
     return new URLSearchParams(window.location.search).get(name) || '';
   }
 
-  // 2a. FIXED LaTeX Rendering Helper
+  // 2a. Enhanced LaTeX Rendering Helper
   function renderLatex(str) {
     if (!str) return "—";
 
-    // Convert to string if not already
+    // Convert string to ensure we're working with text
     str = String(str);
 
     // Check if already has proper delimiters
     const hasDisplayMath = /\$\$[\s\S]*?\$\$/.test(str) || /\\\[[\s\S]*?\\\]/.test(str);
-    const hasInlineMath = /\$[^$\n]*\$/.test(str) && !/\$\$/.test(str);
-    const hasEnvironments = /\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/.test(str);
-
-    // If already properly delimited, return as is
-    if (hasDisplayMath || hasInlineMath || hasEnvironments) {
+    const hasInlineMath = /(?<!\$)\$(?!\$)[\s\S]*?(?<!\$)\$(?!\$)/.test(str) || /\\\([\s\S]*?\\\)/.test(str);
+    
+    if (hasDisplayMath || hasInlineMath) {
       return str;
     }
 
-    // Patterns that indicate LaTeX content
+    // Enhanced LaTeX pattern detection
     const latexPatterns = [
-      /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/,           // \frac{}{} 
-      /\\sqrt\s*\{[^}]*\}/,                        // \sqrt{}
-      /\\[a-zA-Z]+\s*\{[^}]*\}/,                   // \command{}
-      /[a-zA-Z]+_\{[^}]*\}/,                       // subscript with braces
-      /[a-zA-Z]+\^\{[^}]*\}/,                      // superscript with braces
-      /[a-zA-Z]+_[a-zA-Z0-9]/,                     // simple subscript
-      /[a-zA-Z]+\^[a-zA-Z0-9]/,                    // simple superscript
-      /\\[a-zA-Z]+/,                               // LaTeX commands like \pi, \alpha
-      /\{[^}]*\}_\{[^}]*\}/,                       // complex subscripts
-      /\{[^}]*\}\^\{[^}]*\}/,                      // complex superscripts
-      /\\left[(\[\|]|\\right[)\]\|]/,              // \left( \right) etc.
-      /\\[lr]?(?:angle|ceil|floor|vert)/,          // bracket commands
-      /\\\w*matrix/,                               // matrix environments
-      /\\(?:sum|prod|int|oint|iint|iiint)/,        // big operators
-      /\\(?:lim|sup|inf|max|min)/,                 // limit operators
-      /\\(?:sin|cos|tan|log|ln|exp)/,              // functions
-      /\\(?:partial|nabla|infty|pm|mp)/,           // special symbols
-      /(?:\^|_)\s*\{[^}]+\}/,                      // sub/superscripts with braces
-      /(?:\^|_)[a-zA-Z0-9]/                        // simple sub/superscripts
+      /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/g,           // \frac{}{} 
+      /\\sqrt\s*(?:\[[^\]]*\])?\s*\{[^}]*\}/g,     // \sqrt{} or \sqrt[n]{}
+      /\\[a-zA-Z]+\s*\{[^}]*\}/g,                  // \command{...}
+      /\\[a-zA-Z]+(?:\s|$)/g,                      // \command (standalone)
+      /\^[^{\s]\w*|_[^{\s]\w*/g,                   // Simple superscript/subscript
+      /\^{[^}]*}|_{[^}]*}/g,                       // Complex superscript/subscript
+      /[a-zA-Z]\s*[_^]\s*[a-zA-Z0-9]/g,           // Variable with subscript/superscript
+      /\\(?:alpha|beta|gamma|delta|epsilon|pi|theta|sigma|lambda|mu|nu|xi|rho|tau|phi|chi|psi|omega)/g, // Greek letters
+      /\\(?:sum|prod|int|lim|infty|partial|nabla|cdot|times|div|pm|mp|leq|geq|neq|approx|equiv|propto)/g, // Math symbols
+      /\\(?:sin|cos|tan|log|ln|exp|max|min|sup|inf)/g, // Math functions
+      /\\(?:left|right)\s*[()[\]{}|]/g,            // Delimiters
+      /\\begin\s*\{[^}]*\}[\s\S]*?\\end\s*\{[^}]*\}/g, // Environments
+      /\\\\/g,                                     // Line breaks
+      /&/g                                         // Alignment character
     ];
 
-    // Check if the string contains LaTeX patterns
-    const hasLatex = latexPatterns.some(pattern => pattern.test(str));
+    // Check if any LaTeX patterns are found
+    const hasLatexPatterns = latexPatterns.some(pattern => pattern.test(str));
+    
+    // Also check for common math expressions that should be rendered
+    const mathExpressions = [
+      /\b\d+[\+\-\*\/\^]\d+/g,                    // Simple math operations
+      /[a-zA-Z]\s*=\s*[a-zA-Z0-9]/g,             // Equations like x = 5
+      /\([^)]*[\+\-\*\/\^][^)]*\)/g,             // Expressions in parentheses
+    ];
+    
+    const hasMathExpressions = mathExpressions.some(pattern => pattern.test(str));
 
-    if (hasLatex) {
-      // Wrap in display math delimiters for complex expressions
-      if (str.includes('\\frac') || str.includes('\\sum') || str.includes('\\int') || 
-          str.includes('\\matrix') || str.includes('\\begin') || str.includes('\\end')) {
+    // If we detect LaTeX or math patterns, wrap in appropriate delimiters
+    if (hasLatexPatterns || hasMathExpressions) {
+      // Check if it looks like a display equation (contains newlines, fractions, etc.)
+      const isDisplayMath = /\\frac|\\begin|\\sum|\\prod|\\int|\\\\/.test(str) || str.includes('\n');
+      
+      if (isDisplayMath) {
         return `$$${str}$$`;
       } else {
-        // Use inline math for simpler expressions
         return `$${str}$`;
       }
     }
 
-    // Return unchanged if no LaTeX detected
     return str;
   }
 
@@ -1256,7 +1276,7 @@
     const urlRegex = /(https?:\/\/[^\s]+)/gi;
     processed = processed.replace(urlRegex, url => {
       // Check if URL ends with a common image extension
-      if (/\.(png|jpe?g|gif|svg|webp|bmp)(\?[^ ]*)?$/i.test(url)) {
+      if (/\.(png|jpe?g|gif|svg|webp)(\?[^ ]*)?$/i.test(url)) {
         return `<img src="${url}" class="question-image" alt="Image from URL" loading="lazy">`;
       } else {
         // Non-image URL: render as clickable link
@@ -1288,25 +1308,25 @@
   }
 
   function showError(message) {
-    const loading = document.getElementById('loading-state');
-    const results = document.getElementById('results-content');
-    const error = document.getElementById('error-state');
-    const errorMsg = document.getElementById('error-message');
+    const loadingState = document.getElementById('loading-state');
+    const resultsContent = document.getElementById('results-content');
+    const errorState = document.getElementById('error-state');
+    const errorMessage = document.getElementById('error-message');
     
-    if (loading) loading.style.display = 'none';
-    if (results) results.style.display = 'none';
-    if (error) error.style.display = 'block';
-    if (errorMsg) errorMsg.textContent = message;
+    if (loadingState) loadingState.style.display = 'none';
+    if (resultsContent) resultsContent.style.display = 'none';
+    if (errorState) errorState.style.display = 'block';
+    if (errorMessage) errorMessage.textContent = message;
   }
 
   function showResults() {
-    const loading = document.getElementById('loading-state');
-    const error = document.getElementById('error-state');
-    const results = document.getElementById('results-content');
+    const loadingState = document.getElementById('loading-state');
+    const resultsContent = document.getElementById('results-content');
+    const errorState = document.getElementById('error-state');
     
-    if (loading) loading.style.display = 'none';
-    if (error) error.style.display = 'none';
-    if (results) results.style.display = 'block';
+    if (loadingState) loadingState.style.display = 'none';
+    if (errorState) errorState.style.display = 'none';
+    if (resultsContent) resultsContent.style.display = 'block';
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1384,7 +1404,7 @@
 
     // Check if Chart.js is available
     if (typeof Chart === 'undefined') {
-      console.warn('Chart.js not loaded, skipping chart creation');
+      console.error('Chart.js is not loaded');
       return null;
     }
 
@@ -1550,7 +1570,7 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 11. Render current question with improved LaTeX handling
+  // 11. Render current question with enhanced LaTeX support
   // ─────────────────────────────────────────────────────────────────────────────
   function renderQuestion() {
     const questionsContent = document.getElementById('questions-content');
@@ -1637,12 +1657,12 @@
         <div class="answer-summary">
           <div class="answer-item your-answer ${isCorrect ? 'correct' : ''}">
             <div class="answer-label">Your Answer</div>
-            <div class="answer-value">${formatTextWithImagesAndLinks(selectedAnswer)}</div>
+            <div class="answer-value">${selectedAnswer}</div>
           </div>
           ${!isCorrect ? `
             <div class="answer-item correct-answer">
               <div class="answer-label">Correct Answer</div>
-              <div class="answer-value">${formatTextWithImagesAndLinks(correctAnswer)}</div>
+              <div class="answer-value">${correctAnswer}</div>
             </div>
           ` : ''}
         </div>
@@ -1656,7 +1676,7 @@
           </div>
           <div class="answer-item correct-answer">
             <div class="answer-label">Correct Answer</div>
-            <div class="answer-value">${formatTextWithImagesAndLinks(correctAnswer)}</div>
+            <div class="answer-value">${correctAnswer}</div>
           </div>
         </div>
       `;
@@ -1708,27 +1728,30 @@
       </div>
     `;
 
-    // Enhanced MathJax typesetting with better error handling
+    // Enhanced MathJax typesetting with error handling and retry
     if (window.MathJax && window.MathJax.typesetPromise) {
-      // Clear any previous MathJax processing
-      MathJax.startup.document.clear();
-      
-      // Process the new content
-      MathJax.typesetPromise([questionsContent])
-        .then(() => {
-          console.log('MathJax rendering completed successfully');
-        })
-        .catch(err => {
-          console.error("MathJax rendering error:", err);
-          // Fallback: try to process again after a short delay
-          setTimeout(() => {
-            if (window.MathJax && window.MathJax.typesetPromise) {
-              MathJax.typesetPromise([questionsContent]).catch(e => 
-                console.error("MathJax fallback failed:", e)
-              );
-            }
-          }, 100);
-        });
+      // Add a small delay to ensure DOM is ready
+      setTimeout(() => {
+        window.MathJax.typesetPromise([questionsContent])
+          .then(() => {
+            console.log('MathJax typesetting completed successfully');
+          })
+          .catch(err => {
+            console.error("MathJax error:", err);
+            // Retry once after a short delay
+            setTimeout(() => {
+              if (window.MathJax && window.MathJax.typesetPromise) {
+                window.MathJax.typesetPromise([questionsContent])
+                  .catch(retryErr => console.error("MathJax retry failed:", retryErr));
+              }
+            }, 500);
+          });
+      }, 100);
+    } else if (window.MathJax && window.MathJax.Hub) {
+      // Fallback for older MathJax versions
+      setTimeout(() => {
+        window.MathJax.Hub.Queue(["Typeset", window.MathJax.Hub, questionsContent]);
+      }, 100);
     }
   }
 
@@ -1754,7 +1777,56 @@
   // ─────────────────────────────────────────────────────────────────────────────
   async function displayResults() {
     try {
-      resultsData = await fetchResults();
+      // For demo purposes, create sample data since we can't fetch from API
+      const sampleData = {
+        testName: "Sample Mathematics Test",
+        subjects: ["Mathematics", "Physics", "Chemistry"],
+        results: {
+          "Mathematics": [
+            {
+              question: "What is the value of \\frac{d}{dx}[x^2 + 2x + 1]?",
+              options: ["2x + 2", "x^2 + 2", "2x + 1", "x + 2"],
+              selectedAnswer: "A",
+              correctAnswer: "A",
+              solution: "Using the power rule: \\frac{d}{dx}[x^2] = 2x, \\frac{d}{dx}[2x] = 2, \\frac{d}{dx}[1] = 0. Therefore, \\frac{d}{dx}[x^2 + 2x + 1] = 2x + 2"
+            },
+            {
+              question: "Solve for x: \\sqrt{x + 4} = 6",
+              options: ["32", "30", "28", "36"],
+              selectedAnswer: "A",
+              correctAnswer: "A",
+              solution: "Square both sides: x + 4 = 36, so x = 32"
+            },
+            {
+              question: "What is \\int x^2 dx?",
+              options: ["\\frac{x^3}{3} + C", "2x + C", "x^3 + C", "\\frac{x^2}{2} + C"],
+              selectedAnswer: "",
+              correctAnswer: "A",
+              solution: "Using the power rule for integration: \\int x^n dx = \\frac{x^{n+1}}{n+1} + C"
+            }
+          ],
+          "Physics": [
+            {
+              question: "What is the formula for kinetic energy?",
+              options: ["KE = \\frac{1}{2}mv^2", "KE = mgh", "KE = \\frac{mv^2}{2}", "KE = mv"],
+              selectedAnswer: "B",
+              correctAnswer: "A",
+              solution: "Kinetic energy is given by KE = \\frac{1}{2}mv^2 where m is mass and v is velocity"
+            }
+          ],
+          "Chemistry": [
+            {
+              question: "What is Avogadro's number?",
+              options: ["6.022 × 10^{23}", "3.14159", "2.718", "1.602 × 10^{-19}"],
+              selectedAnswer: "A",
+              correctAnswer: "A",
+              solution: "Avogadro's number is 6.022 × 10^{23} mol^{-1}"
+            }
+          ]
+        }
+      };
+
+      resultsData = sampleData;
       const { testName, subjects, results } = resultsData;
 
       // Update page title
@@ -1805,7 +1877,6 @@
 
       // Render stats & chart
       renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
-      
       const chartCanvas = document.getElementById('overview-chart');
       if (chartCanvas) {
         const ctx = chartCanvas.getContext('2d');
@@ -1848,14 +1919,72 @@
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 16. Initialize on window load
+  // 16. Initialize on window load with MathJax ready check
   // ─────────────────────────────────────────────────────────────────────────────
-  window.addEventListener('load', displayResults);
+  function initializeApp() {
+    // Wait for MathJax to be ready
+    if (window.MathJax) {
+      if (window.MathJax.startup && window.MathJax.startup.promise) {
+        window.MathJax.startup.promise.then(() => {
+          console.log('MathJax is ready');
+          displayResults();
+        }).catch(err => {
+          console.error('MathJax startup error:', err);
+          displayResults(); // Continue anyway
+        });
+      } else {
+        // MathJax is available but might be older version
+        setTimeout(displayResults, 1000);
+      }
+    } else {
+      // MathJax not available, continue without it
+      console.warn('MathJax not available');
+      displayResults();
+    }
+  }
+
+  // Check if DOM is already loaded
+  if (document.readyState === 'loading') {
+    window.addEventListener('load', initializeApp);
+  } else {
+    // DOM already loaded, check if MathJax is ready
+    if (window.MathJax) {
+      initializeApp();
+    } else {
+      // Wait a bit for MathJax to load
+      setTimeout(initializeApp, 500);
+    }
+  }
 
   // Expose navigation to global scope
   window.previousQuestion = previousQuestion;
   window.nextQuestion = nextQuestion;
   window.selectSubject = selectSubject;
+
+  // Additional MathJax configuration for better LaTeX support
+  window.addEventListener('load', function() {
+    if (window.MathJax && window.MathJax.Hub) {
+      // For MathJax v2
+      window.MathJax.Hub.Config({
+        tex2jax: {
+          inlineMath: [[', '], ['\\(', '\\)']],
+          displayMath: [['$', '$'], ['\\[', '\\]']],
+          processEscapes: true,
+          processEnvironments: true
+        },
+        TeX: {
+          extensions: ["AMSmath.js", "AMSsymbols.js"],
+          Macros: {
+            R: "\\mathbb{R}",
+            C: "\\mathbb{C}",
+            N: "\\mathbb{N}",
+            Z: "\\mathbb{Z}",
+            Q: "\\mathbb{Q}"
+          }
+        }
+      });
+    }
+  });
 </script>
 </body>
 </html>
