@@ -1133,649 +1133,526 @@
     </footer>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <script>
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 1. Dark mode functionality
-    // ─────────────────────────────────────────────────────────────────────────────
-    let isDarkMode = localStorage.getItem('darkMode') === 'true';
-    const themeToggle = document.getElementById('themeToggle');
-    const body = document.body;
+  <!-- Load MathJax -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-    // Initialize dark mode
-    function initializeDarkMode() {
-      if (isDarkMode) {
-        body.classList.add('dark-mode');
-        themeToggle.querySelector('i').className = 'fas fa-sun';
-      } else {
-        body.classList.remove('dark-mode');
-        themeToggle.querySelector('i').className = 'fas fa-moon';
+<script>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Enhanced LaTeX & HTML rendering (from your first script)
+  // ─────────────────────────────────────────────────────────────────────────────
+  const LATEX_PATTERNS = {
+    ALREADY_FORMATTED: /\\[\(\[\$][\s\S]*?\\[\)\]\$]|\$\$[\s\S]*?\$\$|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}/,
+    STRONG_MATH: /\\(?:frac|sqrt|sum|prod|int|lim|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|omega|nabla|infty|partial|rightarrow|leftarrow|Rightarrow|Leftarrow)\b/,
+    CHEMISTRY: /\\ce\{[^}]+\}/,
+    SUB_SUP_BRACES: /[A-Za-z0-9]+[\^_]\{[^}]+\}/,
+    MATH_OPS: /\\(?:cdot|times|div|pm|mp|leq|geq|neq|equiv|approx|propto|in|notin|subset|supset|cup|cap|wedge|vee|oplus|otimes)\b/,
+    FUNCTIONS: /\\(?:sin|cos|tan|sec|csc|cot|ln|log|exp|sinh|cosh|tanh)\b/,
+    DECORATIONS: /\\(?:overline|underline|vec|hat|tilde|bar|dot|ddot)\{[^}]*\}/,
+    FRACTIONS: /\\frac\s*\{[^}]*\}\s*\{[^}]*\}/,
+    MATRICES: /\\begin\{(?:matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}[\s\S]*?\\end\{(?:matrix|pmatrix|bmatrix|vmatrix|Vmatrix)\}/,
+    DISPLAY_INDICATORS: /\\\\\s*$|\\displaystyle\b|\\begin\{(?:align|gather|multiline|cases|equation)\}/
+  };
+
+  const HTML_PATTERNS = {
+    SUPERSCRIPT: /<sup(?:\s[^>]*)?>(.*?)<\/sup>/gi,
+    SUBSCRIPT:  /<sub(?:\s[^>]*)?>(.*?)<\/sub>/gi,
+    ANY_HTML:   /<\/?[^>]+>/
+  };
+
+  function isAlreadyFormatted(str) {
+    return LATEX_PATTERNS.ALREADY_FORMATTED.test(str);
+  }
+  function containsLaTeX(str) {
+    return Object.values(LATEX_PATTERNS).some(rx => rx.test(str));
+  }
+  function containsHTML(str) {
+    return HTML_PATTERNS.ANY_HTML.test(str);
+  }
+  function shouldBeDisplayMath(s) {
+    return LATEX_PATTERNS.DISPLAY_INDICATORS.test(s)
+        || LATEX_PATTERNS.MATRICES.test(s)
+        || s.includes('\\\\')
+        || (s.includes('\n') && containsLaTeX(s));
+  }
+  function preserveSpacing(str) {
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br>")
+      .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+      .replace(/  +/g, m => '&nbsp;'.repeat(m.length));
+  }
+  function convertHTMLToLaTeX(str) {
+    return str
+      .replace(HTML_PATTERNS.SUPERSCRIPT, (_, c) => /^[A-Za-z0-9]+$/.test(c.trim()) ? `^{${c.trim()}}` : _)
+      .replace(HTML_PATTERNS.SUBSCRIPT,  (_, c) => /^[A-Za-z0-9]+$/.test(c.trim()) ? `_{${c.trim()}}` : _);
+  }
+  function processMixedContent(str) {
+    const converted = convertHTMLToLaTeX(str);
+    const parts = converted.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}|<[^>]+>[\s\S]*?<\/[^>]+>|<[^>]+\/?>)/);
+    return parts.map(seg => {
+      if (!seg) return '';
+      if (isAlreadyFormatted(seg)) return seg;
+      if (containsHTML(seg) && !containsLaTeX(seg)) return seg;
+      if (containsLaTeX(seg)) {
+        const txt = seg.trim();
+        return shouldBeDisplayMath(txt) ? `$$${txt}$$` : `\\(${txt}\\)`;
       }
+      return preserveSpacing(seg);
+    }).join('');
+  }
+  function renderMixedContent(str) {
+    if (typeof str !== 'string' || !str.trim()) return '';
+    return str.split('\n').map(line => {
+      if (!line.trim()) return '<br>';
+      return processMixedContent(line);
+    }).join('<br>');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 1. Dark mode functionality
+  // ─────────────────────────────────────────────────────────────────────────────
+  let isDarkMode = localStorage.getItem('darkMode') === 'true';
+  const themeToggle = document.getElementById('themeToggle');
+  const body = document.body;
+
+  function initializeDarkMode() {
+    if (isDarkMode) {
+      body.classList.add('dark-mode');
+      themeToggle.querySelector('i').className = 'fas fa-sun';
+    } else {
+      body.classList.remove('dark-mode');
+      themeToggle.querySelector('i').className = 'fas fa-moon';
     }
+  }
 
-    // Toggle dark mode
-    function toggleDarkMode() {
-      isDarkMode = !isDarkMode;
-      body.classList.toggle('dark-mode', isDarkMode);
-      localStorage.setItem('darkMode', isDarkMode);
-      
-      // Update icon with animation
-      const icon = themeToggle.querySelector('i');
-      icon.style.transform = 'rotate(180deg) scale(0.8)';
-      
-      setTimeout(() => {
-        icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
-        icon.style.transform = 'rotate(0deg) scale(1)';
-      }, 150);
+  function toggleDarkMode() {
+    isDarkMode = !isDarkMode;
+    body.classList.toggle('dark-mode', isDarkMode);
+    localStorage.setItem('darkMode', isDarkMode);
+    
+    const icon = themeToggle.querySelector('i');
+    icon.style.transform = 'rotate(180deg) scale(0.8)';
+    
+    setTimeout(() => {
+      icon.className = isDarkMode ? 'fas fa-sun' : 'fas fa-moon';
+      icon.style.transform = 'rotate(0deg) scale(1)';
+    }, 150);
 
-      // Update chart colors if chart exists
-      if (window.overviewChart) {
-        updateChartColors();
-      }
+    if (window.overviewChart) {
+      updateChartColors();
     }
+  }
 
-    themeToggle.addEventListener('click', toggleDarkMode);
-    initializeDarkMode();
+  themeToggle.addEventListener('click', toggleDarkMode);
+  initializeDarkMode();
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 2. Utility functions for text formatting
-    // ─────────────────────────────────────────────────────────────────────────────
-    function getParam(name) {
-      return new URLSearchParams(window.location.search).get(name) || '';
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2. Utility functions for text formatting & others
+  // ─────────────────────────────────────────────────────────────────────────────
+  function getParam(name) {
+    return new URLSearchParams(window.location.search).get(name) || '';
+  }
 
-    // 2a. LaTeX Rendering Helper
-    function renderLatex(str) {
-      if (!str) return "—";
+  function sanitizeHTML(html) {
+    const temp = document.createElement('div');
+    temp.textContent = html;
+    return temp.innerHTML;
+  }
 
-      // Detect existing TeX delimiters: $$…$$, \[…\], $$…$$, or \begin{…}…\end{…}
-      const alreadyHasDelimiters =
-          /\\$$.+?\\$$/.test(str)         // $$ … $$
-        || /\\\[.+?\\\]/.test(str)         // \[ … \]
-        || /\$\$[\s\S]+?\$\$/.test(str)    // $$ … $$
-        || /\\begin\{.+?\}[\s\S]+?\\end\{.+?\}/.test(str);
+  function formatDate(dateString) {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
 
-      if (alreadyHasDelimiters) {
-        return str;
-      }
+  function showError(message) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('results-content').style.display = 'none';
+    document.getElementById('error-state').style.display = 'block';
+    document.getElementById('error-message').textContent = message;
+  }
 
-      // If we see a "bare" TeX pattern, wrap once in $$ … $$
-      const hasInlineMath =
-          /\\frac\s*{[^}]+}\s*{[^}]+}/.test(str)
-        || /\\hat\{[^}]+\}/.test(str)
-        || /\\pi\b/.test(str)
-        || /\\varepsilon/.test(str)
-        || /[A-Za-z]+_\{.+?\}/.test(str);
+  function showResults() {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('error-state').style.display = 'none';
+    document.getElementById('results-content').style.display = 'block';
+  }
 
-      if (hasInlineMath) {
-        return `\$$${str}\$$`;
-      }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 2b. Convert any URL into <img> if it's an image, or <a> if not
+  // ─────────────────────────────────────────────────────────────────────────────
+  function formatTextWithImagesAndLinks(text) {
+    if (!text) return '';
+    const safe = sanitizeHTML(text);
+    let html = renderMixedContent(safe);
+    return html.replace(
+      /(https?:\/\/[^\s]+)/gi,
+      url => /\.(png|jpe?g|gif|svg)(\?[^ ]*)?$/i.test(url)
+        ? `<img src="${url}" class="question-image" loading="lazy" alt="Embedded image">`
+        : `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    );
+  }
 
-      // Otherwise return unchanged
-      return str;
-    }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 3. Get URL parameters
+  // ─────────────────────────────────────────────────────────────────────────────
+  const testID = getParam('test');
+  const batchName = getParam('batch');
+  const username = getParam('username');
 
-    // 2b. Convert any URL into <img> if it's an image, or <a> if not
-    function formatTextWithImagesAndLinks(text) {
-      if (!text) return '';
+  if (!testID || !batchName || !username) {
+    showError('Missing required parameters. Please check the URL and try again.');
+    throw new Error('Missing URL parameters');
+  }
 
-      // First apply LaTeX wrapping if needed
-      let processed = renderLatex(text);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. Global state for results
+  // ─────────────────────────────────────────────────────────────────────────────
+  let resultsData = null;
+  let currentSubject = '';
+  let currentQuestionIndex = 0;
+  let currentSubjectQuestions = [];
+  let overviewChart = null;
 
-      // Then replace any URL with either an <img> or <a> tag
-      const urlRegex = /(https?:\/\/[^\s]+)/gi;
-      processed = processed.replace(urlRegex, url => {
-        // Check if URL ends with a common image extension
-        if (/\.(png|jpe?g|gif|svg)(\?[^ ]*)?$/i.test(url)) {
-          return `<img src="${url}" class="question-image" alt="Image from URL" loading="lazy">`;
-        } else {
-          // Non-image URL: render as clickable link
-          return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
-        }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 5. API helper
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function api(path, opts = {}) {
+    try {
+      const response = await fetch('/api/' + path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...opts
       });
-
-      return processed;
-    }
-
-    // 2c. Sanitize HTML to prevent XSS
-    function sanitizeHTML(html) {
-      const temp = document.createElement('div');
-      temp.textContent = html;
-      return temp.innerHTML;
-    }
-
-    // 2d. Format date
-    function formatDate(dateString) {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      return date.toLocaleDateString(undefined, { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-
-    function showError(message) {
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('results-content').style.display = 'none';
-      document.getElementById('error-state').style.display = 'block';
-      document.getElementById('error-message').textContent = message;
-    }
-
-    function showResults() {
-      document.getElementById('loading-state').style.display = 'none';
-      document.getElementById('error-state').style.display = 'none';
-      document.getElementById('results-content').style.display = 'block';
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 3. Get URL parameters
-    // ─────────────────────────────────────────────────────────────────────────────
-    const testID = getParam('test');
-    const batchName = getParam('batch');
-    const username = getParam('username');
-
-    if (!testID || !batchName || !username) {
-      showError('Missing required parameters. Please check the URL and try again.');
-      throw new Error('Missing URL parameters');
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 4. Global state for results
-    // ─────────────────────────────────────────────────────────────────────────────
-    let resultsData = null;
-    let currentSubject = '';
-    let currentQuestionIndex = 0;
-    let currentSubjectQuestions = [];
-    let overviewChart = null;
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 5. API helper
-    // ─────────────────────────────────────────────────────────────────────────────
-    async function api(path, opts = {}) {
-      try {
-        const response = await fetch('/api/' + path, {
-          headers: { 'Content-Type': 'application/json' },
-          ...opts
-        });
-        if (!response.ok) {
-          const errorBody = await response.json().catch(() => ({}));
-          throw new Error(errorBody.error || `API Error: ${response.status}`);
-        }
-        return await response.json();
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+      if (!response.ok) {
+        const errorBody = await response.json().catch(() => ({}));
+        throw new Error(errorBody.error || `API Error: ${response.status}`);
       }
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
     }
+  }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 6. Fetch results from backend
-    // ─────────────────────────────────────────────────────────────────────────────
-    async function fetchResults() {
-      try {
-        const response = await fetch(
-          `/api/tests/${encodeURIComponent(testID)}/results` +
-          `?batchName=${encodeURIComponent(batchName)}` +
-          `&username=${encodeURIComponent(username)}`
-        );
-
-        if (!response.ok) {
-          const error = await response.json().catch(() => ({}));
-          throw new Error(error.error || 'Failed to load results');
-        }
-
-        return await response.json();
-      } catch (error) {
-        console.error('Fetch error:', error);
-        throw error;
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 6. Fetch results from backend
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function fetchResults() {
+    try {
+      const response = await fetch(
+        `/api/tests/${encodeURIComponent(testID)}/results` +
+        `?batchName=${encodeURIComponent(batchName)}` +
+        `&username=${encodeURIComponent(username)}`
+      );
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || 'Failed to load results');
       }
+      return await response.json();
+    } catch (error) {
+      console.error('Fetch error:', error);
+      throw error;
     }
+  }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 7. Create doughnut chart
-    // ─────────────────────────────────────────────────────────────────────────────
-    function createDoughnutChart(ctx, data) {
-      // Destroy existing chart if it exists
-      if (overviewChart) {
-        overviewChart.destroy();
-      }
-
-      overviewChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Correct', 'Wrong', 'Unanswered'],
-          datasets: [{
-            data: data,
-            backgroundColor: ['#10B981', '#EF4444', '#F59E0B'],
-            borderWidth: 0,
-            cutout: '70%'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: true,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              titleColor: 'white',
-              bodyColor: 'white',
-              borderColor: 'rgba(255, 255, 255, 0.1)',
-              borderWidth: 1,
-              cornerRadius: 8,
-              displayColors: true,
-              callbacks: {
-                label: function(context) {
-                  const label = context.label || '';
-                  const value = context.raw || 0;
-                  const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                  const percentage = Math.round((value / total) * 100);
-                  return `${label}: ${value} (${percentage}%)`;
-                }
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 7. Create doughnut chart
+  // ─────────────────────────────────────────────────────────────────────────────
+  function createDoughnutChart(ctx, data) {
+    if (overviewChart) overviewChart.destroy();
+    overviewChart = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['Correct', 'Wrong', 'Unanswered'],
+        datasets: [{ data, backgroundColor: ['#10B981','#EF4444','#F59E0B'], borderWidth: 0, cutout: '70%' }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(0,0,0,0.8)',
+            titleColor: 'white', bodyColor: 'white',
+            borderColor: 'rgba(255,255,255,0.1)', borderWidth:1, cornerRadius:8,
+            callbacks: {
+              label(ctx) {
+                const v = ctx.raw||0;
+                const total = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+                return `${ctx.label}: ${v} (${Math.round(v/total*100)}%)`;
               }
             }
-          },
-          animation: {
-            animateRotate: true,
-            animateScale: true
           }
-        }
-      });
-
-      return overviewChart;
-    }
-
-    // Update chart colors based on theme
-    function updateChartColors() {
-      if (!overviewChart) return;
-      
-      // Keep the same colors regardless of theme for consistency
-      overviewChart.update();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 8. Render statistics cards with new marking scheme
-    // ─────────────────────────────────────────────────────────────────────────────
-    function renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore) {
-      const statsGrid = document.getElementById('stats-grid');
-      statsGrid.innerHTML = `
-        <div class="stat-card correct fade-in">
-          <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-number">${totalCorrect}</div>
-          <div class="stat-label">Correct</div>
-        </div>
-        <div class="stat-card wrong fade-in" style="animation-delay: 0.1s">
-          <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
-          <div class="stat-number">${totalWrong}</div>
-          <div class="stat-label">Wrong</div>
-        </div>
-        <div class="stat-card unanswered fade-in" style="animation-delay: 0.2s">
-          <div class="stat-icon"><i class="fas fa-question-circle"></i></div>
-          <div class="stat-number">${totalUnanswered}</div>
-          <div class="stat-label">Unanswered</div>
-        </div>
-        <div class="stat-card score fade-in" style="animation-delay: 0.3s">
-          <div class="stat-icon"><i class="fas fa-trophy"></i></div>
-          <div class="stat-number">${totalScore}</div>
-          <div class="stat-label">Total Score</div>
-        </div>
-      `;
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 9. Render subject tabs
-    // ─────────────────────────────────────────────────────────────────────────────
-    function renderSubjectTabs(subjects) {
-      const subjectTabs = document.getElementById('subject-tabs');
-      subjectTabs.innerHTML = subjects.map((subject, index) => `
-        <button 
-          class="subject-tab ${index === 0 ? 'active' : ''} fade-in" 
-          style="animation-delay: ${index * 0.05}s"
-          onclick="selectSubject('${subject}', ${index})"
-          aria-selected="${index === 0 ? 'true' : 'false'}"
-        >
-          <i class="fas fa-book"></i>
-          ${subject}
-        </button>
-      `).join('');
-
-      // Initialize scroll buttons
-      initializeScrollButtons();
-    }
-
-    // Initialize horizontal scroll buttons for subject tabs
-    function initializeScrollButtons() {
-      const scrollLeftBtn = document.getElementById('scroll-left');
-      const scrollRightBtn = document.getElementById('scroll-right');
-      const tabsContainer = document.getElementById('subject-tabs');
-      
-      // Check if scrolling is needed
-      function checkScroll() {
-        const isScrollable = tabsContainer.scrollWidth > tabsContainer.clientWidth;
-        scrollLeftBtn.style.display = isScrollable ? 'flex' : 'none';
-        scrollRightBtn.style.display = isScrollable ? 'flex' : 'none';
-        
-        // Check if at the beginning or end
-        scrollLeftBtn.disabled = tabsContainer.scrollLeft <= 0;
-        scrollRightBtn.disabled = tabsContainer.scrollLeft + tabsContainer.clientWidth >= tabsContainer.scrollWidth;
+        },
+        animation: { animateRotate: true, animateScale: true }
       }
-      
-      // Scroll left
-      scrollLeftBtn.addEventListener('click', () => {
-        tabsContainer.scrollBy({ left: -200, behavior: 'smooth' });
-      });
-      
-      // Scroll right
-      scrollRightBtn.addEventListener('click', () => {
-        tabsContainer.scrollBy({ left: 200, behavior: 'smooth' });
-      });
-      
-      // Check on load and resize
-      checkScroll();
-      window.addEventListener('resize', checkScroll);
-      
-      // Check when scrolling
-      tabsContainer.addEventListener('scroll', checkScroll);
+    });
+    return overviewChart;
+  }
+
+  function updateChartColors() {
+    if (!overviewChart) return;
+    overviewChart.update();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 8. Render statistics cards
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderStats(c, w, u, s) {
+    const g = document.getElementById('stats-grid');
+    g.innerHTML = `
+      <div class="stat-card correct fade-in"><div class="stat-icon"><i class="fas fa-check-circle"></i></div><div class="stat-number">${c}</div><div class="stat-label">Correct</div></div>
+      <div class="stat-card wrong fade-in" style="animation-delay:0.1s"><div class="stat-icon"><i class="fas fa-times-circle"></i></div><div class="stat-number">${w}</div><div class="stat-label">Wrong</div></div>
+      <div class="stat-card unanswered fade-in" style="animation-delay:0.2s"><div class="stat-icon"><i class="fas fa-question-circle"></i></div><div class="stat-number">${u}</div><div class="stat-label">Unanswered</div></div>
+      <div class="stat-card score fade-in" style="animation-delay:0.3s"><div class="stat-icon"><i class="fas fa-trophy"></i></div><div class="stat-number">${s}</div><div class="stat-label">Total Score</div></div>
+    `;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 9. Render subject tabs
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderSubjectTabs(subjects) {
+    const tabs = document.getElementById('subject-tabs');
+    tabs.innerHTML = subjects.map((sub,i) => `
+      <button class="subject-tab ${i===0?'active':''} fade-in" style="animation-delay:${i*0.05}s" onclick="selectSubject('${sub}',${i})" aria-selected="${i===0}">
+        <i class="fas fa-book"></i> ${sub}
+      </button>
+    `).join('');
+    initializeScrollButtons();
+  }
+
+  function initializeScrollButtons() {
+    const left = document.getElementById('scroll-left'),
+          right= document.getElementById('scroll-right'),
+          container = document.getElementById('subject-tabs');
+    function check() {
+      const scrollable = container.scrollWidth>container.clientWidth;
+      left.style.display = right.style.display = scrollable?'flex':'none';
+      left.disabled = container.scrollLeft<=0;
+      right.disabled= container.scrollLeft+container.clientWidth>=container.scrollWidth;
+    }
+    left.onclick=()=>container.scrollBy({left:-200,behavior:'smooth'});
+    right.onclick=()=>container.scrollBy({left:200,behavior:'smooth'});
+    check(); window.addEventListener('resize',check); container.addEventListener('scroll',check);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 10. Select subject & questions
+  // ─────────────────────────────────────────────────────────────────────────────
+  function selectSubject(sub,i) {
+    currentSubject = sub;
+    currentSubjectQuestions = resultsData.results[sub]||[];
+    currentQuestionIndex=0;
+    document.querySelectorAll('.subject-tab').forEach((t,j)=>{
+      t.classList.toggle('active',j===i);
+      t.setAttribute('aria-selected',j===i);
+    });
+    renderQuestion();
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 11. Render current question
+  // ─────────────────────────────────────────────────────────────────────────────
+  function renderQuestion() {
+    const container = document.getElementById('questions-content');
+    const counter = document.getElementById('question-counter');
+    if (!currentSubjectQuestions.length) {
+      container.innerHTML = `
+        <div class="empty-state fade-in">
+          <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+          <h3 class="empty-title">No Questions Found</h3>
+          <p class="empty-text">No questions available for this subject</p>
+        </div>`;
+      return;
+    }
+    const q = currentSubjectQuestions[currentQuestionIndex];
+    const selRaw = q.selectedAnswer, corRaw = q.correctAnswer;
+    const sel = selRaw!=null?String(selRaw).trim():'';
+    const cor = corRaw!=null?String(corRaw).trim():'';
+    const isMCQ = Array.isArray(q.options)&&q.options.length>0;
+    const answered = sel!=='';
+    const correctHit = answered && (isMCQ?sel.toUpperCase()===cor.toUpperCase():sel===cor);
+    const status = !answered?'unanswered':correctHit?'correct':'wrong';
+    counter.textContent = `Question ${currentQuestionIndex+1} of ${currentSubjectQuestions.length}`;
+    const progress = ((currentQuestionIndex+1)/currentSubjectQuestions.length)*100;
+
+    let optsHTML = '';
+    if (isMCQ) {
+      optsHTML = `<ul class="options-list">` + q.options.map((opt,idx)=>{
+        const letter = String.fromCharCode(65+idx);
+        const isRight = opt.trim().toUpperCase()===cor.toUpperCase();
+        const isSelWrong = opt.trim().toUpperCase()===sel.toUpperCase()&&!correctHit;
+        let cls = 'option-item';
+        if(isRight) cls+=' correct';
+        if(isSelWrong) cls+=' selected';
+        return `<li class="${cls}"><strong>${letter}.</strong> ${formatTextWithImagesAndLinks(opt)}</li>`;
+      }).join('') + `</ul>`;
     }
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 10. Select subject and show questions
-    // ─────────────────────────────────────────────────────────────────────────────
-    function selectSubject(subject, index) {
-      currentSubject = subject;
-      currentSubjectQuestions = resultsData.results[subject] || [];
-      currentQuestionIndex = 0;
-
-      // Update active tab
-      document.querySelectorAll('.subject-tab').forEach((tab, i) => {
-        tab.classList.toggle('active', i === index);
-        tab.setAttribute('aria-selected', i === index ? 'true' : 'false');
-      });
-
-      renderQuestion();
-    }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 11. Render current question
-    // ─────────────────────────────────────────────────────────────────────────────
-    function renderQuestion() {
-      const questionsContent = document.getElementById('questions-content');
-      const questionCounter = document.getElementById('question-counter');
-
-      if (!currentSubjectQuestions.length) {
-        questionsContent.innerHTML = `
-          <div class="empty-state fade-in">
-            <div class="empty-icon"><i class="fas fa-inbox"></i></div>
-            <h3 class="empty-title">No Questions Found</h3>
-            <p class="empty-text">No questions available for this subject</p>
+    let ansHTML = '';
+    if (answered) {
+      ansHTML = `
+        <div class="answer-summary">
+          <div class="answer-item your-answer ${correctHit?'correct':''}">
+            <div class="answer-label">Your Answer</div>
+            <div class="answer-value">${sel}</div>
           </div>
-        `;
-        return;
-      }
-
-      const question = currentSubjectQuestions[currentQuestionIndex];
-      
-      // Normalize answers safely
-      const rawSel = question.selectedAnswer;
-      const rawCor = question.correctAnswer;
-
-      const selectedAnswer = rawSel !== null && rawSel !== undefined
-        ? String(rawSel).trim()
-        : '';
-      const correctAnswer = rawCor !== null && rawCor !== undefined
-        ? String(rawCor).trim()
-        : '';
-
-      // Determine if MCQ or integer, and compare appropriately
-      const isMCQ = Array.isArray(question.options) && question.options.length > 0;
-      const isAnswered = selectedAnswer !== '';
-      const isCorrect = isAnswered && (
-        isMCQ
-          ? selectedAnswer.toUpperCase() === correctAnswer.toUpperCase()
-          : selectedAnswer === correctAnswer
-      );
-
-      // Update counter
-      questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${currentSubjectQuestions.length}`;
-
-      // Calculate progress
-      const progress = ((currentQuestionIndex + 1) / currentSubjectQuestions.length) * 100;
-
-      // Determine status
-      let status = 'unanswered';
-      if (isAnswered) {
-        status = isCorrect ? 'correct' : 'wrong';
-      }
-
-      // Render options
-      let optionsHTML = '';
-      if (question.options && question.options.length) {
-        optionsHTML = `
-          <ul class="options-list">
-            ${question.options.map((option, idx) => {
-              const optionUpper = option.trim().toUpperCase();
-              const optionLetter = String.fromCharCode(65 + idx); // A, B, C, D...
-              let classes = 'option-item';
-              
-              if (optionUpper === correctAnswer.toUpperCase()) {
-                classes += ' correct';
-              }
-              if (optionUpper === selectedAnswer.toUpperCase() && !isCorrect) {
-                classes += ' selected';
-              }
-              
-              return `<li class="${classes}">
-                <strong>${optionLetter}.</strong> ${formatTextWithImagesAndLinks(option)}
-              </li>`;
-            }).join('')}
-          </ul>
-        `;
-      }
-
-      // Render answer summary
-      let answerSummaryHTML = '';
-      if (isAnswered) {
-        answerSummaryHTML = `
-          <div class="answer-summary">
-            <div class="answer-item your-answer ${isCorrect ? 'correct' : ''}">
-              <div class="answer-label">Your Answer</div>
-              <div class="answer-value">${selectedAnswer}</div>
-            </div>
-            ${!isCorrect ? `
-              <div class="answer-item correct-answer">
-                <div class="answer-label">Correct Answer</div>
-                <div class="answer-value">${correctAnswer}</div>
-              </div>
-            ` : ''}
-          </div>
-        `;
-      } else {
-        answerSummaryHTML = `
-          <div class="answer-summary">
-            <div class="answer-item your-answer">
-              <div class="answer-label">Your Answer</div>
-              <div class="answer-value">Not answered</div>
-            </div>
+          ${!correctHit?`
             <div class="answer-item correct-answer">
               <div class="answer-label">Correct Answer</div>
-              <div class="answer-value">${correctAnswer}</div>
-            </div>
+              <div class="answer-value">${cor}</div>
+            </div>`:''}
+        </div>`;
+    } else {
+      ansHTML = `
+        <div class="answer-summary">
+          <div class="answer-item your-answer">
+            <div class="answer-label">Your Answer</div>
+            <div class="answer-value">Not answered</div>
           </div>
-        `;
-      }
+          <div class="answer-item correct-answer">
+            <div class="answer-label">Correct Answer</div>
+            <div class="answer-value">${cor}</div>
+          </div>
+        </div>`;
+    }
 
-      questionsContent.innerHTML = `
-        <div class="progress-container">
-          <div class="progress-bar" style="width: ${progress}%"></div>
-        </div>
-        
-        <div class="question-card fade-in">
-          <div class="question-header">
-            <div class="question-number">Question ${currentQuestionIndex + 1}</div>
-            <div class="question-status ${status}">
-              <i class="fas fa-${status === 'correct' ? 'check' : status === 'wrong' ? 'times' : 'question'}"></i>
-              ${status.charAt(0).toUpperCase() + status.slice(1)}
-            </div>
-          </div>
-          <div class="question-body">
-            <div class="question-text">
-              ${formatTextWithImagesAndLinks(question.question)}
-            </div>
-            
-            ${optionsHTML}
-            
-            ${answerSummaryHTML}
-            
-            <div class="solution-section">
-              <div class="solution-title">
-                <i class="fas fa-lightbulb"></i>
-                Solution
-              </div>
-              <div class="solution-text">
-                ${formatTextWithImagesAndLinks(question.solution || 'No solution provided.')}
-              </div>
-            </div>
-            
-            <div class="question-nav">
-              <button class="nav-btn secondary" onclick="previousQuestion()" ${currentQuestionIndex === 0 ? 'disabled' : ''} aria-label="Previous question">
-                <i class="fas fa-arrow-left"></i>
-                Previous
-              </button>
-              <button class="nav-btn primary" onclick="nextQuestion()" ${currentQuestionIndex === currentSubjectQuestions.length - 1 ? 'disabled' : ''} aria-label="Next question">
-                Next
-                <i class="fas fa-arrow-right"></i>
-              </button>
-            </div>
+    container.innerHTML = `
+      <div class="progress-container"><div class="progress-bar" style="width:${progress}%"></div></div>
+      <div class="question-card fade-in">
+        <div class="question-header">
+          <div class="question-number">Question ${currentQuestionIndex+1}</div>
+          <div class="question-status ${status}">
+            <i class="fas fa-${status==='correct'?'check':status==='wrong'?'times':'question'}"></i>
+            ${status.charAt(0).toUpperCase()+status.slice(1)}
           </div>
         </div>
-      `;
-
-      // Trigger MathJax to typeset any LaTeX in the newly injected HTML
-      if (window.MathJax) {
-        MathJax.typesetPromise([questionsContent]).catch(err => console.error("MathJax error:", err));
-      }
+        <div class="question-body">
+          <div class="question-text">${formatTextWithImagesAndLinks(q.question)}</div>
+          ${optsHTML}
+          ${ansHTML}
+          <div class="solution-section">
+            <div class="solution-title"><i class="fas fa-lightbulb"></i> Solution</div>
+            <div class="solution-text">${formatTextWithImagesAndLinks(q.solution||'No solution provided.')}</div>
+          </div>
+          <div class="question-nav">
+            <button class="nav-btn secondary" onclick="previousQuestion()" ${currentQuestionIndex===0?'disabled':''} aria-label="Previous question">
+              <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            <button class="nav-btn primary" onclick="nextQuestion()" ${currentQuestionIndex===currentSubjectQuestions.length-1?'disabled':''} aria-label="Next question">
+              Next <i class="fas fa-arrow-right"></i>
+            </button>
+          </div>
+        </div>
+      </div>`;
+    
+    if (window.MathJax) {
+      MathJax.typesetPromise([container]).catch(err=>console.error("MathJax error:",err));
     }
-
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 12. Navigation functions
-    // ─────────────────────────────────────────────────────────────────────────────
-    function previousQuestion() {
-      if (currentQuestionIndex > 0) {
-        currentQuestionIndex--;
-        renderQuestion();
-      }
-    }
-
-    function nextQuestion() {
-      if (currentQuestionIndex < currentSubjectQuestions.length - 1) {
-        currentQuestionIndex++;
-        renderQuestion();
-      }
-    }
-
-   // ─────────────────────────────────────────────────────────────────────────────
-// 13. Main function to display results with new marking scheme
-// ─────────────────────────────────────────────────────────────────────────────
-async function displayResults() {
-  try {
-    resultsData = await fetchResults();
-    const { testName, subjects, results } = resultsData;
-
-    // Update page title
-    if (testName) {
-      document.title = `${testName} - PWians Test Results`;
-    }
-
-    // Totals
-    let totalCorrect     = 0;
-    let totalWrong       = 0;
-    let totalUnanswered  = 0;
-    let totalScore       = 0;
-
-    // ─── Normalize and tally ────────────────────────────────────────────────
-    Object.values(results).forEach(subQuestions => {
-      subQuestions.forEach(question => {
-        // Always coerce to string first:
-        const rawSel = question.selectedAnswer;
-        const rawCor = question.correctAnswer;
-
-        const selected = rawSel != null
-          ? String(rawSel).trim()
-          : '';
-        const correct  = rawCor != null
-          ? String(rawCor).trim()
-          : '';
-
-        const isMCQ     = Array.isArray(question.options) && question.options.length > 0;
-        const answered  = selected !== '';
-        const correctHit = answered && (
-          isMCQ
-            ? selected.toUpperCase() === correct.toUpperCase()
-            : selected === correct
-        );
-
-        if (!answered) {
-          totalUnanswered++;
-        } else if (correctHit) {
-          totalCorrect++;
-          totalScore += 4;
-        } else {
-          totalWrong++;
-          totalScore -= 1;
-        }
-      });
-    });
-    // ─────────────────────────────────────────────────────────────────────────
-
-    // Render stats & chart
-    renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
-    const ctx = document.getElementById('overview-chart').getContext('2d');
-    createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
-
-    // Subjects & first question
-    renderSubjectTabs(subjects);
-    if (subjects.length) selectSubject(subjects[0], 0);
-
-    showResults();
-  } catch (error) {
-    console.error('Error displaying results:', error);
-    showError(error.message || 'Failed to load results. Please try again.');
   }
-}
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 14. Keyboard navigation
-    // ─────────────────────────────────────────────────────────────────────────────
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowLeft') {
-        e.preventDefault();
-        previousQuestion();
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault();
-        nextQuestion();
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 12. Navigation functions
+  // ─────────────────────────────────────────────────────────────────────────────
+  function previousQuestion() {
+    if (currentQuestionIndex>0) {
+      currentQuestionIndex--;
+      renderQuestion();
+    }
+  }
+  function nextQuestion() {
+    if (currentQuestionIndex<currentSubjectQuestions.length-1) {
+      currentQuestionIndex++;
+      renderQuestion();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 13. Main function to display results
+  // ─────────────────────────────────────────────────────────────────────────────
+  async function displayResults() {
+    try {
+      resultsData = await fetchResults();
+      const { testName, subjects, results } = resultsData;
+
+      if (testName) {
+        document.title = `${testName} - PWians Test Results`;
       }
-    });
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 15. Privacy policy modal
-    // ─────────────────────────────────────────────────────────────────────────────
-    document.getElementById('privacy-link').addEventListener('click', function(e) {
+      let totalCorrect = 0, totalWrong = 0, totalUnanswered = 0, totalScore = 0;
+
+      Object.values(results).forEach(subQs => {
+        subQs.forEach(q => {
+          const selRaw = q.selectedAnswer, corRaw = q.correctAnswer;
+          const sel = selRaw!=null?String(selRaw).trim():'';
+          const cor = corRaw!=null?String(corRaw).trim():'';
+          const isMCQ = Array.isArray(q.options)&&q.options.length>0;
+          const answered = sel!=='';
+          const correctHit = answered && (isMCQ?sel.toUpperCase()===cor.toUpperCase():sel===cor);
+          if (!answered) {
+            totalUnanswered++;
+          } else if (correctHit) {
+            totalCorrect++;
+            totalScore += 4;
+          } else {
+            totalWrong++;
+            totalScore -= 1;
+          }
+        });
+      });
+
+      renderStats(totalCorrect, totalWrong, totalUnanswered, totalScore);
+      const ctx = document.getElementById('overview-chart').getContext('2d');
+      createDoughnutChart(ctx, [totalCorrect, totalWrong, totalUnanswered]);
+
+      renderSubjectTabs(subjects);
+      if (subjects.length) selectSubject(subjects[0], 0);
+
+      showResults();
+    } catch (error) {
+      console.error('Error displaying results:', error);
+      showError(error.message || 'Failed to load results. Please try again.');
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 14. Keyboard navigation
+  // ─────────────────────────────────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      alert('Privacy Policy: This application collects and displays test results for educational purposes only. Your data is securely stored and not shared with third parties.');
-    });
+      previousQuestion();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      nextQuestion();
+    }
+  });
 
-    // ─────────────────────────────────────────────────────────────────────────────
-    // 16. Initialize on window load
-    // ─────────────────────────────────────────────────────────────────────────────
-    window.addEventListener('load', displayResults);
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 15. Privacy policy modal
+  // ─────────────────────────────────────────────────────────────────────────────
+  document.getElementById('privacy-link').addEventListener('click', e => {
+    e.preventDefault();
+    alert('Privacy Policy: This application collects and displays test results for educational purposes only. Your data is securely stored and not shared with third parties.');
+  });
 
-    // Expose navigation to global scope
-    window.previousQuestion = previousQuestion;
-    window.nextQuestion = nextQuestion;
-    window.selectSubject = selectSubject;
-  </script>
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 16. Initialize on window load
+  // ─────────────────────────────────────────────────────────────────────────────
+  window.addEventListener('load', displayResults);
+
+  // Expose navigation globally
+  window.previousQuestion = previousQuestion;
+  window.nextQuestion     = nextQuestion;
+  window.selectSubject    = selectSubject;
+</script>
+
 </body>
 </html>
