@@ -1188,42 +1188,30 @@
       .replace(/  +/g, m => '&nbsp;'.repeat(m.length));
   }
   
-  function convertHTMLToLaTeX(str) {
-    return str
-      .replace(HTML_PATTERNS.SUPERSCRIPT, (match, content) => {
-        const cleanContent = content.trim();
-        return /^[A-Za-z0-9\+\-\*\/\(\)\[\]]+$/.test(cleanContent) ? `^{${cleanContent}}` : match;
-      })
-      .replace(HTML_PATTERNS.SUBSCRIPT, (match, content) => {
-        const cleanContent = content.trim();
-        return /^[A-Za-z0-9\+\-\*\/\(\)\[\]]+$/.test(cleanContent) ? `_{${cleanContent}}` : match;
-      });
-  }
-  
   function processMixedContent(str) {
-    // First convert HTML sub/sup to LaTeX before any other processing
-    let converted = convertHTMLToLaTeX(str);
-    
-    // Split on already formatted math expressions to preserve them
-    const parts = converted.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\})/);
+    // Split on already formatted math expressions and HTML tags to preserve them
+    const parts = str.split(/(\$\$[\s\S]*?\$\$|\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)|\\begin\{[^}]+\}[\s\S]*?\\end\{[^}]+\}|<[^>]*>[\s\S]*?<\/[^>]*>|<[^>]*\/?>)/);
     
     return parts.map(segment => {
       if (!segment) return '';
       
-      // If already formatted, return as-is
+      // If already formatted math, return as-is
       if (isAlreadyFormatted(segment)) return segment;
       
-      // If contains HTML but no LaTeX, preserve HTML
-      if (containsHTML(segment) && !containsLaTeX(segment)) return segment;
+      // If contains HTML tags (including sub/sup), preserve them
+      if (containsHTML(segment)) return segment;
       
-      // If contains LaTeX, wrap appropriately
-      if (containsLaTeX(segment)) {
+      // If contains LaTeX but no HTML, wrap appropriately
+      if (containsLaTeX(segment) && !containsHTML(segment)) {
         const trimmed = segment.trim();
-        return shouldBeDisplayMath(trimmed) ? `$$${trimmed}$$` : `\\(${trimmed}\\)`;
+        return shouldBeDisplayMath(trimmed) ? `$${trimmed}$` : `\\(${trimmed}\\)`;
       }
       
-      // For plain text, preserve spacing
-      return preserveSpacing(segment);
+      // For plain text, preserve spacing but don't escape HTML entities
+      return segment
+        .replace(/\n/g, "<br>")
+        .replace(/\t/g, "&nbsp;&nbsp;&nbsp;&nbsp;")
+        .replace(/  +/g, m => '&nbsp;'.repeat(m.length));
     }).join('');
   }
   
@@ -1281,13 +1269,13 @@
     return new URLSearchParams(window.location.search).get(name) || '';
   }
 
-  // FIXED: Don't escape HTML here if we want to process sub/sup tags
+  // FIXED: Keep HTML tags like sub/sup intact, only remove dangerous content
   function sanitizeHTML(html) {
     // Create a temporary div to safely parse HTML
     const temp = document.createElement('div');
     temp.innerHTML = html;
     
-    // Remove potentially dangerous elements but keep sub/sup
+    // Remove potentially dangerous elements but keep sub/sup and other safe tags
     const dangerousTags = ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'textarea', 'button'];
     dangerousTags.forEach(tag => {
       const elements = temp.querySelectorAll(tag);
@@ -1339,10 +1327,10 @@
   function formatTextWithImagesAndLinks(text) {
     if (!text) return '';
     
-    // First sanitize the HTML properly
+    // First sanitize the HTML properly (this keeps sub/sup tags intact)
     const safe = sanitizeHTML(text);
     
-    // Then render mixed content (this will handle sub/sup conversion)
+    // Then render mixed content (this will preserve HTML tags like sub/sup)
     let html = renderMixedContent(safe);
     
     // Finally handle URLs
