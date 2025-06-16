@@ -1398,6 +1398,29 @@ textarea:focus-visible {
           </div>
         </section>
 
+      <div class="filter-bar" style="margin-bottom:16px; display:flex; gap:16px; align-items:center;">
+      <!-- Batch Filter -->
+      <div>
+        <label for="batchFilter">Batch:</label>
+        <select id="batchFilter">
+          <option value="">All batches</option>
+          <!-- populated via JS -->
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div>
+        <label for="statusFilter">Status:</label>
+        <select id="statusFilter">
+          <option value="">All statuses</option>
+          <option value="Published">Published</option>
+          <option value="Scheduled">Scheduled</option>
+          <option value="Ready">Ready</option>
+        </select>
+      </div>
+    </div>
+
+
         <!-- Test Preview Section -->
         <section id="test-preview-section" class="section hidden">
           <div class="page-header">
@@ -1857,106 +1880,151 @@ textarea:focus-visible {
   // ─────────────────────────────────────────────────────────────────────────────
   // 12. Load test preview (unchanged)
   // ─────────────────────────────────────────────────────────────────────────────
-  async function loadTestPreview() {
-    const container = document.getElementById('testPreviewContainer');
-    container.innerHTML = `
-      <div class="loading-container">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Loading test series...</div>
-      </div>
-    `;
-    try {
-      const tests = await api('tests');
-      container.innerHTML = '';
-      if (tests.length === 0) {
-        container.innerHTML = `
-          <div class="card">
-            <div class="card-body" style="text-align: center; padding: 80px 20px;">
-              <i class="fas fa-inbox" style="font-size: 64px; color: var(--text-muted); margin-bottom: 24px; opacity: 0.5;"></i>
-              <h3 style="color: var(--text-secondary); margin-bottom: 16px; font-size: 24px; font-weight: 700;">No Tests Found</h3>
-              <p style="color: var(--text-muted); font-size: 16px;">Create your first test to get started</p>
-            </div>
-          </div>
-        `;
-        return;
-      }
-      const now = Date.now();
-      tests.forEach(test => {
-        const card = document.createElement('div');
-        card.className = 'test-card';
-        let status, statusClass, actionButton;
-        if (test.published) {
-          status = 'Published';
-          statusClass = 'status-published';
-          actionButton = `<button class="btn btn-danger btn-sm" onclick="deleteTest('${test._id}')">
-            <i class="fas fa-trash"></i> Delete
-          </button>`;
-        } else if (test.scheduledAt && now < new Date(test.scheduledAt).getTime()) {
-          status = 'Scheduled';
-          statusClass = 'status-scheduled';
-          actionButton = `<button class="btn btn-secondary btn-sm" disabled>
-            <i class="fas fa-clock"></i> Pending
-          </button>`;
-        } else {
-          status = 'Ready';
-          statusClass = 'status-ready';
-          actionButton = `<button class="btn btn-success btn-sm" onclick="sendTest('${test._id}')">
-            <i class="fas fa-paper-plane"></i> Publish
-          </button>`;
-        }
-        card.innerHTML = `
-          <div class="test-header">
-            <div>
-              <h3 class="test-title">${test.TestID} – ${test.testName}</h3>
-              <div class="test-details">
-                <div class="test-detail">
-                  <i class="fas fa-users"></i>
-                  <span>Batch: ${test.batch.BatchID} – ${test.batch.name}</span>
-                </div>
-                <div class="test-detail">
-                  <i class="fas fa-clock"></i>
-                  <span>Duration: ${test.testDuration} min</span>
-                </div>
-                <div class="test-detail">
-                  <i class="fas fa-book"></i>
-                  <span>Subjects: ${test.subjects.join(', ')}</span>
-                </div>
-                ${test.scheduledAt ? `
-                  <div class="test-detail">
-                    <i class="fas fa-calendar"></i>
-                    <span>Schedule: ${new Date(test.scheduledAt).toLocaleString()}</span>
-                  </div>
-                ` : ''}
-              </div>
-            </div>
-            <div class="test-status ${statusClass}">
-              <i class="fas fa-${test.published ? 'check-circle' : (test.scheduledAt && now < new Date(test.scheduledAt).getTime() ? 'clock' : 'play-circle')}"></i>
-              ${status}
-            </div>
-          </div>
-          <div class="btn-group">
-            <button class="btn btn-secondary btn-sm" onclick="previewTest('${test._id}')">
-              <i class="fas fa-eye"></i> Preview
-            </button>
-            ${actionButton}
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    } catch (error) {
-      console.error('Error loading test preview:', error);
+ async function loadTestPreview() {
+  const container = document.getElementById('testPreviewContainer');
+  container.innerHTML = `
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading test series...</div>
+    </div>
+  `;
+
+  try {
+    // 1) Fetch all tests
+    let tests = await api('tests');
+    const now = Date.now();
+
+    // 2) Read filter values
+    const batchFilter  = document.getElementById('batchFilter')?.value  || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+
+    // 3) Compute a status string on each test
+    tests = tests.map(test => {
+      const status = test.published
+        ? 'Published'
+        : (test.scheduledAt && now < new Date(test.scheduledAt).getTime())
+          ? 'Scheduled'
+          : 'Ready';
+      return { ...test, _computedStatus: status };
+    });
+
+    // 4) Apply Batch filter (if any)
+    if (batchFilter) {
+      tests = tests.filter(t => t.batch._id === batchFilter);
+    }
+    // 5) Apply Status filter (if any)
+    if (statusFilter) {
+      tests = tests.filter(t => t._computedStatus === statusFilter);
+    }
+
+    // 6) Clear container & handle “no results”
+    container.innerHTML = '';
+    if (tests.length === 0) {
       container.innerHTML = `
         <div class="card">
           <div class="card-body" style="text-align: center; padding: 80px 20px;">
-            <i class="fas fa-exclamation-triangle" style="font-size: 64px; color: var(--error); margin-bottom: 24px;"></i>
-            <h3 style="color: var(--error); margin-bottom: 16px; font-size: 24px; font-weight: 700;">Error Loading Tests</h3>
-            <p style="color: var(--text-muted); font-size: 16px;">Please try again later</p>
+            <i class="fas fa-inbox" style="font-size: 64px; color: var(--text-muted); margin-bottom: 24px; opacity: 0.5;"></i>
+            <h3 style="color: var(--text-secondary); margin-bottom: 16px; font-size: 24px; font-weight: 700;">
+              No tests found
+            </h3>
+            <p style="color: var(--text-muted); font-size: 16px;">
+              ${batchFilter || statusFilter
+                ? 'Try adjusting or clearing your filters.'
+                : 'Create your first test to get started.'}
+            </p>
           </div>
         </div>
       `;
-      showToast('Error loading tests', 'error');
+      return;
     }
+
+    // 7) Render each test-card
+    tests.forEach(test => {
+      const card = document.createElement('div');
+      card.className = 'test-card';
+
+      // Use the computed status for styling & buttons
+      const status = test._computedStatus;
+      let statusClass, actionButton;
+      if (status === 'Published') {
+        statusClass = 'status-published';
+        actionButton = `<button class="btn btn-danger btn-sm" onclick="deleteTest('${test._id}')">
+          <i class="fas fa-trash"></i> Delete
+        </button>`;
+      } else if (status === 'Scheduled') {
+        statusClass = 'status-scheduled';
+        actionButton = `<button class="btn btn-secondary btn-sm" disabled>
+          <i class="fas fa-clock"></i> Pending
+        </button>`;
+      } else { // Ready
+        statusClass = 'status-ready';
+        actionButton = `<button class="btn btn-success btn-sm" onclick="sendTest('${test._id}')">
+          <i class="fas fa-paper-plane"></i> Publish
+        </button>`;
+      }
+
+      card.innerHTML = `
+        <div class="test-header">
+          <div>
+            <h3 class="test-title">${test.TestID} – ${test.testName}</h3>
+            <div class="test-details">
+              <div class="test-detail">
+                <i class="fas fa-users"></i>
+                <span>Batch: ${test.batch.BatchID} – ${test.batch.name}</span>
+              </div>
+              <div class="test-detail">
+                <i class="fas fa-clock"></i>
+                <span>Duration: ${test.testDuration} min</span>
+              </div>
+              <div class="test-detail">
+                <i class="fas fa-book"></i>
+                <span>Subjects: ${test.subjects.join(', ')}</span>
+              </div>
+              ${test.scheduledAt ? `
+                <div class="test-detail">
+                  <i class="fas fa-calendar"></i>
+                  <span>Schedule: ${new Date(test.scheduledAt).toLocaleString()}</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          <div class="test-status ${statusClass}">
+            <i class="fas fa-${
+              status === 'Published' ? 'check-circle' :
+              status === 'Scheduled' ? 'clock' :
+              'play-circle'
+            }"></i>
+            ${status}
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-secondary btn-sm" onclick="previewTest('${test._id}')">
+            <i class="fas fa-eye"></i> Preview
+          </button>
+          ${actionButton}
+        </div>
+      `;
+
+      container.appendChild(card);
+    });
+
+  } catch (error) {
+    console.error('Error loading test preview:', error);
+    container.innerHTML = `
+      <div class="card">
+        <div class="card-body" style="text-align: center; padding: 80px 20px;">
+          <i class="fas fa-exclamation-triangle" style="font-size: 64px; color: var(--error); margin-bottom: 24px;"></i>
+          <h3 style="color: var(--error); margin-bottom: 16px; font-size: 24px; font-weight: 700;">
+            Error Loading Tests
+          </h3>
+          <p style="color: var(--text-muted); font-size: 16px;">Please try again later</p>
+        </div>
+      </div>
+    `;
+    showToast('Error loading tests', 'error');
   }
+}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 13. Test actions (Cascade delete: test + questions + chapters)
@@ -2282,6 +2350,36 @@ document.getElementById('previewBtn').addEventListener('click', () => {
         showToast('Error adding chapter', 'error');
       }
     });
+
+// --- Populate the Batch Filter ---
+async function populateBatchFilter() {
+  try {
+    const batches = await api('batches');
+    const select = document.getElementById('batchFilter');
+    batches.forEach(batch => {
+      const opt = document.createElement('option');
+      opt.value = batch._id;
+      opt.textContent = `${batch.BatchID} – ${batch.name}`;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    console.error('Error loading batches for filter', err);
+  }
+}
+
+// --- On DOM ready: populate + listen for changes ---
+document.addEventListener('DOMContentLoaded', () => {
+  populateBatchFilter();
+
+  // When either filter changes, re-run the preview
+  document.getElementById('batchFilter')
+    .addEventListener('change', loadTestPreview);
+  document.getElementById('statusFilter')
+    .addEventListener('change', loadTestPreview);
+
+  // ... your existing init code (populateBatchSelects, switchTab, etc) ...
+});
+
 
     // ────────────────────────────────────────────────────────────────────────────
     // 18. Initialize: populate batches & default tab (unchanged)
