@@ -26,7 +26,7 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// Route Mounts
+// === Your API Routes ===
 app.use('/api/batches',    batchesRouter);
 app.use('/api/tests',      testsRouter);
 app.use('/api/questions',  questionsRouter);
@@ -46,19 +46,18 @@ const Submission = mongoose.model('Submission', new mongoose.Schema({
 }));
 
 const groupByTime = (unit) => {
-  const durationMap = {
-    hour: 24 * 60 * 60 * 1000,   // last 24 hrs
-    day: 30 * 24 * 60 * 60 * 1000 // last 30 days
+  const msBack = {
+    hour: 24 * 60 * 60 * 1000,   // 24 hours
+    day: 30 * 24 * 60 * 60 * 1000 // 30 days
   };
-
-  const format = unit === 'hour' ? "%Y-%m-%d %H:00" : "%Y-%m-%d";
-  const rangeMs = unit === 'hour' ? durationMap.hour : durationMap.day;
+  const format = unit === 'hour' ? '%Y-%m-%d %H:00' : '%Y-%m-%d';
+  const range = unit === 'hour' ? msBack.hour : msBack.day;
 
   return [
     {
       $match: {
         createdAt: {
-          $gte: new Date(Date.now() - rangeMs)
+          $gte: new Date(Date.now() - range)
         }
       }
     },
@@ -67,15 +66,13 @@ const groupByTime = (unit) => {
         _id: {
           $dateToString: {
             format: format,
-            date: "$createdAt"
+            date: '$createdAt'
           }
         },
         count: { $sum: 1 }
       }
     },
-    {
-      $sort: { _id: 1 }
-    }
+    { $sort: { _id: 1 } }
   ];
 };
 
@@ -91,14 +88,9 @@ app.get('/api/submissions/hourly', async (req, res) => {
 
 app.get('/api/submissions/weekly', async (req, res) => {
   try {
+    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const data = await Submission.aggregate([
-      {
-        $match: {
-          createdAt: {
-            $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-          }
-        }
-      },
+      { $match: { createdAt: { $gte: oneWeekAgo } } },
       {
         $group: {
           _id: {
@@ -129,7 +121,12 @@ app.get('/api/submissions/monthly', async (req, res) => {
   }
 });
 
-// Start Server (bind to 0.0.0.0 for public access)
+// Optional: Serve stats.html at "/"
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'stats.html'));
+});
+
+// Start Server
 const PORT = process.env.PORT || 3000;
 console.log(`Binding server to 0.0.0.0 on port ${PORT}`);
 app.listen(PORT, '0.0.0.0', () => {
