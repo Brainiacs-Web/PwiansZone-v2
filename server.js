@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 
 const express  = require('express');
@@ -34,10 +33,101 @@ app.use('/api/questions',  questionsRouter);
 app.use('/api/chapters',   chaptersRouter);
 app.use('/api/testSeries', testSeriesRouter);
 
-// Optional SPA fallback
-// app.get('*', (req, res) => {
-//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
-// });
+// === Submissions Analytics API ===
+const Submission = mongoose.model('Submission', new mongoose.Schema({
+  test: mongoose.Schema.Types.ObjectId,
+  batchName: String,
+  username: String,
+  responses: Object,
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+}));
+
+const groupByTime = (unit) => {
+  const durationMap = {
+    hour: 24 * 60 * 60 * 1000,   // last 24 hrs
+    day: 30 * 24 * 60 * 60 * 1000 // last 30 days
+  };
+
+  const format = unit === 'hour' ? "%Y-%m-%d %H:00" : "%Y-%m-%d";
+  const rangeMs = unit === 'hour' ? durationMap.hour : durationMap.day;
+
+  return [
+    {
+      $match: {
+        createdAt: {
+          $gte: new Date(Date.now() - rangeMs)
+        }
+      }
+    },
+    {
+      $group: {
+        _id: {
+          $dateToString: {
+            format: format,
+            date: "$createdAt"
+          }
+        },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $sort: { _id: 1 }
+    }
+  ];
+};
+
+app.get('/api/submissions/hourly', async (req, res) => {
+  try {
+    const data = await Submission.aggregate(groupByTime('hour'));
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error getting hourly submissions');
+  }
+});
+
+app.get('/api/submissions/weekly', async (req, res) => {
+  try {
+    const data = await Submission.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: {
+              format: "%Y-%m-%d",
+              date: "$createdAt"
+            }
+          },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error getting weekly submissions');
+  }
+});
+
+app.get('/api/submissions/monthly', async (req, res) => {
+  try {
+    const data = await Submission.aggregate(groupByTime('day'));
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error getting monthly submissions');
+  }
+});
 
 // Start Server (bind to 0.0.0.0 for public access)
 const PORT = process.env.PORT || 3000;

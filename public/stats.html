@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Submission Analytics Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    #controls {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    #chartContainer {
+      max-width: 900px;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 Submissions Dashboard</h1>
+
+  <div id="controls">
+    <label for="timeRange">Select Time Range:</label>
+    <select id="timeRange">
+      <option value="hourly">Last 24 Hours (Hourly)</option>
+      <option value="weekly">Last 7 Days</option>
+      <option value="monthly">Last 30 Days</option>
+    </select>
+  </div>
+
+  <div id="chartContainer">
+    <canvas id="submissionChart"></canvas>
+  </div>
+
+  <script>
+    const ctx = document.getElementById('submissionChart').getContext('2d');
+    let chart;
+
+    async function fetchData(range) {
+      const response = await fetch(`/api/submissions/${range}`);
+      const data = await response.json();
+
+      const labels = data.map(item => item._id);
+      const counts = data.map(item => item.count);
+
+      return { labels, counts };
+    }
+
+    async function renderChart(range) {
+      const { labels, counts } = await fetchData(range);
+
+      if (chart) chart.destroy();
+
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Submissions',
+            data: counts,
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0,123,255,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              position: 'top'
+            },
+            title: {
+              display: true,
+              text: `Submissions - ${range.toUpperCase()}`
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: range === 'hourly' ? 'Hour' : 'Date'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Number of Submissions'
+              },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById('timeRange').addEventListener('change', (e) => {
+      renderChart(e.target.value);
+    });
+
+    // Load default view
+    renderChart('hourly');
+  </script>
+</body>
+</html>
