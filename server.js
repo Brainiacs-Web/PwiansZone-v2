@@ -1,3 +1,4 @@
+// server.js
 require('dotenv').config();
 
 const express  = require('express');
@@ -26,107 +27,25 @@ mongoose.connect(process.env.MONGODB_URI, {
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.error('MongoDB connection error:', err));
 
-// === Your API Routes ===
+// Route Mounts
 app.use('/api/batches',    batchesRouter);
 app.use('/api/tests',      testsRouter);
 app.use('/api/questions',  questionsRouter);
 app.use('/api/chapters',   chaptersRouter);
 app.use('/api/testSeries', testSeriesRouter);
 
-// === Submissions Analytics API ===
-const Submission = mongoose.model('Submission', new mongoose.Schema({
-  test: mongoose.Schema.Types.ObjectId,
-  batchName: String,
-  username: String,
-  responses: Object,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-}));
-
-const groupByTime = (unit) => {
-  const msBack = {
-    hour: 24 * 60 * 60 * 1000,   // 24 hours
-    day: 30 * 24 * 60 * 60 * 1000 // 30 days
-  };
-  const format = unit === 'hour' ? '%Y-%m-%d %H:00' : '%Y-%m-%d';
-  const range = unit === 'hour' ? msBack.hour : msBack.day;
-
-  return [
-    {
-      $match: {
-        createdAt: {
-          $gte: new Date(Date.now() - range)
-        }
-      }
-    },
-    {
-      $group: {
-        _id: {
-          $dateToString: {
-            format: format,
-            date: '$createdAt'
-          }
-        },
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { _id: 1 } }
-  ];
-};
-
-app.get('/api/submissions/hourly', async (req, res) => {
-  try {
-    const data = await Submission.aggregate(groupByTime('hour'));
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error getting hourly submissions');
-  }
-});
-
-app.get('/api/submissions/weekly', async (req, res) => {
-  try {
-    const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const data = await Submission.aggregate([
-      { $match: { createdAt: { $gte: oneWeekAgo } } },
-      {
-        $group: {
-          _id: {
-            $dateToString: {
-              format: "%Y-%m-%d",
-              date: "$createdAt"
-            }
-          },
-          count: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error getting weekly submissions');
-  }
-});
-
-app.get('/api/submissions/monthly', async (req, res) => {
-  try {
-    const data = await Submission.aggregate(groupByTime('day'));
-    res.json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error getting monthly submissions');
-  }
-});
-
-// Optional: Serve stats.html at "/"
-app.get('/', (req, res) => {
+// === Serve stats.html ===
+// Now you can go to http://<host>:<port>/stats
+app.get('/stats', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'stats.html'));
 });
 
-// Start Server
+// Optional SPA fallback
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// });
+
+// Start Server (bind to 0.0.0.0 for public access)
 const PORT = process.env.PORT || 3000;
 console.log(`Binding server to 0.0.0.0 on port ${PORT}`);
 app.listen(PORT, '0.0.0.0', () => {
